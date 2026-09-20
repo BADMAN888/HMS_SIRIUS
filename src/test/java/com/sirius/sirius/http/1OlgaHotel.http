@@ -4,10 +4,15 @@
 @roomUrl = {{baseUrl}}/api/rooms
 @rateUrl = {{baseUrl}}/api/rates
 @priceUrl = {{baseUrl}}/api/prices
+@guestDocumentUrl = {{baseUrl}}/api/guest-documents
+@profileUrl = {{baseUrl}}/api/profiles
+@reservationUrl = {{baseUrl}}/api/reservations
+@folioUrl = {{baseUrl}}/api/folios
+@accrualUrl = {{baseUrl}}/api/accruals
+@paymentUrl = {{baseUrl}}/api/payments
 
-### ==================================================
-### 1. AUTH
-### ==================================================
+
+### AUTH
 
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
@@ -18,34 +23,29 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("Login status is 200", function () {
+    client.test("Login successful", function () {
         client.assert(response.status === 200);
     });
 
-    client.test("Token exists", function () {
-        client.assert(response.body.token !== undefined);
-        client.assert(response.body.token !== null);
-    });
-
+    client.assert(response.body.token !== null);
     client.global.set("token", response.body.token);
 %}
 
-### ==================================================
-### 2. HOTEL
-### ==================================================
+
+### HOTEL
 
 POST {{hotelUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "hotelName": "Olga Grand Hotel",
-  "description": "Four-star hotel in Kozyn with comfortable rooms, modern facilities and professional service.",
-  "phone": "+380441234567",
-  "email": "info@sirius-hotel.com",
-  "address": "Malyshka Street 8",
-  "checkInTime": "14:00",
-  "checkOutTime": "12:00"
+  "hotelName": "Sirius Hotel",
+  "description": "Modern hotel in Kozyn",
+  "phone": "+380501234567",
+  "email": "sirius.hotel@gmail.com",
+  "address": "Kozyn, Kyiv Region",
+  "checkInTime": "14:00:00",
+  "checkOutTime": "12:00:00"
 }
 
 > {%
@@ -53,18 +53,39 @@ Content-Type: application/json
         client.assert(response.status === 201);
     });
 
-    client.test("Hotel id exists", function () {
-        client.assert(response.body.id !== undefined);
-    });
-
     client.global.set("hotelId", response.body.id);
 %}
 
-### ==================================================
-### 3. ROOM CATEGORIES
-### ==================================================
 
-### Standard
+### HOTEL BY ID
+
+GET {{hotelUrl}}/{{hotelId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Hotel found", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.assert(response.body.id == client.global.get("hotelId"));
+%}
+
+
+### HOTEL BY NAME
+
+GET {{hotelUrl}}/by-name?name=Sirius%20Hotel
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Hotel found by name", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.assert(response.body.hotelName === "Sirius Hotel");
+%}
+
+
+### ROOM CATEGORIES
 
 POST {{roomCategoryUrl}}
 Authorization: Bearer {{token}}
@@ -72,7 +93,7 @@ Content-Type: application/json
 
 {
   "name": "Standard",
-  "description": "Comfortable room with everything needed for a pleasant stay.",
+  "description": "Standard room",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
@@ -85,7 +106,8 @@ Content-Type: application/json
     client.global.set("standardCategoryId", response.body.id);
 %}
 
-### Superior
+
+###
 
 POST {{roomCategoryUrl}}
 Authorization: Bearer {{token}}
@@ -93,7 +115,7 @@ Content-Type: application/json
 
 {
   "name": "Superior",
-  "description": "Spacious and comfortable room with an improved interior and additional amenities.",
+  "description": "Superior room",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
@@ -106,7 +128,8 @@ Content-Type: application/json
     client.global.set("superiorCategoryId", response.body.id);
 %}
 
-### Junior Suite
+
+###
 
 POST {{roomCategoryUrl}}
 Authorization: Bearer {{token}}
@@ -114,7 +137,7 @@ Content-Type: application/json
 
 {
   "name": "Junior Suite",
-  "description": "Spacious room with a sleeping area and a comfortable living space.",
+  "description": "Junior Suite room",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
@@ -127,7 +150,8 @@ Content-Type: application/json
     client.global.set("juniorSuiteCategoryId", response.body.id);
 %}
 
-### Suite
+
+###
 
 POST {{roomCategoryUrl}}
 Authorization: Bearer {{token}}
@@ -135,7 +159,7 @@ Content-Type: application/json
 
 {
   "name": "Suite",
-  "description": "Elegant spacious suite with a separate bedroom and living area.",
+  "description": "Suite room",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
@@ -148,7 +172,8 @@ Content-Type: application/json
     client.global.set("suiteCategoryId", response.body.id);
 %}
 
-### Kozyn Corner
+
+###
 
 POST {{roomCategoryUrl}}
 Authorization: Bearer {{token}}
@@ -156,7 +181,7 @@ Content-Type: application/json
 
 {
   "name": "Kozyn Corner",
-  "description": "Premium corner room with a spacious layout and panoramic views.",
+  "description": "Premium corner room",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
@@ -169,11 +194,32 @@ Content-Type: application/json
     client.global.set("kozynCornerCategoryId", response.body.id);
 %}
 
-### ==================================================
-### 4. ROOMS
-### ==================================================
 
-### Room 101
+### ALL ROOM CATEGORIES
+
+GET {{roomCategoryUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Room categories loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### ROOM CATEGORIES BY HOTEL
+
+GET {{roomCategoryUrl}}/by-hotel/{{hotelId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Hotel categories loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### ROOMS
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
@@ -196,7 +242,8 @@ Content-Type: application/json
     client.global.set("room101Id", response.body.id);
 %}
 
-### Room 102
+
+###
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
@@ -206,7 +253,7 @@ Content-Type: application/json
   "roomNumber": "102",
   "floor": 1,
   "status": "AVAILABLE",
-  "roomView": "CITY",
+  "roomView": "GARDEN",
   "hotelId": {{hotelId}},
   "categoryId": {{standardCategoryId}}
 }
@@ -217,7 +264,8 @@ Content-Type: application/json
     });
 %}
 
-### Room 103
+
+###
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
@@ -227,7 +275,7 @@ Content-Type: application/json
   "roomNumber": "103",
   "floor": 1,
   "status": "AVAILABLE",
-  "roomView": "GARDEN",
+  "roomView": "STREET",
   "hotelId": {{hotelId}},
   "categoryId": {{standardCategoryId}}
 }
@@ -238,49 +286,8 @@ Content-Type: application/json
     });
 %}
 
-### Room 104
 
-POST {{roomUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomNumber": "104",
-  "floor": 1,
-  "status": "AVAILABLE",
-  "roomView": "GARDEN",
-  "hotelId": {{hotelId}},
-  "categoryId": {{standardCategoryId}}
-}
-
-> {%
-    client.test("Room 104 created", function () {
-        client.assert(response.status === 201);
-    });
-%}
-
-### Room 105
-
-POST {{roomUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomNumber": "105",
-  "floor": 1,
-  "status": "AVAILABLE",
-  "roomView": "CITY",
-  "hotelId": {{hotelId}},
-  "categoryId": {{standardCategoryId}}
-}
-
-> {%
-    client.test("Room 105 created", function () {
-        client.assert(response.status === 201);
-    });
-%}
-
-### Room 201
+###
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
@@ -299,9 +306,12 @@ Content-Type: application/json
     client.test("Room 201 created", function () {
         client.assert(response.status === 201);
     });
+
+    client.global.set("room201Id", response.body.id);
 %}
 
-### Room 202
+
+###
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
@@ -322,70 +332,8 @@ Content-Type: application/json
     });
 %}
 
-### Room 203
 
-POST {{roomUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomNumber": "203",
-  "floor": 2,
-  "status": "AVAILABLE",
-  "roomView": "CITY",
-  "hotelId": {{hotelId}},
-  "categoryId": {{superiorCategoryId}}
-}
-
-> {%
-    client.test("Room 203 created", function () {
-        client.assert(response.status === 201);
-    });
-%}
-
-### Room 204
-
-POST {{roomUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomNumber": "204",
-  "floor": 2,
-  "status": "AVAILABLE",
-  "roomView": "GARDEN",
-  "hotelId": {{hotelId}},
-  "categoryId": {{superiorCategoryId}}
-}
-
-> {%
-    client.test("Room 204 created", function () {
-        client.assert(response.status === 201);
-    });
-%}
-
-### Room 205
-
-POST {{roomUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomNumber": "205",
-  "floor": 2,
-  "status": "AVAILABLE",
-  "roomView": "CITY",
-  "hotelId": {{hotelId}},
-  "categoryId": {{superiorCategoryId}}
-}
-
-> {%
-    client.test("Room 205 created", function () {
-        client.assert(response.status === 201);
-    });
-%}
-
-### Room 301
+###
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
@@ -406,7 +354,8 @@ Content-Type: application/json
     });
 %}
 
-### Room 302
+
+###
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
@@ -427,70 +376,8 @@ Content-Type: application/json
     });
 %}
 
-### Room 303
 
-POST {{roomUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomNumber": "303",
-  "floor": 3,
-  "status": "AVAILABLE",
-  "roomView": "CITY",
-  "hotelId": {{hotelId}},
-  "categoryId": {{juniorSuiteCategoryId}}
-}
-
-> {%
-    client.test("Room 303 created", function () {
-        client.assert(response.status === 201);
-    });
-%}
-
-### Room 304
-
-POST {{roomUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomNumber": "304",
-  "floor": 3,
-  "status": "AVAILABLE",
-  "roomView": "GARDEN",
-  "hotelId": {{hotelId}},
-  "categoryId": {{suiteCategoryId}}
-}
-
-> {%
-    client.test("Room 304 created", function () {
-        client.assert(response.status === 201);
-    });
-%}
-
-### Room 305
-
-POST {{roomUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomNumber": "305",
-  "floor": 3,
-  "status": "AVAILABLE",
-  "roomView": "CITY",
-  "hotelId": {{hotelId}},
-  "categoryId": {{suiteCategoryId}}
-}
-
-> {%
-    client.test("Room 305 created", function () {
-        client.assert(response.status === 201);
-    });
-%}
-
-### Room 401
+###
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
@@ -500,7 +387,7 @@ Content-Type: application/json
   "roomNumber": "401",
   "floor": 4,
   "status": "AVAILABLE",
-  "roomView": "GARDEN",
+  "roomView": "CITY",
   "hotelId": {{hotelId}},
   "categoryId": {{suiteCategoryId}}
 }
@@ -511,7 +398,8 @@ Content-Type: application/json
     });
 %}
 
-### Room 402
+
+###
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
@@ -521,7 +409,7 @@ Content-Type: application/json
   "roomNumber": "402",
   "floor": 4,
   "status": "AVAILABLE",
-  "roomView": "CITY",
+  "roomView": "GARDEN",
   "hotelId": {{hotelId}},
   "categoryId": {{suiteCategoryId}}
 }
@@ -532,28 +420,8 @@ Content-Type: application/json
     });
 %}
 
-### Room 403
 
-POST {{roomUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomNumber": "403",
-  "floor": 4,
-  "status": "AVAILABLE",
-  "roomView": "GARDEN",
-  "hotelId": {{hotelId}},
-  "categoryId": {{suiteCategoryId}}
-}
-
-> {%
-    client.test("Room 403 created", function () {
-        client.assert(response.status === 201);
-    });
-%}
-
-### Room 404
+###
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
@@ -572,13 +440,74 @@ Content-Type: application/json
     client.test("Room 404 created", function () {
         client.assert(response.status === 201);
     });
+
+    client.global.set("room404Id", response.body.id);
 %}
 
-### ==================================================
-### 5. RATES
-### ==================================================
 
-### BAR
+### ALL ROOMS
+
+GET {{roomUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Rooms loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### ROOMS BY HOTEL
+
+GET {{roomUrl}}/hotel/{{hotelId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Hotel rooms loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### ROOMS BY CATEGORY
+
+GET {{roomUrl}}/category/{{standardCategoryId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Category rooms loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### AVAILABLE ROOMS
+
+GET {{roomUrl}}/hotel/{{hotelId}}/status/AVAILABLE
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Available rooms loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### ROOM BY ID
+
+GET {{roomUrl}}/{{room101Id}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Room found", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.assert(response.body.id == client.global.get("room101Id"));
+%}
+
+
+### RATES
 
 POST {{rateUrl}}
 Authorization: Bearer {{token}}
@@ -601,7 +530,8 @@ Content-Type: application/json
     client.global.set("barRateId", response.body.id);
 %}
 
-### BAR10
+
+###
 
 POST {{rateUrl}}
 Authorization: Bearer {{token}}
@@ -624,21 +554,47 @@ Content-Type: application/json
     client.global.set("bar10RateId", response.body.id);
 %}
 
-### ==================================================
-### 6. PRICES
-### ==================================================
 
-### BAR Standard
+### BAR BY ID
+
+GET {{rateUrl}}/{{barRateId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("BAR rate found", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.assert(response.body.name === "BAR");
+    client.assert(response.body.currency === "UAH");
+    client.assert(response.body.active === true);
+%}
+
+
+### ALL RATES
+
+GET {{rateUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Rates loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### PRICES
 
 POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "rateId": {{barRateId}},
   "roomCategoryId": {{standardCategoryId}},
-  "price": 5000.00,
-  "startDate": "2026-01-01",
-  "endDate": "2026-12-31",
+  "amount": 5000.00,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
   "status": "ACTIVE"
 }
 
@@ -650,17 +606,19 @@ Content-Type: application/json
     client.global.set("barStandardPriceId", response.body.id);
 %}
 
-### BAR Superior
+
+###
 
 POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "rateId": {{barRateId}},
   "roomCategoryId": {{superiorCategoryId}},
-  "price": 6000.00,
-  "startDate": "2026-01-01",
-  "endDate": "2026-12-31",
+  "amount": 6000.00,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
   "status": "ACTIVE"
 }
 
@@ -668,21 +626,21 @@ Content-Type: application/json
     client.test("BAR Superior price created", function () {
         client.assert(response.status === 201);
     });
-
-    client.global.set("barSuperiorPriceId", response.body.id);
 %}
 
-### BAR Junior Suite
+
+###
 
 POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "rateId": {{barRateId}},
   "roomCategoryId": {{juniorSuiteCategoryId}},
-  "price": 9000.00,
-  "startDate": "2026-01-01",
-  "endDate": "2026-12-31",
+  "amount": 9000.00,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
   "status": "ACTIVE"
 }
 
@@ -690,21 +648,21 @@ Content-Type: application/json
     client.test("BAR Junior Suite price created", function () {
         client.assert(response.status === 201);
     });
-
-    client.global.set("barJuniorSuitePriceId", response.body.id);
 %}
 
-### BAR Suite
+
+###
 
 POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "rateId": {{barRateId}},
   "roomCategoryId": {{suiteCategoryId}},
-  "price": 10000.00,
-  "startDate": "2026-01-01",
-  "endDate": "2026-12-31",
+  "amount": 10000.00,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
   "status": "ACTIVE"
 }
 
@@ -712,21 +670,21 @@ Content-Type: application/json
     client.test("BAR Suite price created", function () {
         client.assert(response.status === 201);
     });
-
-    client.global.set("barSuitePriceId", response.body.id);
 %}
 
-### BAR Kozyn Corner
+
+###
 
 POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "rateId": {{barRateId}},
   "roomCategoryId": {{kozynCornerCategoryId}},
-  "price": 15000.00,
-  "startDate": "2026-01-01",
-  "endDate": "2026-12-31",
+  "amount": 15000.00,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
   "status": "ACTIVE"
 }
 
@@ -734,21 +692,21 @@ Content-Type: application/json
     client.test("BAR Kozyn Corner price created", function () {
         client.assert(response.status === 201);
     });
-
-    client.global.set("barKozynCornerPriceId", response.body.id);
 %}
 
-### BAR10 Standard
+
+###
 
 POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "rateId": {{bar10RateId}},
   "roomCategoryId": {{standardCategoryId}},
-  "price": 4500.00,
-  "startDate": "2026-01-01",
-  "endDate": "2026-12-31",
+  "amount": 4500.00,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
   "status": "ACTIVE"
 }
 
@@ -760,17 +718,19 @@ Content-Type: application/json
     client.global.set("bar10StandardPriceId", response.body.id);
 %}
 
-### BAR10 Superior
+
+###
 
 POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "rateId": {{bar10RateId}},
   "roomCategoryId": {{superiorCategoryId}},
-  "price": 5400.00,
-  "startDate": "2026-01-01",
-  "endDate": "2026-12-31",
+  "amount": 5400.00,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
   "status": "ACTIVE"
 }
 
@@ -778,21 +738,21 @@ Content-Type: application/json
     client.test("BAR10 Superior price created", function () {
         client.assert(response.status === 201);
     });
-
-    client.global.set("bar10SuperiorPriceId", response.body.id);
 %}
 
-### BAR10 Junior Suite
+
+###
 
 POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "rateId": {{bar10RateId}},
   "roomCategoryId": {{juniorSuiteCategoryId}},
-  "price": 8100.00,
-  "startDate": "2026-01-01",
-  "endDate": "2026-12-31",
+  "amount": 8100.00,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
   "status": "ACTIVE"
 }
 
@@ -800,21 +760,21 @@ Content-Type: application/json
     client.test("BAR10 Junior Suite price created", function () {
         client.assert(response.status === 201);
     });
-
-    client.global.set("bar10JuniorSuitePriceId", response.body.id);
 %}
 
-### BAR10 Suite
+
+###
 
 POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "rateId": {{bar10RateId}},
   "roomCategoryId": {{suiteCategoryId}},
-  "price": 9000.00,
-  "startDate": "2026-01-01",
-  "endDate": "2026-12-31",
+  "amount": 9000.00,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
   "status": "ACTIVE"
 }
 
@@ -822,21 +782,21 @@ Content-Type: application/json
     client.test("BAR10 Suite price created", function () {
         client.assert(response.status === 201);
     });
-
-    client.global.set("bar10SuitePriceId", response.body.id);
 %}
 
-### BAR10 Kozyn Corner
+
+###
 
 POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "rateId": {{bar10RateId}},
   "roomCategoryId": {{kozynCornerCategoryId}},
-  "price": 13500.00,
-  "startDate": "2026-01-01",
-  "endDate": "2026-12-31",
+  "amount": 13500.00,
+  "validFrom": "2026-01-01",
+  "validTo": "2026-12-31",
   "status": "ACTIVE"
 }
 
@@ -844,148 +804,409 @@ Content-Type: application/json
     client.test("BAR10 Kozyn Corner price created", function () {
         client.assert(response.status === 201);
     });
-
-    client.global.set("bar10KozynCornerPriceId", response.body.id);
 %}
 
-### ==================================================
-### 7. VERIFICATION
-### ==================================================
 
-### Get hotel
-
-GET {{hotelUrl}}/{{hotelId}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Hotel GET status is 200", function () {
-        client.assert(response.status === 200);
-    });
-
-    client.test("Correct hotel id", function () {
-        client.assert(response.body.id == client.global.get("hotelId"));
-    });
-%}
-
-### Get all hotels
-
-GET {{hotelUrl}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Hotels GET status is 200", function () {
-        client.assert(response.status === 200);
-    });
-
-    client.test("Hotels response is array", function () {
-        client.assert(Array.isArray(response.body));
-    });
-%}
-
-### Get all room categories
-
-GET {{roomCategoryUrl}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Room categories GET status is 200", function () {
-        client.assert(response.status === 200);
-    });
-
-    client.test("Room categories response is array", function () {
-        client.assert(Array.isArray(response.body));
-    });
-%}
-
-### Get all rooms
-
-GET {{roomUrl}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Rooms GET status is 200", function () {
-        client.assert(response.status === 200);
-    });
-
-    client.test("Rooms response is array", function () {
-        client.assert(Array.isArray(response.body));
-    });
-%}
-
-### Get BAR rate
-
-GET {{rateUrl}}/{{barRateId}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("BAR rate GET status is 200", function () {
-        client.assert(response.status === 200);
-    });
-
-    client.test("Rate name is BAR", function () {
-        client.assert(response.body.name === "BAR");
-    });
-
-    client.test("Rate currency is UAH", function () {
-        client.assert(response.body.currency === "UAH");
-    });
-
-    client.test("Rate is active", function () {
-        client.assert(response.body.active === true);
-    });
-%}
-
-### Get all rates
-
-GET {{rateUrl}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Rates GET status is 200", function () {
-        client.assert(response.status === 200);
-    });
-
-    client.test("Rates response is array", function () {
-        client.assert(Array.isArray(response.body));
-    });
-%}
-
-### Get BAR Standard price
+### PRICE BY ID
 
 GET {{priceUrl}}/{{barStandardPriceId}}
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Price GET status is 200", function () {
+    client.test("Price found", function () {
         client.assert(response.status === 200);
     });
 
-    client.test("Price is correct", function () {
-        client.assert(response.body.price == 5000);
-    });
-
-    client.test("Price status is ACTIVE", function () {
-        client.assert(response.body.status === "ACTIVE");
-    });
-
-    client.test("Price has correct category", function () {
-        client.assert(
-            response.body.roomCategoryId == client.global.get("standardCategoryId")
-        );
-    });
+    client.assert(response.body.id == client.global.get("barStandardPriceId"));
 %}
 
-### Get all prices
+
+### ALL PRICES
 
 GET {{priceUrl}}
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Prices GET status is 200", function () {
+    client.test("Prices loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### GUEST DOCUMENT
+
+POST {{guestDocumentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "documentType": "PASSPORT",
+  "documentNumber": "AA{{hotelId}}123456",
+  "issueDate": "2020-01-01",
+  "expiryDate": "2030-01-01"
+}
+
+> {%
+    client.test("Guest document created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("guestDocumentId", response.body.id);
+%}
+
+
+### GUEST DOCUMENT BY ID
+
+GET {{guestDocumentUrl}}/{{guestDocumentId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Guest document found", function () {
         client.assert(response.status === 200);
     });
 
-    client.test("Prices response is array", function () {
-        client.assert(Array.isArray(response.body));
+    client.assert(response.body.id == client.global.get("guestDocumentId"));
+%}
+
+
+### ALL GUEST DOCUMENTS
+
+GET {{guestDocumentUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Guest documents loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### PROFILE
+
+POST {{profileUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "firstName": "Vlad",
+  "lastName": "Sirius",
+  "middleName": "Testovych",
+  "phoneNumber": "+380501234568",
+  "email": "vlad.sirius.{{hotelId}}@gmail.com",
+  "gender": "MALE",
+  "address": "Kyiv, Ukraine",
+  "guestDocument": {
+    "documentType": "ID_CARD",
+    "documentNumber": "ID{{hotelId}}987654",
+    "issueDate": "2021-01-01",
+    "expiryDate": "2031-01-01"
+  }
+}
+
+> {%
+    client.test("Profile created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.assert(response.body.id !== null);
+    client.global.set("profileId", response.body.id);
+%}
+
+
+### PROFILE BY ID
+
+GET {{profileUrl}}/{{profileId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Profile found", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.assert(response.body.id == client.global.get("profileId"));
+%}
+
+
+### ALL PROFILES
+
+GET {{profileUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Profiles loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### RESERVATION
+
+POST {{reservationUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomId": {{room101Id}},
+  "rateId": {{barRateId}},
+  "guest": {
+    "firstName": "John",
+    "lastName": "Smith",
+    "phone": "+380501234569"
+  },
+  "checkInDate": "2026-09-25",
+  "checkOutDate": "2026-09-28",
+  "adults": 2,
+  "children": 0
+}
+
+> {%
+    client.test("Reservation created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.assert(response.body.id !== null);
+    client.assert(response.body.confirmationNumber !== null);
+
+    client.global.set("reservationId", response.body.id);
+%}
+
+
+### RESERVATION BY ID
+
+GET {{reservationUrl}}/{{reservationId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Reservation found", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.assert(response.body.id == client.global.get("reservationId"));
+%}
+
+
+### ALL RESERVATIONS
+
+GET {{reservationUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Reservations loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### RESERVATIONS BY CHECK-IN DATE
+
+GET {{reservationUrl}}/check-in?date=2026-09-25
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Reservations by check-in date loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### RESERVATIONS BY CHECK-OUT DATE
+
+GET {{reservationUrl}}/check-out?date=2026-09-28
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Reservations by check-out date loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### RESERVATIONS BY DATE
+
+GET {{reservationUrl}}/by-date?date=2026-09-25
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Reservations by date loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### RESERVATIONS BY DATE RANGE
+
+GET {{reservationUrl}}/by-date-range?startDate=2026-09-25&endDate=2026-09-28
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Reservations by date range loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### FOLIO BY RESERVATION
+
+GET {{folioUrl}}/reservation/{{reservationId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Folio created with reservation", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.assert(response.body.id !== null);
+    client.assert(response.body.reservationId == client.global.get("reservationId"));
+    client.assert(response.body.status === "OPEN");
+
+    client.global.set("folioId", response.body.id);
+%}
+
+
+### FOLIO BY ID
+
+GET {{folioUrl}}/{{folioId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Folio found", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.assert(response.body.id == client.global.get("folioId"));
+%}
+
+
+### ALL FOLIOS
+
+GET {{folioUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Folios loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### ACCRUAL
+
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": {{folioId}},
+  "type": "BREAKFAST",
+  "description": "Breakfast",
+  "unitPrice": 500.00,
+  "quantity": 2
+}
+
+> {%
+    client.test("Accrual created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.assert(response.body.id !== null);
+    client.global.set("accrualId", response.body.id);
+%}
+
+
+### ACCRUAL BY ID
+
+GET {{accrualUrl}}/{{accrualId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Accrual found", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.assert(response.body.id == client.global.get("accrualId"));
+%}
+
+
+### ACCRUALS BY FOLIO
+
+GET {{accrualUrl}}/folio/{{folioId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Folio accruals loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### ALL ACCRUALS
+
+GET {{accrualUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Accruals loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### PAYMENT
+
+POST {{paymentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": {{folioId}},
+  "method": "CARD",
+  "amount": 1000.00,
+  "description": "Breakfast payment"
+}
+
+> {%
+    client.test("Payment created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.assert(response.body.id !== null);
+    client.global.set("paymentId", response.body.id);
+%}
+
+
+### PAYMENT BY ID
+
+GET {{paymentUrl}}/{{paymentId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Payment found", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.assert(response.body.id == client.global.get("paymentId"));
+%}
+
+
+### PAYMENTS BY FOLIO
+
+GET {{paymentUrl}}/folio/{{folioId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Folio payments loaded", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### ALL PAYMENTS
+
+GET {{paymentUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Payments loaded", function () {
+        client.assert(response.status === 200);
     });
 %}

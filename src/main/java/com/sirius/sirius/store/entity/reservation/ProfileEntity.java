@@ -57,7 +57,7 @@ public class ProfileEntity {
     @ManyToMany(mappedBy = "guests")
     Set<ReservationEntity> reservations = new HashSet<>();
 
-    @OneToOne
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "guest_document_id", unique = true)
     GuestDocumentEntity guestDocument;
 }
