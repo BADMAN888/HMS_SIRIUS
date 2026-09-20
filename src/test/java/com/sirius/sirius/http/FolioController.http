@@ -1,0 +1,144 @@
+
+@baseUrl = http://localhost:8080
+@folioUrl = {{baseUrl}}/api/folios
+
+### ========================================
+### LOGIN
+### ========================================
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@gmail.com",
+  "password": "123456"
+}
+
+> {%
+    client.global.set("token", response.body.token);
+%}
+
+
+### ========================================
+### CREATE FOLIO
+### ========================================
+
+POST {{folioUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reservationId": 6,
+  "status": "OPEN"
+}
+
+> {%
+    client.test("Status is 201", function() {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("folioId", response.body.id);
+%}
+
+
+### ========================================
+### GET FOLIO BY ID
+### ========================================
+
+GET {{folioUrl}}/{{folioId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function() {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Folio ID is correct", function() {
+        client.assert(response.body.id === Number(client.global.get("folioId")));
+    });
+%}
+
+
+### ========================================
+### GET FOLIO BY RESERVATION ID
+### ========================================
+
+GET {{folioUrl}}/reservation/6
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function() {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### ========================================
+### GET ALL FOLIOS
+### ========================================
+
+GET {{folioUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function() {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Response is an array", function() {
+        client.assert(Array.isArray(response.body));
+    });
+%}
+
+
+### ========================================
+### UPDATE FOLIO
+### ========================================
+
+PUT {{folioUrl}}/{{folioId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reservationId": 1,
+  "status": "CLOSED"
+}
+
+> {%
+    client.test("Status is 200", function() {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Status is CLOSED", function() {
+        client.assert(response.body.status === "CLOSED");
+    });
+%}
+
+
+### ========================================
+### DELETE FOLIO
+### ========================================
+
+DELETE {{folioUrl}}/{{folioId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 204", function() {
+        client.assert(response.status === 204);
+    });
+%}
+
+
+### ========================================
+### GET DELETED FOLIO
+### ========================================
+
+GET {{folioUrl}}/{{folioId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 404", function() {
+        client.assert(response.status === 404);
+    });
+%}
+

@@ -1,0 +1,34 @@
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@gmail.com",
+  "password": "123456"
+}
+###
+POST http://localhost:8080/api/hotels
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelName": "Olga Grand Hotel",
+  "description": "Four-star hotel in Kozyn with comfortable rooms, modern facilities and professional service.",
+  "phone": "+380441234567",
+  "email": "info@sirius-hotel.com",
+  "address": "Malyshka Street 8",
+  "checkInTime": "14:00",
+  "checkOutTime": "12:00"
+}
+###
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "102",
+  "floor": 1,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": {{hotelId}},
+  "categoryId": {{standardCategoryId}}
+}

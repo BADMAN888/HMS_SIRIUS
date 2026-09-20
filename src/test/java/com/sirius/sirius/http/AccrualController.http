@@ -1,0 +1,208 @@
+
+@baseUrl = http://localhost:8080
+@accrualUrl = {{baseUrl}}/api/accruals
+
+
+### ========================================
+### LOGIN
+### ========================================
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@gmail.com",
+  "password": "123456"
+}
+
+> {%
+    client.test("Login - status 200", function() {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+
+    client.global.set("token", response.body.token);
+%}
+
+
+### ========================================
+### GET ALL ACCRUALS
+### ========================================
+
+GET {{accrualUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get all accruals - status 200", function() {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+%}
+
+
+### ========================================
+### GET ACCRUAL BY ID
+### ========================================
+
+GET {{accrualUrl}}/1
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get accrual - status 200", function() {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+%}
+
+
+### ========================================
+### GET ACCRUAL BY ID - NOT FOUND
+### ========================================
+
+GET {{accrualUrl}}/999999
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get accrual - status 404", function() {
+        client.assert(response.status === 404, "Expected status 404");
+    });
+%}
+
+
+### ========================================
+### GET ACCRUALS BY FOLIO ID
+### ========================================
+
+GET {{accrualUrl}}/folio/1
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get accruals by folio - status 200", function() {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+%}
+
+
+### ========================================
+### CREATE ROOM ACCRUAL
+### ========================================
+
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": 1,
+  "type": "ROOM",
+  "description": "Room 101",
+  "unitPrice": 120.00,
+  "quantity": 2
+}
+
+> {%
+    client.test("Create room accrual - status 201", function() {
+        client.assert(response.status === 201, "Expected status 201");
+    });
+
+    client.test("Create room accrual - amount 240", function() {
+        client.assert(response.body.amount === 240, "Expected amount 240");
+    });
+%}
+
+
+### ========================================
+### CREATE SERVICE ACCRUAL
+### ========================================
+
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": 1,
+  "type": "SERVICE",
+  "description": "Breakfast",
+  "unitPrice": 25.00,
+  "quantity": 2
+}
+
+> {%
+    client.test("Create service accrual - status 201", function() {
+        client.assert(response.status === 201, "Expected status 201");
+    });
+
+    client.test("Create service accrual - amount 50", function() {
+        client.assert(response.body.amount === 50, "Expected amount 50");
+    });
+%}
+
+
+### ========================================
+### CREATE ACCRUAL - FOLIO NOT FOUND
+### ========================================
+
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": 999999,
+  "type": "ROOM",
+  "description": "Room 205",
+  "unitPrice": 120.00,
+  "quantity": 1
+}
+
+> {%
+    client.test("Create accrual - folio not found - status 404", function() {
+        client.assert(response.status === 404, "Expected status 404");
+    });
+%}
+
+
+### ========================================
+### CREATE ACCRUAL - VALIDATION ERROR
+### ========================================
+
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": 1,
+  "type": "ROOM",
+  "description": "",
+  "unitPrice": 0,
+  "quantity": 0
+}
+
+> {%
+    client.test("Create invalid accrual - status 400", function() {
+        client.assert(response.status === 400, "Expected status 400");
+    });
+%}
+
+
+### ========================================
+### DELETE ACCRUAL
+### ========================================
+
+DELETE {{accrualUrl}}/1
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Delete accrual - status 204", function() {
+        client.assert(response.status === 204, "Expected status 204");
+    });
+%}
+
+
+### ========================================
+### DELETE ACCRUAL - NOT FOUND
+### ========================================
+
+DELETE {{accrualUrl}}/999999
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Delete accrual - status 404", function() {
+        client.assert(response.status === 404, "Expected status 404");
+    });
+%}

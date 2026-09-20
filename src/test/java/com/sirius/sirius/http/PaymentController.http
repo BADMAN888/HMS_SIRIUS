@@ -1,0 +1,179 @@
+
+@baseUrl = http://localhost:8080
+@paymentUrl = {{baseUrl}}/api/payments
+
+
+### ========================================
+### LOGIN
+### ========================================
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@gmail.com",
+  "password": "123456"
+}
+
+> {%
+    client.global.set("token", response.body.token);
+%}
+
+
+### ========================================
+### CREATE PAYMENT
+### ========================================
+
+POST {{paymentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": 1,
+  "method": "CASH",
+  "amount": 150.00,
+  "description": "Payment for accommodation"
+}
+
+> {%
+    client.test("Status is 201", function() {
+        client.assert(response.status === 201);
+    });
+
+    client.test("Payment ID exists", function() {
+        client.assert(response.body.id != null);
+    });
+
+    client.test("Folio ID is correct", function() {
+        client.assert(response.body.folioId === 1);
+    });
+
+    client.test("Amount is correct", function() {
+        client.assert(Number(response.body.amount) === 150);
+    });
+
+    client.test("Paid at exists", function() {
+        client.assert(response.body.paidAt != null);
+    });
+
+    client.global.set("paymentId", response.body.id);
+%}
+
+
+### ========================================
+### GET PAYMENT BY ID
+### ========================================
+
+GET {{paymentUrl}}/{{paymentId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function() {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Payment ID is correct", function() {
+        client.assert(
+            response.body.id === Number(client.global.get("paymentId"))
+        );
+    });
+%}
+
+
+### ========================================
+### GET ALL PAYMENTS
+### ========================================
+
+GET {{paymentUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function() {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Response is an array", function() {
+        client.assert(Array.isArray(response.body));
+    });
+%}
+
+
+### ========================================
+### GET PAYMENTS BY FOLIO
+### ========================================
+
+GET {{paymentUrl}}/folio/1
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function() {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Response is an array", function() {
+        client.assert(Array.isArray(response.body));
+    });
+%}
+
+
+### ========================================
+### UPDATE PAYMENT
+### ========================================
+
+PUT {{paymentUrl}}/{{paymentId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": 1,
+  "method": "CARD",
+  "amount": 200.00,
+  "description": "Updated payment"
+}
+
+> {%
+    client.test("Status is 200", function() {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Payment method is CARD", function() {
+        client.assert(response.body.method === "CARD");
+    });
+
+    client.test("Amount is correct", function() {
+        client.assert(Number(response.body.amount) === 200);
+    });
+
+    client.test("Description is correct", function() {
+        client.assert(response.body.description === "Updated payment");
+    });
+%}
+
+
+### ========================================
+### DELETE PAYMENT
+### ========================================
+
+DELETE {{paymentUrl}}/{{paymentId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 204", function() {
+        client.assert(response.status === 204);
+    });
+%}
+
+
+### ========================================
+### GET DELETED PAYMENT
+### ========================================
+
+GET {{paymentUrl}}/{{paymentId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 404", function() {
+        client.assert(response.status === 404);
+    });
+%}
+

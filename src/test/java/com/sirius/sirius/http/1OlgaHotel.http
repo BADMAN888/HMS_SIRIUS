@@ -1,0 +1,991 @@
+@baseUrl = http://localhost:8080
+@hotelUrl = {{baseUrl}}/api/hotels
+@roomCategoryUrl = {{baseUrl}}/api/room-category
+@roomUrl = {{baseUrl}}/api/rooms
+@rateUrl = {{baseUrl}}/api/rates
+@priceUrl = {{baseUrl}}/api/prices
+
+### ==================================================
+### 1. AUTH
+### ==================================================
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@gmail.com",
+  "password": "123456"
+}
+
+> {%
+    client.test("Login status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Token exists", function () {
+        client.assert(response.body.token !== undefined);
+        client.assert(response.body.token !== null);
+    });
+
+    client.global.set("token", response.body.token);
+%}
+
+### ==================================================
+### 2. HOTEL
+### ==================================================
+
+POST {{hotelUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelName": "Olga Grand Hotel",
+  "description": "Four-star hotel in Kozyn with comfortable rooms, modern facilities and professional service.",
+  "phone": "+380441234567",
+  "email": "info@sirius-hotel.com",
+  "address": "Malyshka Street 8",
+  "checkInTime": "14:00",
+  "checkOutTime": "12:00"
+}
+
+> {%
+    client.test("Hotel created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.test("Hotel id exists", function () {
+        client.assert(response.body.id !== undefined);
+    });
+
+    client.global.set("hotelId", response.body.id);
+%}
+
+### ==================================================
+### 3. ROOM CATEGORIES
+### ==================================================
+
+### Standard
+
+POST {{roomCategoryUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Standard",
+  "description": "Comfortable room with everything needed for a pleasant stay.",
+  "countOfBeds": 2,
+  "hotelId": {{hotelId}}
+}
+
+> {%
+    client.test("Standard category created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("standardCategoryId", response.body.id);
+%}
+
+### Superior
+
+POST {{roomCategoryUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Superior",
+  "description": "Spacious and comfortable room with an improved interior and additional amenities.",
+  "countOfBeds": 2,
+  "hotelId": {{hotelId}}
+}
+
+> {%
+    client.test("Superior category created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("superiorCategoryId", response.body.id);
+%}
+
+### Junior Suite
+
+POST {{roomCategoryUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Junior Suite",
+  "description": "Spacious room with a sleeping area and a comfortable living space.",
+  "countOfBeds": 2,
+  "hotelId": {{hotelId}}
+}
+
+> {%
+    client.test("Junior Suite category created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("juniorSuiteCategoryId", response.body.id);
+%}
+
+### Suite
+
+POST {{roomCategoryUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Suite",
+  "description": "Elegant spacious suite with a separate bedroom and living area.",
+  "countOfBeds": 2,
+  "hotelId": {{hotelId}}
+}
+
+> {%
+    client.test("Suite category created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("suiteCategoryId", response.body.id);
+%}
+
+### Kozyn Corner
+
+POST {{roomCategoryUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Kozyn Corner",
+  "description": "Premium corner room with a spacious layout and panoramic views.",
+  "countOfBeds": 2,
+  "hotelId": {{hotelId}}
+}
+
+> {%
+    client.test("Kozyn Corner category created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("kozynCornerCategoryId", response.body.id);
+%}
+
+### ==================================================
+### 4. ROOMS
+### ==================================================
+
+### Room 101
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "101",
+  "floor": 1,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": {{hotelId}},
+  "categoryId": {{standardCategoryId}}
+}
+
+> {%
+    client.test("Room 101 created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("room101Id", response.body.id);
+%}
+
+### Room 102
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "102",
+  "floor": 1,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": {{hotelId}},
+  "categoryId": {{standardCategoryId}}
+}
+
+> {%
+    client.test("Room 102 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 103
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "103",
+  "floor": 1,
+  "status": "AVAILABLE",
+  "roomView": "GARDEN",
+  "hotelId": {{hotelId}},
+  "categoryId": {{standardCategoryId}}
+}
+
+> {%
+    client.test("Room 103 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 104
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "104",
+  "floor": 1,
+  "status": "AVAILABLE",
+  "roomView": "GARDEN",
+  "hotelId": {{hotelId}},
+  "categoryId": {{standardCategoryId}}
+}
+
+> {%
+    client.test("Room 104 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 105
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "105",
+  "floor": 1,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": {{hotelId}},
+  "categoryId": {{standardCategoryId}}
+}
+
+> {%
+    client.test("Room 105 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 201
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "201",
+  "floor": 2,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": {{hotelId}},
+  "categoryId": {{superiorCategoryId}}
+}
+
+> {%
+    client.test("Room 201 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 202
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "202",
+  "floor": 2,
+  "status": "AVAILABLE",
+  "roomView": "GARDEN",
+  "hotelId": {{hotelId}},
+  "categoryId": {{superiorCategoryId}}
+}
+
+> {%
+    client.test("Room 202 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 203
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "203",
+  "floor": 2,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": {{hotelId}},
+  "categoryId": {{superiorCategoryId}}
+}
+
+> {%
+    client.test("Room 203 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 204
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "204",
+  "floor": 2,
+  "status": "AVAILABLE",
+  "roomView": "GARDEN",
+  "hotelId": {{hotelId}},
+  "categoryId": {{superiorCategoryId}}
+}
+
+> {%
+    client.test("Room 204 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 205
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "205",
+  "floor": 2,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": {{hotelId}},
+  "categoryId": {{superiorCategoryId}}
+}
+
+> {%
+    client.test("Room 205 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 301
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "301",
+  "floor": 3,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": {{hotelId}},
+  "categoryId": {{juniorSuiteCategoryId}}
+}
+
+> {%
+    client.test("Room 301 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 302
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "302",
+  "floor": 3,
+  "status": "AVAILABLE",
+  "roomView": "GARDEN",
+  "hotelId": {{hotelId}},
+  "categoryId": {{juniorSuiteCategoryId}}
+}
+
+> {%
+    client.test("Room 302 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 303
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "303",
+  "floor": 3,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": {{hotelId}},
+  "categoryId": {{juniorSuiteCategoryId}}
+}
+
+> {%
+    client.test("Room 303 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 304
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "304",
+  "floor": 3,
+  "status": "AVAILABLE",
+  "roomView": "GARDEN",
+  "hotelId": {{hotelId}},
+  "categoryId": {{suiteCategoryId}}
+}
+
+> {%
+    client.test("Room 304 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 305
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "305",
+  "floor": 3,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": {{hotelId}},
+  "categoryId": {{suiteCategoryId}}
+}
+
+> {%
+    client.test("Room 305 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 401
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "401",
+  "floor": 4,
+  "status": "AVAILABLE",
+  "roomView": "GARDEN",
+  "hotelId": {{hotelId}},
+  "categoryId": {{suiteCategoryId}}
+}
+
+> {%
+    client.test("Room 401 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 402
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "402",
+  "floor": 4,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": {{hotelId}},
+  "categoryId": {{suiteCategoryId}}
+}
+
+> {%
+    client.test("Room 402 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 403
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "403",
+  "floor": 4,
+  "status": "AVAILABLE",
+  "roomView": "GARDEN",
+  "hotelId": {{hotelId}},
+  "categoryId": {{suiteCategoryId}}
+}
+
+> {%
+    client.test("Room 403 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### Room 404
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "404",
+  "floor": 4,
+  "status": "AVAILABLE",
+  "roomView": "PANORAMIC",
+  "hotelId": {{hotelId}},
+  "categoryId": {{kozynCornerCategoryId}}
+}
+
+> {%
+    client.test("Room 404 created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+### ==================================================
+### 5. RATES
+### ==================================================
+
+### BAR
+
+POST {{rateUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "BAR",
+  "description": "Best Available Rate",
+  "currency": "UAH",
+  "categoryId": {{standardCategoryId}},
+  "price": 5000.00,
+  "active": true
+}
+
+> {%
+    client.test("BAR rate created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("barRateId", response.body.id);
+%}
+
+### BAR10
+
+POST {{rateUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "BAR10",
+  "description": "Best Available Rate with 10% discount",
+  "currency": "UAH",
+  "categoryId": {{standardCategoryId}},
+  "price": 4500.00,
+  "active": true
+}
+
+> {%
+    client.test("BAR10 rate created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("bar10RateId", response.body.id);
+%}
+
+### ==================================================
+### 6. PRICES
+### ==================================================
+
+### BAR Standard
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomCategoryId": {{standardCategoryId}},
+  "price": 5000.00,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31",
+  "status": "ACTIVE"
+}
+
+> {%
+    client.test("BAR Standard price created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("barStandardPriceId", response.body.id);
+%}
+
+### BAR Superior
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomCategoryId": {{superiorCategoryId}},
+  "price": 6000.00,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31",
+  "status": "ACTIVE"
+}
+
+> {%
+    client.test("BAR Superior price created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("barSuperiorPriceId", response.body.id);
+%}
+
+### BAR Junior Suite
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomCategoryId": {{juniorSuiteCategoryId}},
+  "price": 9000.00,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31",
+  "status": "ACTIVE"
+}
+
+> {%
+    client.test("BAR Junior Suite price created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("barJuniorSuitePriceId", response.body.id);
+%}
+
+### BAR Suite
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomCategoryId": {{suiteCategoryId}},
+  "price": 10000.00,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31",
+  "status": "ACTIVE"
+}
+
+> {%
+    client.test("BAR Suite price created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("barSuitePriceId", response.body.id);
+%}
+
+### BAR Kozyn Corner
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomCategoryId": {{kozynCornerCategoryId}},
+  "price": 15000.00,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31",
+  "status": "ACTIVE"
+}
+
+> {%
+    client.test("BAR Kozyn Corner price created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("barKozynCornerPriceId", response.body.id);
+%}
+
+### BAR10 Standard
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomCategoryId": {{standardCategoryId}},
+  "price": 4500.00,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31",
+  "status": "ACTIVE"
+}
+
+> {%
+    client.test("BAR10 Standard price created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("bar10StandardPriceId", response.body.id);
+%}
+
+### BAR10 Superior
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomCategoryId": {{superiorCategoryId}},
+  "price": 5400.00,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31",
+  "status": "ACTIVE"
+}
+
+> {%
+    client.test("BAR10 Superior price created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("bar10SuperiorPriceId", response.body.id);
+%}
+
+### BAR10 Junior Suite
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomCategoryId": {{juniorSuiteCategoryId}},
+  "price": 8100.00,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31",
+  "status": "ACTIVE"
+}
+
+> {%
+    client.test("BAR10 Junior Suite price created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("bar10JuniorSuitePriceId", response.body.id);
+%}
+
+### BAR10 Suite
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomCategoryId": {{suiteCategoryId}},
+  "price": 9000.00,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31",
+  "status": "ACTIVE"
+}
+
+> {%
+    client.test("BAR10 Suite price created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("bar10SuitePriceId", response.body.id);
+%}
+
+### BAR10 Kozyn Corner
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomCategoryId": {{kozynCornerCategoryId}},
+  "price": 13500.00,
+  "startDate": "2026-01-01",
+  "endDate": "2026-12-31",
+  "status": "ACTIVE"
+}
+
+> {%
+    client.test("BAR10 Kozyn Corner price created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("bar10KozynCornerPriceId", response.body.id);
+%}
+
+### ==================================================
+### 7. VERIFICATION
+### ==================================================
+
+### Get hotel
+
+GET {{hotelUrl}}/{{hotelId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Hotel GET status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Correct hotel id", function () {
+        client.assert(response.body.id == client.global.get("hotelId"));
+    });
+%}
+
+### Get all hotels
+
+GET {{hotelUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Hotels GET status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Hotels response is array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+%}
+
+### Get all room categories
+
+GET {{roomCategoryUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Room categories GET status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Room categories response is array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+%}
+
+### Get all rooms
+
+GET {{roomUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Rooms GET status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Rooms response is array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+%}
+
+### Get BAR rate
+
+GET {{rateUrl}}/{{barRateId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("BAR rate GET status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Rate name is BAR", function () {
+        client.assert(response.body.name === "BAR");
+    });
+
+    client.test("Rate currency is UAH", function () {
+        client.assert(response.body.currency === "UAH");
+    });
+
+    client.test("Rate is active", function () {
+        client.assert(response.body.active === true);
+    });
+%}
+
+### Get all rates
+
+GET {{rateUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Rates GET status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Rates response is array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+%}
+
+### Get BAR Standard price
+
+GET {{priceUrl}}/{{barStandardPriceId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Price GET status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Price is correct", function () {
+        client.assert(response.body.price == 5000);
+    });
+
+    client.test("Price status is ACTIVE", function () {
+        client.assert(response.body.status === "ACTIVE");
+    });
+
+    client.test("Price has correct category", function () {
+        client.assert(
+            response.body.roomCategoryId == client.global.get("standardCategoryId")
+        );
+    });
+%}
+
+### Get all prices
+
+GET {{priceUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Prices GET status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Prices response is array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+%}

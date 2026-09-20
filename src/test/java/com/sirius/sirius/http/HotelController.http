@@ -1,0 +1,232 @@
+@baseUrl = http://localhost:8080
+@hotelUrl = {{baseUrl}}/api/hotels
+
+
+### ========================================
+### LOGIN
+### ========================================
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@gmail.com",
+  "password": "123456"
+}
+
+> {%
+    client.test("Login - status 200", function() {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+
+    client.global.set("token", response.body.token);
+%}
+
+
+### ========================================
+### GET HOTEL BY ID
+### ========================================
+
+GET {{hotelUrl}}/1
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get hotel - status 200", function() {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+%}
+
+
+### ========================================
+### GET HOTEL BY ID - NOT FOUND
+### ========================================
+
+GET {{hotelUrl}}/999999
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get hotel - status 404", function() {
+        client.assert(response.status === 404, "Expected status 404");
+    });
+%}
+
+
+### ========================================
+### GET HOTEL BY NAME
+### ========================================
+
+GET {{hotelUrl}}/by-name?name=Sirius%20Hotel
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get hotel by name - status 200", function() {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+%}
+
+
+### ========================================
+### GET HOTEL BY NAME - NOT FOUND
+### ========================================
+
+GET {{hotelUrl}}/by-name?name=Unknown%20Hotel
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get hotel by name - status 404", function() {
+        client.assert(response.status === 404, "Expected status 404");
+    });
+%}
+
+
+### ========================================
+### CREATE HOTEL
+### ========================================
+
+POST {{hotelUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelName": "Sirius Hotel",
+  "description": "Modern hotel in Kyiv",
+  "phone": "+380441234567",
+  "email": "info@sirius.com",
+  "address": "Khreshchatyk Street 1",
+  "checkInTime": "14:00",
+  "checkOutTime": "12:00"
+}
+
+> {%
+    client.test("Create hotel - status 201", function() {
+        client.assert(response.status === 201, "Expected status 201");
+    });
+%}
+
+
+### ========================================
+### CREATE HOTEL - DUPLICATE
+### ========================================
+
+POST {{hotelUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelName": "Sirius Hotel",
+  "description": "Another hotel",
+  "phone": "+380441111111",
+  "email": "another@sirius.com",
+  "address": "Another Street 10",
+  "checkInTime": "14:00",
+  "checkOutTime": "12:00"
+}
+
+> {%
+    client.test("Create duplicate hotel - status 400", function() {
+        client.assert(response.status === 400, "Expected status 400");
+    });
+%}
+
+
+### ========================================
+### CREATE HOTEL - VALIDATION ERROR
+### ========================================
+
+POST {{hotelUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelName": "",
+  "description": "Test hotel",
+  "phone": "+380441234567",
+  "email": "invalid-email",
+  "address": "Test address",
+  "checkInTime": "14:00",
+  "checkOutTime": "12:00"
+}
+
+> {%
+    client.test("Create invalid hotel - status 400", function() {
+        client.assert(response.status === 400, "Expected status 400");
+    });
+%}
+
+
+### ========================================
+### UPDATE HOTEL
+### ========================================
+
+PUT {{hotelUrl}}/2
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelName": "Sirius Hotel Updated",
+  "description": "Updated hotel description",
+  "phone": "+380449999999",
+  "email": "updated@sirius.com",
+  "address": "Khreshchatyk Street 100",
+  "checkInTime": "15:00",
+  "checkOutTime": "11:00"
+}
+
+> {%
+    client.test("Update hotel - status 200", function() {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+%}
+
+
+### ========================================
+### UPDATE HOTEL - NOT FOUND
+### ========================================
+
+PUT {{hotelUrl}}/999999
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelName": "Unknown Hotel",
+  "description": "Test description",
+  "phone": "+380441234567",
+  "email": "test@example.com",
+  "address": "Test address",
+  "checkInTime": "14:00",
+  "checkOutTime": "12:00"
+}
+
+> {%
+    client.test("Update hotel - status 404", function() {
+        client.assert(response.status === 404, "Expected status 404");
+    });
+%}
+
+
+### ========================================
+### DELETE HOTEL
+### ========================================
+
+DELETE {{hotelUrl}}/1
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Delete hotel - status 204", function() {
+        client.assert(response.status === 204, "Expected status 204");
+    });
+%}
+
+
+### ========================================
+### DELETE HOTEL - NOT FOUND
+### ========================================
+
+DELETE {{hotelUrl}}/999999
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Delete hotel - status 404", function() {
+        client.assert(response.status === 404, "Expected status 404");
+    });
+%}

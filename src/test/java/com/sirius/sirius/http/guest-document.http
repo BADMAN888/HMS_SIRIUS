@@ -1,0 +1,103 @@
+@baseUrl = http://localhost:8080
+@guestDocumentUrl = {{baseUrl}}/api/guest-documents
+
+
+### ========================================
+### LOGIN
+### ========================================
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@gmail.com",
+  "password": "123456"
+}
+
+> {%
+    client.global.set("token", response.body.token);
+%}
+
+
+### ========================================
+### GET ALL
+### ========================================
+
+GET {{guestDocumentUrl}}
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ========================================
+### GET BY ID
+### ========================================
+
+GET {{guestDocumentUrl}}/1
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ========================================
+### CREATE
+### ========================================
+
+POST {{guestDocumentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "documentType": "PASSPORT",
+  "documentNumber": "AA123456",
+  "issueDate": "2020-05-15",
+  "expiryDate": "2030-05-15"
+}
+
+
+### ========================================
+### CREATE ID CARD
+### ========================================
+
+POST {{guestDocumentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "documentType": "ID_CARD",
+  "documentNumber": "123456789",
+  "issueDate": "2022-03-10",
+  "expiryDate": "2032-03-10"
+}
+
+
+### ========================================
+### UPDATE
+### ========================================
+
+PUT {{guestDocumentUrl}}/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "documentType": "PASSPORT",
+  "documentNumber": "AA987654",
+  "issueDate": "2021-06-20",
+  "expiryDate": "2031-06-20"
+}
+
+
+### ========================================
+### DELETE
+### ========================================
+
+DELETE {{guestDocumentUrl}}/1
+Authorization: Bearer {{token}}
+Accept: text/plain
+
+
+### ========================================
+### GET DELETED
+### ========================================
+
+GET {{guestDocumentUrl}}/1
+Authorization: Bearer {{token}}
+Accept: application/json

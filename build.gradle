@@ -1,0 +1,59 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.1.1'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.sirius'
+version = '0.0.1-SNAPSHOT'
+description = 'SIRIUS'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // MapStruct
+    implementation "org.mapstruct:mapstruct:1.6.3"
+    annotationProcessor "org.mapstruct:mapstruct-processor:1.6.3"
+
+    // Lombok
+    compileOnly "org.projectlombok:lombok"
+    annotationProcessor "org.projectlombok:lombok"
+    annotationProcessor "org.projectlombok:lombok-mapstruct-binding:0.2.0"
+
+    // Spring
+    implementation "org.springframework.boot:spring-boot-starter-validation"
+    implementation "org.springframework.boot:spring-boot-starter-security"
+    implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+    implementation "org.springframework.boot:spring-boot-starter-webmvc"
+
+    // PostgreSQL
+    runtimeOnly "org.postgresql:postgresql"
+
+    // JWT
+    implementation "io.jsonwebtoken:jjwt-api:0.12.6"
+    runtimeOnly "io.jsonwebtoken:jjwt-impl:0.12.6"
+    runtimeOnly "io.jsonwebtoken:jjwt-jackson:0.12.6"
+
+    // Tests
+    testImplementation "org.springframework.security:spring-security-test"
+    testImplementation "org.springframework.boot:spring-boot-starter-data-jpa-test"
+    testImplementation "org.springframework.boot:spring-boot-starter-webmvc-test"
+    testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+
+    // Docker Compose integration
+    runtimeOnly "org.springframework.boot:spring-boot-docker-compose"
+
+    implementation "com.fasterxml:classmate:1.7.0"
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

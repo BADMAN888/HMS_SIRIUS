@@ -1,0 +1,118 @@
+@baseUrl = http://localhost:8080
+@roomUrl = {{baseUrl}}/api/rooms
+
+
+### ========================================
+### LOGIN
+### ========================================
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@gmail.com",
+  "password": "123456"
+}
+
+> {%
+    client.global.set("token", response.body.token);
+%}
+
+
+### ========================================
+### GET ALL ROOMS
+### ========================================
+
+GET {{roomUrl}}
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ========================================
+### GET ROOM BY ID
+### ========================================
+
+GET {{roomUrl}}/1
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ========================================
+### GET ROOMS BY HOTEL
+### ========================================
+
+GET {{roomUrl}}/hotel/1
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ========================================
+### GET ROOMS BY CATEGORY
+### ========================================
+
+GET {{roomUrl}}/category/1
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ========================================
+### GET AVAILABLE ROOMS BY HOTEL
+### ========================================
+
+GET {{roomUrl}}/hotel/1/status/AVAILABLE
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ========================================
+### GET OCCUPIED ROOMS BY HOTEL
+### ========================================
+
+GET {{roomUrl}}/hotel/1/status/OCCUPIED
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ========================================
+### CREATE ROOM
+### ========================================
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "101",
+  "floor": 1,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": 1,
+  "categoryId": 1
+}
+
+
+### ========================================
+### UPDATE ROOM
+### ========================================
+
+PUT {{roomUrl}}/1
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "102",
+  "floor": 1,
+  "status": "AVAILABLE",
+  "view": "CITY",
+  "hotelId": 1,
+  "categoryId": 1
+}
+
+
+### ========================================
+### DELETE ROOM
+### ========================================
+
+DELETE {{roomUrl}}/1
+Authorization: Bearer {{token}}
+Accept: text/plain

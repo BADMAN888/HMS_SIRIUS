@@ -1,0 +1,244 @@
+@baseUrl = http://localhost:8080
+@rateUrl = {{baseUrl}}/api/rates
+@categoryId = 1
+@rateId = 1
+
+### Login
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@gmail.com",
+  "password": "admin123"
+}
+
+> {%
+    client.global.set("token", response.body.token);
+%}
+
+###
+
+### Create rate
+
+POST {{rateUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Standard Flexible",
+  "description": "Flexible standard room rate",
+  "currency": "USD",
+  "categoryId": {{categoryId}},
+  "price": 150.00,
+  "active": true
+}
+
+> {%
+    client.test("Status is 201", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.test("Rate has id", function () {
+        client.assert(response.body.id !== undefined);
+    });
+
+    client.test("Price is correct", function () {
+        client.assert(response.body.price === 150);
+    });
+
+    client.test("Category is correct", function () {
+        client.assert(response.body.categoryId === client.global.get("categoryId"));
+    });
+
+    client.global.set("rateId", response.body.id);
+%}
+
+###
+
+### Get all rates
+
+GET {{rateUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+###
+
+### Get rate by id
+
+GET {{rateUrl}}/{{rateId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Correct rate id", function () {
+        client.assert(response.body.id == client.global.get("rateId"));
+    });
+%}
+
+###
+
+### Update rate
+
+PUT {{rateUrl}}/{{rateId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Standard Flexible Updated",
+  "description": "Updated standard room rate",
+  "currency": "USD",
+  "categoryId": {{categoryId}},
+  "price": 175.00,
+  "active": true
+}
+
+> {%
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Updated price is correct", function () {
+        client.assert(response.body.price === 175);
+    });
+
+    client.test("Updated name is correct", function () {
+        client.assert(response.body.name === "Standard Flexible Updated");
+    });
+%}
+
+###
+
+### Create inactive rate
+
+POST {{rateUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Inactive Rate",
+  "description": "Inactive test rate",
+  "currency": "USD",
+  "categoryId": {{categoryId}},
+  "price": 100.00,
+  "active": false
+}
+
+> {%
+    client.test("Status is 201", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+###
+
+### Create rate with invalid category
+
+POST {{rateUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Category Rate",
+  "description": "Invalid category",
+  "currency": "USD",
+  "categoryId": 999999,
+  "price": 100.00,
+  "active": true
+}
+
+> {%
+    client.test("Status is 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+###
+
+### Create rate with zero price
+
+POST {{rateUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Zero Price Rate",
+  "description": "Invalid price",
+  "currency": "USD",
+  "categoryId": {{categoryId}},
+  "price": 0,
+  "active": true
+}
+
+> {%
+    client.test("Status is 400", function () {
+        client.assert(response.status === 400);
+    });
+%}
+
+###
+
+### Create rate with negative price
+
+POST {{rateUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Negative Price Rate",
+  "description": "Invalid price",
+  "currency": "USD",
+  "categoryId": {{categoryId}},
+  "price": -10.00,
+  "active": true
+}
+
+> {%
+    client.test("Status is 400", function () {
+        client.assert(response.status === 400);
+    });
+%}
+
+###
+
+### Create rate with invalid currency
+
+POST {{rateUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Currency Rate",
+  "description": "Invalid currency",
+  "currency": "US",
+  "categoryId": {{categoryId}},
+  "price": 100.00,
+  "active": true
+}
+
+> {%
+    client.test("Status is 400", function () {
+        client.assert(response.status === 400);
+    });
+%}
+
+###
+
+### Get non-existing rate
+
+GET {{rateUrl}}/999999
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 404", function () {
+        client.assert(response.status === 404);
+    });
+%}

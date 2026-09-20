@@ -1,0 +1,32 @@
+GET http://localhost:8080/api/reservation
+Content-Type: application/json
+Authorization: Bearer
+{
+  "checkIn": "2026-06-01",
+  "checkOut": "2026-06-05"
+}
+###
+  response!:
+{
+"categoryId": 1,2,3,4,5
+}
+###
+POST http://localhost:8080/api/reservation
+Content-Type: application/json
+Authorization: Bearer
+{
+"categoryId": 1
+"checkIn": "2026-06-01",
+"checkOut": "2026-06-05",
+"countOfGuests": 2,
+"guestName": Kovalenko Vlad
+}
+###
+  response!:
+{
+status: success
+"reservationNumber": 4564564564
+}
+###
+GET http://localhost:8080/api/reservation/1
+

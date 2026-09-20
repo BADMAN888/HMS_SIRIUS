@@ -1,0 +1,45 @@
+services:
+
+  postgres:
+    image: postgres:15
+    container_name: sirius-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: sirius
+      POSTGRES_USER: HMS_sirius
+      POSTGRES_PASSWORD: HMS_sirius
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U HMS_sirius -d sirius"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+
+  app:
+    build: .
+    container_name: sirius
+    restart: unless-stopped
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sirius
+      SPRING_DATASOURCE_USERNAME: HMS_sirius
+      SPRING_DATASOURCE_PASSWORD: HMS_sirius
+
+    ports:
+      - "8080:8080"
+
+
+volumes:
+  postgres_data:
