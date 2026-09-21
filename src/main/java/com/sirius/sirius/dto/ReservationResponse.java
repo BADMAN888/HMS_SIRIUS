@@ -12,6 +12,7 @@ public record ReservationResponse(
         String confirmationNumber,
         Long roomId,
         Long rateId,
+        Long primaryGuestId,
         Set<Long> guestIds,
         LocalDate checkInDate,
         LocalDate checkOutDate,

@@ -2,7 +2,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.GuestDocumentRequest;
 import com.sirius.sirius.dto.GuestDocumentResponse;
-import com.sirius.sirius.service.GuestDocumentService;
+import com.sirius.sirius.service.profile.GuestDocumentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

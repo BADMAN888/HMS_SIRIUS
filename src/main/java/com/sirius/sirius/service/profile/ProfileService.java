@@ -1,4 +1,4 @@
-package com.sirius.sirius.service;
+package com.sirius.sirius.service.profile;
 
 import com.sirius.sirius.dto.ProfileRequest;
 import com.sirius.sirius.dto.ProfileResponse;

@@ -2,7 +2,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.ProfileRequest;
 import com.sirius.sirius.dto.ProfileResponse;
-import com.sirius.sirius.service.ProfileService;
+import com.sirius.sirius.service.profile.ProfileService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

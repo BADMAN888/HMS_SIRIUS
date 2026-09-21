@@ -2,7 +2,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.RoomCategoryRequest;
 import com.sirius.sirius.dto.RoomCategoryResponse;
-import com.sirius.sirius.service.RoomCategoryService;
+import com.sirius.sirius.service.hotel.RoomCategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

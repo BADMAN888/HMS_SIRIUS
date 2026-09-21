@@ -2,7 +2,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.HotelRequest;
 import com.sirius.sirius.dto.HotelResponse;
-import com.sirius.sirius.service.HotelService;
+import com.sirius.sirius.service.hotel.HotelService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

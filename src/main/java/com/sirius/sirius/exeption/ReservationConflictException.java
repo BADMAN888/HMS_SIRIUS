@@ -1,8 +1,8 @@
 package com.sirius.sirius.exeption;
 
-public class ReservationConflictException extends RuntimeException {
+public class ReservationConflictException extends ConflictException {
 
-    public ReservationConflictException() {
-        super("Room is already reserved for selected dates");
+    public ReservationConflictException(String message) {
+        super(message);
     }
 }

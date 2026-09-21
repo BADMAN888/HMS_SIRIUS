@@ -2,7 +2,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.auth.AuthRequest;
 import com.sirius.sirius.dto.auth.AuthResponse;
-import com.sirius.sirius.service.AuthService;
+import com.sirius.sirius.service.auth.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;

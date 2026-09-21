@@ -1,4 +1,4 @@
-package com.sirius.sirius.service;
+package com.sirius.sirius.service.auth;
 
 import com.sirius.sirius.dto.auth.AuthRequest;
 import com.sirius.sirius.dto.auth.AuthResponse;

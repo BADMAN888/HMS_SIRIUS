@@ -1,4 +1,4 @@
-package com.sirius.sirius.service;
+package com.sirius.sirius.service.hotel;
 
 import com.sirius.sirius.dto.HotelRequest;
 import com.sirius.sirius.dto.HotelResponse;

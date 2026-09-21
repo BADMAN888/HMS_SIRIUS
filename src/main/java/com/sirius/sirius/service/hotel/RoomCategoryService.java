@@ -1,4 +1,4 @@
-package com.sirius.sirius.service;
+package com.sirius.sirius.service.hotel;
 
 import com.sirius.sirius.dto.RoomCategoryRequest;
 import com.sirius.sirius.dto.RoomCategoryResponse;

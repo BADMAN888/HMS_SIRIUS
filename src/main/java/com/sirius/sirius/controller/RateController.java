@@ -2,7 +2,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.RateRequest;
 import com.sirius.sirius.dto.RateResponse;
-import com.sirius.sirius.service.RateService;
+import com.sirius.sirius.service.billing.RateService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

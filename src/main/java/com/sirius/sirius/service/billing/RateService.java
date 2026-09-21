@@ -1,4 +1,4 @@
-package com.sirius.sirius.service;
+package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.RateRequest;
 import com.sirius.sirius.dto.RateResponse;

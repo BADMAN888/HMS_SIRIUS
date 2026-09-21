@@ -2,7 +2,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.RoomRequest;
 import com.sirius.sirius.dto.RoomResponse;
-import com.sirius.sirius.service.RoomService;
+import com.sirius.sirius.service.hotel.RoomService;
 import com.sirius.sirius.store.enums.RoomStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

@@ -2,7 +2,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.AccrualRequest;
 import com.sirius.sirius.dto.AccrualResponse;
-import com.sirius.sirius.service.AccrualService;
+import com.sirius.sirius.service.billing.AccrualService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;

@@ -1,8 +1,8 @@
 package com.sirius.sirius.exeption;
 
-public class RoomNotFoundException extends RuntimeException {
+public class RoomNotFoundException extends NotFoundException {
 
-    public RoomNotFoundException(Long roomId) {
-        super("Room with id " + roomId + " not found");
+    public RoomNotFoundException(String message) {
+        super(message);
     }
 }

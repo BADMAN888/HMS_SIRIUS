@@ -1,6 +1,5 @@
 package com.sirius.sirius.store.entity.reservation;
 
-import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
@@ -40,6 +39,10 @@ public class ReservationEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "rate_id", nullable = false)
     RateEntity rate;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "primary_guest_id", nullable = false)
+    ProfileEntity primaryGuest;
 
     @ManyToMany
     @JoinTable(

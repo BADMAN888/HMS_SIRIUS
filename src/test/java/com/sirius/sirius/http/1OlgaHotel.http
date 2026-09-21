@@ -1,3 +1,4 @@
+
 @baseUrl = http://localhost:8080
 @hotelUrl = {{baseUrl}}/api/hotels
 @roomCategoryUrl = {{baseUrl}}/api/room-category
@@ -881,7 +882,7 @@ Authorization: Bearer {{token}}
 %}
 
 
-### PROFILE
+### PROFILE 1
 
 POST {{profileUrl}}
 Authorization: Bearer {{token}}
@@ -904,7 +905,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("Profile created", function () {
+    client.test("Profile 1 created", function () {
         client.assert(response.status === 201);
     });
 
@@ -913,13 +914,77 @@ Content-Type: application/json
 %}
 
 
-### PROFILE BY ID
+### PROFILE 2
+
+POST {{profileUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "middleName": "Testovych",
+  "phoneNumber": "+380501234569",
+  "email": "john.smith.{{hotelId}}@gmail.com",
+  "gender": "MALE",
+  "address": "London, United Kingdom",
+  "guestDocument": {
+    "documentType": "PASSPORT",
+    "documentNumber": "PS{{hotelId}}123456",
+    "issueDate": "2020-02-01",
+    "expiryDate": "2030-02-01"
+  }
+}
+
+> {%
+    client.test("Profile 2 created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.assert(response.body.id !== null);
+    client.global.set("profileId2", response.body.id);
+%}
+
+
+### PROFILE 3
+
+POST {{profileUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "firstName": "Anna",
+  "lastName": "Smith",
+  "middleName": "Testovych",
+  "phoneNumber": "+380501234570",
+  "email": "anna.smith.{{hotelId}}@gmail.com",
+  "gender": "FEMALE",
+  "address": "Kyiv, Ukraine",
+  "guestDocument": {
+    "documentType": "PASSPORT",
+    "documentNumber": "PS{{hotelId}}654321",
+    "issueDate": "2020-03-01",
+    "expiryDate": "2030-03-01"
+  }
+}
+
+> {%
+    client.test("Profile 3 created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.assert(response.body.id !== null);
+    client.global.set("profileId3", response.body.id);
+%}
+
+
+### PROFILE 1 BY ID
 
 GET {{profileUrl}}/{{profileId}}
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Profile found", function () {
+    client.test("Profile 1 found", function () {
         client.assert(response.status === 200);
     });
 
@@ -948,43 +1013,16 @@ Content-Type: application/json
 {
   "roomId": {{room101Id}},
   "rateId": {{barRateId}},
-  "guest": {
-    "firstName": "John",
-    "lastName": "Smith",
-    "phone": "+380501234569"
-  },
+  "primaryGuestId": {{profileId}},
+  "guestIds": [
+    {{profileId}},
+    {{profileId2}}
+  ],
   "checkInDate": "2026-09-25",
   "checkOutDate": "2026-09-28",
   "adults": 2,
   "children": 0
 }
-
-> {%
-    client.test("Reservation created", function () {
-        client.assert(response.status === 201);
-    });
-
-    client.assert(response.body.id !== null);
-    client.assert(response.body.confirmationNumber !== null);
-
-    client.global.set("reservationId", response.body.id);
-%}
-
-
-### RESERVATION BY ID
-
-GET {{reservationUrl}}/{{reservationId}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Reservation found", function () {
-        client.assert(response.status === 200);
-    });
-
-    client.assert(response.body.id == client.global.get("reservationId"));
-%}
-
-
 ### ALL RESERVATIONS
 
 GET {{reservationUrl}}
@@ -1023,7 +1061,7 @@ Authorization: Bearer {{token}}
 
 ### RESERVATIONS BY DATE
 
-GET {{reservationUrl}}/by-date?date=2026-09-25
+GET {{reservationUrl}}/date?date=2026-09-25
 Authorization: Bearer {{token}}
 
 > {%
@@ -1035,31 +1073,13 @@ Authorization: Bearer {{token}}
 
 ### RESERVATIONS BY DATE RANGE
 
-GET {{reservationUrl}}/by-date-range?startDate=2026-09-25&endDate=2026-09-28
+GET {{reservationUrl}}/date-range?startDate=2026-09-25&endDate=2026-09-28
 Authorization: Bearer {{token}}
 
 > {%
     client.test("Reservations by date range loaded", function () {
         client.assert(response.status === 200);
     });
-%}
-
-
-### FOLIO BY RESERVATION
-
-GET {{folioUrl}}/reservation/{{reservationId}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Folio created with reservation", function () {
-        client.assert(response.status === 200);
-    });
-
-    client.assert(response.body.id !== null);
-    client.assert(response.body.reservationId == client.global.get("reservationId"));
-    client.assert(response.body.status === "OPEN");
-
-    client.global.set("folioId", response.body.id);
 %}
 
 
@@ -1075,8 +1095,6 @@ Authorization: Bearer {{token}}
 
     client.assert(response.body.id == client.global.get("folioId"));
 %}
-
-
 ### ALL FOLIOS
 
 GET {{folioUrl}}
@@ -1210,3 +1228,4 @@ Authorization: Bearer {{token}}
         client.assert(response.status === 200);
     });
 %}
+

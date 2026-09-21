@@ -20,23 +20,7 @@ public class GlobalExceptionHandler {
             NotFoundException ex,
             HttpServletRequest request
     ) {
-        return build(
-                HttpStatus.NOT_FOUND,
-                ex.getMessage(),
-                request
-        );
-    }
-
-    @ExceptionHandler(RoomNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleRoomNotFound(
-            RoomNotFoundException ex,
-            HttpServletRequest request
-    ) {
-        return build(
-                HttpStatus.NOT_FOUND,
-                ex.getMessage(),
-                request
-        );
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(BadRequestException.class)
@@ -44,11 +28,7 @@ public class GlobalExceptionHandler {
             BadRequestException ex,
             HttpServletRequest request
     ) {
-        return build(
-                HttpStatus.BAD_REQUEST,
-                ex.getMessage(),
-                request
-        );
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(ValidationException.class)
@@ -56,11 +36,15 @@ public class GlobalExceptionHandler {
             ValidationException ex,
             HttpServletRequest request
     ) {
-        return build(
-                HttpStatus.BAD_REQUEST,
-                ex.getMessage(),
-                request
-        );
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflict(
+            ConflictException ex,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -71,40 +55,10 @@ public class GlobalExceptionHandler {
         String message = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(error ->
-                        error.getField() + " " + error.getDefaultMessage()
-                )
+                .map(error -> error.getField() + " " + error.getDefaultMessage())
                 .collect(Collectors.joining(", "));
 
-        return build(
-                HttpStatus.BAD_REQUEST,
-                message,
-                request
-        );
-    }
-
-    @ExceptionHandler(ReservationConflictException.class)
-    public ResponseEntity<ErrorResponse> handleReservationConflict(
-            ReservationConflictException ex,
-            HttpServletRequest request
-    ) {
-        return build(
-                HttpStatus.CONFLICT,
-                ex.getMessage(),
-                request
-        );
-    }
-
-    @ExceptionHandler(NoAvailableRoomsException.class)
-    public ResponseEntity<ErrorResponse> handleNoAvailableRooms(
-            NoAvailableRoomsException ex,
-            HttpServletRequest request
-    ) {
-        return build(
-                HttpStatus.CONFLICT,
-                ex.getMessage(),
-                request
-        );
+        return build(HttpStatus.BAD_REQUEST, message, request);
     }
 
     @ExceptionHandler(Exception.class)
@@ -131,17 +85,27 @@ public class GlobalExceptionHandler {
             String message,
             HttpServletRequest request
     ) {
+        ErrorResponse response = new ErrorResponse(
+                LocalDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                request.getRequestURI()
+        );
+
         return ResponseEntity
                 .status(status)
-                .body(
-                        new ErrorResponse(
-                                LocalDateTime.now(),
-                                status.value(),
-                                status.name(),
-                                message,
-                                request.getRequestURI()
-                        )
-                );
+                .body(response);
+    }
+    @ExceptionHandler(ReservationConflictException.class)
+    public ResponseEntity<ErrorResponse> handleReservationConflict(
+            ReservationConflictException ex,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.CONFLICT,
+                ex.getMessage(),
+                request
+        );
     }
 }
-
