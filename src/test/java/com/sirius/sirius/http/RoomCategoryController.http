@@ -1,7 +1,8 @@
 @baseUrl = http://localhost:8080
-@roomCategoryUrl = {{baseUrl}}/api/room-categories
+@roomCategoryUrl = {{baseUrl}}/api/room-category
 @hotelId = 1
 @categoryId = 1
+@notFoundId = 999999
 
 
 ### =========================
@@ -22,6 +23,13 @@ Content-Type: application/json
         client.assert(response.status === 200, "Expected status 200");
     });
 
+    client.test("Login - token exists", function() {
+        client.assert(
+            response.body.token !== undefined,
+            "Expected JWT token"
+        );
+    });
+
     client.global.set("token", response.body.token);
 %}
 
@@ -34,13 +42,13 @@ Content-Type: application/json
 GET {{roomCategoryUrl}}/{{categoryId}}
 Authorization: Bearer {{token}}
 
-> {%
-    client.test("Get room category - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
+### GET ROOM CATEGORY - NOT FOUND
+GET {{roomCategoryUrl}}/{{notFoundId}}
+Authorization: Bearer {{token}}
 
-    client.test("Response contains id", function() {
-        client.assert(response.body.id !== undefined, "Expected id");
+> {%
+    client.test("Get non-existing category - status 404", function() {
+        client.assert(response.status === 404, "Expected status 404");
     });
 %}
 
@@ -50,12 +58,15 @@ GET {{roomCategoryUrl}}
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Get all room categories - status 200", function() {
+    client.test("Get all categories - status 200", function() {
         client.assert(response.status === 200, "Expected status 200");
     });
 
     client.test("Response is array", function() {
-        client.assert(Array.isArray(response.body), "Expected array");
+        client.assert(
+            Array.isArray(response.body),
+            "Expected array"
+        );
     });
 %}
 
@@ -70,7 +81,28 @@ Authorization: Bearer {{token}}
     });
 
     client.test("Response is array", function() {
-        client.assert(Array.isArray(response.body), "Expected array");
+        client.assert(
+            Array.isArray(response.body),
+            "Expected array"
+        );
+    });
+
+    client.test("All categories belong to hotel", function() {
+        client.assert(
+            response.body.every(category => category.hotelId === 1),
+            "Expected all categories to belong to hotel 1"
+        );
+    });
+%}
+
+
+### GET ROOM CATEGORIES BY NON-EXISTING HOTEL
+GET {{roomCategoryUrl}}/by-hotel/{{notFoundId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get categories by non-existing hotel - status 404", function() {
+        client.assert(response.status === 404, "Expected status 404");
     });
 %}
 
@@ -85,23 +117,57 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Deluxe",
-  "description": "Large room with double bed",
+  "name": "HTTP xe",
+  "description": "Large room created by HTTP test",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
 
 > {%
-    client.test("Create room category - status 201", function() {
+    client.test("Create category - status 201", function() {
         client.assert(response.status === 201, "Expected status 201");
     });
 
-    client.test("Response contains id", function() {
-        client.assert(response.body.id !== undefined, "Expected id");
+    client.test("Created category has id", function() {
+        client.assert(
+            response.body.id !== undefined,
+            "Expected category id"
+        );
     });
 
-    client.test("Response contains name", function() {
-        client.assert(response.body.name === "Deluxe", "Expected name Deluxe");
+    client.test("Created category has correct name", function() {
+        client.assert(
+            response.body.name === "HTTP Deluxe",
+            "Expected name HTTP Deluxe"
+        );
+    });
+
+    client.test("Created category has correct hotel", function() {
+        client.assert(
+            response.body.hotelId === 1,
+            "Expected hotelId 1"
+        );
+    });
+
+    client.global.set("createdCategoryId", response.body.id);
+%}
+
+
+### CREATE DUPLICATE ROOM CATEGORY
+POST {{roomCategoryUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "HTTP Deluxe",
+  "description": "Duplicate category",
+  "countOfBeds": 2,
+  "hotelId": {{hotelId}}
+}
+
+> {%
+    client.test("Duplicate category - status 400", function() {
+        client.assert(response.status === 400, "Expected status 400");
     });
 %}
 
@@ -119,7 +185,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("Invalid request - status 400", function() {
+    client.test("Invalid category - status 400", function() {
         client.assert(response.status === 400, "Expected status 400");
     });
 %}
@@ -131,14 +197,14 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Suite",
-  "description": "Luxury room",
+  "name": "HTTP Invalid Hotel",
+  "description": "Hotel does not exist",
   "countOfBeds": 2,
-  "hotelId": 999999
+  "hotelId": {{notFoundId}}
 }
 
 > {%
-    client.test("Hotel not found - status 404", function() {
+    client.test("Non-existing hotel - status 404", function() {
         client.assert(response.status === 404, "Expected status 404");
     });
 %}
@@ -149,39 +215,53 @@ Content-Type: application/json
 ### =========================
 
 ### UPDATE ROOM CATEGORY
-PUT {{roomCategoryUrl}}/{{categoryId}}
+PUT {{roomCategoryUrl}}/{{createdCategoryId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Updated Deluxe",
-  "description": "Updated room description",
-  "countOfBeds": 2,
+  "name": "HTTP Deluxe Updated",
+  "description": "Updated room category",
+  "countOfBeds": 3,
   "hotelId": {{hotelId}}
 }
 
 > {%
-    client.test("Update room category - status 200", function() {
+    client.test("Update category - status 200", function() {
         client.assert(response.status === 200, "Expected status 200");
     });
 
-    client.test("Name was updated", function() {
+    client.test("Category name was updated", function() {
         client.assert(
-            response.body.name === "Updated Deluxe",
+            response.body.name === "HTTP Deluxe Updated",
             "Expected updated name"
+        );
+    });
+
+    client.test("Category beds were updated", function() {
+        client.assert(
+            response.body.countOfBeds === 3,
+            "Expected countOfBeds 3"
+        );
+    });
+
+    client.test("Category hotel was preserved", function() {
+        client.assert(
+            response.body.hotelId === 1,
+            "Expected hotelId 1"
         );
     });
 %}
 
 
 ### UPDATE ROOM CATEGORY - NOT FOUND
-PUT {{roomCategoryUrl}}/999999
+PUT {{roomCategoryUrl}}/{{notFoundId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Updated Category",
-  "description": "Description",
+  "name": "Not Found Category",
+  "description": "Category does not exist",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
@@ -193,23 +273,53 @@ Content-Type: application/json
 %}
 
 
+### UPDATE ROOM CATEGORY - HOTEL NOT FOUND
+PUT {{roomCategoryUrl}}/{{createdCategoryId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "Invalid Hotel Category",
+  "description": "Hotel does not exist",
+  "countOfBeds": 2,
+  "hotelId": {{notFoundId}}
+}
+
+> {%
+    client.test("Update with non-existing hotel - status 404", function() {
+        client.assert(response.status === 404, "Expected status 404");
+    });
+%}
+
+
 ### =========================
 ### DELETE
 ### =========================
 
-### DELETE ROOM CATEGORY
-DELETE {{roomCategoryUrl}}/{{categoryId}}
+### DELETE CREATED ROOM CATEGORY
+DELETE {{roomCategoryUrl}}/{{createdCategoryId}}
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Delete room category - status 200", function() {
+    client.test("Delete category - status 200", function() {
         client.assert(response.status === 200, "Expected status 200");
     });
 %}
 
 
+### GET DELETED ROOM CATEGORY
+GET {{roomCategoryUrl}}/{{createdCategoryId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get deleted category - status 404", function() {
+        client.assert(response.status === 404, "Expected status 404");
+    });
+%}
+
+
 ### DELETE ROOM CATEGORY - NOT FOUND
-DELETE {{roomCategoryUrl}}/999999
+DELETE {{roomCategoryUrl}}/{{notFoundId}}
 Authorization: Bearer {{token}}
 
 > {%

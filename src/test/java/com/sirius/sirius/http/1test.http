@@ -32,3 +32,47 @@ Content-Type: application/json
   "hotelId": {{hotelId}},
   "categoryId": {{standardCategoryId}}
 }
+### RESERVATION
+
+POST {{reservationUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomId": {{room101Id}},
+  "rateId": {{barRateId}},
+  "primaryGuestId": {{profileId}},
+  "guestIds": [
+    {{profileId}},
+    {{profileId2}}
+  ],
+  "checkInDate": "2026-09-25",
+  "checkOutDate": "2026-09-28",
+  "adults": 2,
+  "children": 0
+}
+
+> {%
+    client.test("Reservation created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.assert(response.body.id !== null);
+    client.assert(response.body.folioId !== null);
+
+    client.global.set("reservationId", response.body.id);
+    client.global.set("folioId", response.body.folioId);
+%}
+
+### FOLIO BY ID
+
+GET {{folioUrl}}/{{folioId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Folio found", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.assert(response.body.id == client.global.get("folioId"));
+%}

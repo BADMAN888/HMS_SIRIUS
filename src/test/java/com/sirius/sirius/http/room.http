@@ -1,6 +1,11 @@
 @baseUrl = http://localhost:8080
 @roomUrl = {{baseUrl}}/api/rooms
 
+@hotelId = 1
+@categoryId = 1
+@testRoomId = 1
+@notFoundId = 999999
+
 
 ### ========================================
 ### LOGIN
@@ -15,6 +20,15 @@ Content-Type: application/json
 }
 
 > {%
+    client.test("Login returns 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("JWT token exists", function () {
+        client.assert(response.body.token !== undefined);
+        client.assert(response.body.token !== null);
+    });
+
     client.global.set("token", response.body.token);
 %}
 
@@ -27,50 +41,194 @@ GET {{roomUrl}}
 Authorization: Bearer {{token}}
 Accept: application/json
 
+> {%
+    client.test("Get all rooms returns 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Response is an array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+%}
+
 
 ### ========================================
 ### GET ROOM BY ID
 ### ========================================
 
-GET {{roomUrl}}/1
+GET {{roomUrl}}/{{testRoomId}}
 Authorization: Bearer {{token}}
 Accept: application/json
+
+> {%
+    client.test("Get room by id returns 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Room id is correct", function () {
+        client.assert(response.body.id === 1);
+    });
+%}
+
+
+### ========================================
+### GET ROOM BY NON-EXISTENT ID
+### ========================================
+
+GET {{roomUrl}}/{{notFoundId}}
+Authorization: Bearer {{token}}
+Accept: application/json
+
+> {%
+    client.test("Get non-existent room returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
 
 
 ### ========================================
 ### GET ROOMS BY HOTEL
 ### ========================================
 
-GET {{roomUrl}}/hotel/1
+GET {{roomUrl}}/hotel/{{hotelId}}
 Authorization: Bearer {{token}}
 Accept: application/json
+
+> {%
+    client.test("Get rooms by hotel returns 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Response is an array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+
+    client.test("All rooms belong to hotel 1", function () {
+        response.body.forEach(function (room) {
+            client.assert(room.hotelId === 1);
+        });
+    });
+%}
+
+
+### ========================================
+### GET ROOMS BY NON-EXISTENT HOTEL
+### ========================================
+
+GET {{roomUrl}}/hotel/{{notFoundId}}
+Authorization: Bearer {{token}}
+Accept: application/json
+
+> {%
+    client.test("Get rooms by non-existent hotel returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
 
 
 ### ========================================
 ### GET ROOMS BY CATEGORY
 ### ========================================
 
-GET {{roomUrl}}/category/1
+GET {{roomUrl}}/category/{{categoryId}}
 Authorization: Bearer {{token}}
 Accept: application/json
 
+> {%
+    client.test("Get rooms by category returns 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Response is an array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+
+    client.test("All rooms belong to category 1", function () {
+        response.body.forEach(function (room) {
+            client.assert(room.categoryId === 1);
+        });
+    });
+%}
+
 
 ### ========================================
-### GET AVAILABLE ROOMS BY HOTEL
+### GET ROOMS BY NON-EXISTENT CATEGORY
 ### ========================================
 
-GET {{roomUrl}}/hotel/1/status/AVAILABLE
+GET {{roomUrl}}/category/{{notFoundId}}
 Authorization: Bearer {{token}}
 Accept: application/json
 
+> {%
+    client.test("Get rooms by non-existent category returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
 
 ### ========================================
-### GET OCCUPIED ROOMS BY HOTEL
+### GET AVAILABLE ROOMS
 ### ========================================
 
-GET {{roomUrl}}/hotel/1/status/OCCUPIED
+GET {{roomUrl}}/hotel/{{hotelId}}/status/AVAILABLE
 Authorization: Bearer {{token}}
 Accept: application/json
+
+> {%
+    client.test("Get available rooms returns 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Response is an array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+
+    client.test("All rooms are AVAILABLE", function () {
+        response.body.forEach(function (room) {
+            client.assert(room.status === "AVAILABLE");
+        });
+    });
+%}
+
+
+### ========================================
+### GET OCCUPIED ROOMS
+### ========================================
+
+GET {{roomUrl}}/hotel/{{hotelId}}/status/OCCUPIED
+Authorization: Bearer {{token}}
+Accept: application/json
+
+> {%
+    client.test("Get occupied rooms returns 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Response is an array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+
+    client.test("All rooms are OCCUPIED", function () {
+        response.body.forEach(function (room) {
+            client.assert(room.status === "OCCUPIED");
+        });
+    });
+%}
+
+
+### ========================================
+### GET ROOMS BY STATUS AND NON-EXISTENT HOTEL
+### ========================================
+
+GET {{roomUrl}}/hotel/{{notFoundId}}/status/AVAILABLE
+Authorization: Bearer {{token}}
+Accept: application/json
+
+> {%
+    client.test("Get status rooms for non-existent hotel returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
 
 
 ### ========================================
@@ -82,37 +240,267 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "101",
-  "floor": 1,
+  "roomNumber": "HTTP-101",
+  "floor": 10,
   "status": "AVAILABLE",
   "roomView": "CITY",
   "hotelId": 1,
   "categoryId": 1
 }
 
+> {%
+    client.test("Create room returns 201", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.test("Created room has id", function () {
+        client.assert(response.body.id !== undefined);
+    });
+
+    client.test("Created room number is correct", function () {
+        client.assert(response.body.roomNumber === "HTTP-101");
+    });
+
+    client.global.set("createdRoomId", response.body.id);
+%}
+
+
+### ========================================
+### CREATE DUPLICATE ROOM
+### ========================================
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "HTTP-101",
+  "floor": 10,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": 1,
+  "categoryId": 1
+}
+
+> {%
+    client.test("Duplicate room returns 400", function () {
+        client.assert(response.status === 400);
+    });
+%}
+
+
+### ========================================
+### CREATE ROOM WITH INVALID DATA
+### ========================================
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "",
+  "floor": null,
+  "status": null,
+  "roomView": null,
+  "hotelId": null,
+  "categoryId": null
+}
+
+> {%
+    client.test("Invalid room returns 400", function () {
+        client.assert(response.status === 400);
+    });
+%}
+
+
+### ========================================
+### CREATE ROOM WITH NON-EXISTENT HOTEL
+### ========================================
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "HTTP-102",
+  "floor": 10,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": 999999,
+  "categoryId": 1
+}
+
+> {%
+    client.test("Non-existent hotel returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+
+### ========================================
+### CREATE ROOM WITH NON-EXISTENT CATEGORY
+### ========================================
+
+POST {{roomUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "HTTP-103",
+  "floor": 10,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": 1,
+  "categoryId": 999999
+}
+
+> {%
+    client.test("Non-existent category returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
 
 ### ========================================
 ### UPDATE ROOM
 ### ========================================
 
-PUT {{roomUrl}}/1
+PUT {{roomUrl}}/{{testRoomId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "102",
-  "floor": 1,
+  "roomNumber": "HTTP-UPDATED-101",
+  "floor": 10,
   "status": "AVAILABLE",
-  "view": "CITY",
+  "roomView": "PANORAMIC",
   "hotelId": 1,
   "categoryId": 1
 }
+
+> {%
+    client.test("Update room returns 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Updated room number is correct", function () {
+        client.assert(response.body.roomNumber === "HTTP-UPDATED-101");
+    });
+
+    client.test("Updated room view is correct", function () {
+        client.assert(response.body.roomView === "PANORAMIC");
+    });
+%}
+
+
+### ========================================
+### UPDATE NON-EXISTENT ROOM
+### ========================================
+
+PUT {{roomUrl}}/{{notFoundId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "HTTP-404",
+  "floor": 10,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": 1,
+  "categoryId": 1
+}
+
+> {%
+    client.test("Update non-existent room returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+
+### ========================================
+### UPDATE ROOM WITH NON-EXISTENT HOTEL
+### ========================================
+
+PUT {{roomUrl}}/{{testRoomId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "HTTP-INVALID-HOTEL",
+  "floor": 10,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": 999999,
+  "categoryId": 1
+}
+
+> {%
+    client.test("Update with non-existent hotel returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+
+### ========================================
+### UPDATE ROOM WITH NON-EXISTENT CATEGORY
+### ========================================
+
+PUT {{roomUrl}}/{{testRoomId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "HTTP-INVALID-CATEGORY",
+  "floor": 10,
+  "status": "AVAILABLE",
+  "roomView": "CITY",
+  "hotelId": 1,
+  "categoryId": 999999
+}
+
+> {%
+    client.test("Update with non-existent category returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
 
 
 ### ========================================
 ### DELETE ROOM
 ### ========================================
 
-DELETE {{roomUrl}}/1
+DELETE {{roomUrl}}/{{testRoomId}}
 Authorization: Bearer {{token}}
 Accept: text/plain
+
+> {%
+    client.test("Delete room returns 200", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+
+### ========================================
+### DELETE NON-EXISTENT ROOM
+### ========================================
+
+DELETE {{roomUrl}}/{{notFoundId}}
+Authorization: Bearer {{token}}
+Accept: text/plain
+
+
+
+
+### ========================================
+### GET DELETED ROOM
+### ========================================
+
+GET {{roomUrl}}/{{testRoomId}}
+Authorization: Bearer {{token}}
+Accept: application/json
+
+> {%
+    client.test("Deleted room returns 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
