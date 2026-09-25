@@ -1562,4 +1562,7 @@ Authorization: Bearer {{token}}
 
     client.assert(response.body.length >= 1);
 %}
+###
+GET http://localhost:8080/api/hotel-grid?startDate=2026-09-25&endDate=2026-10-26
+Authorization: Bearer {{token}}
 

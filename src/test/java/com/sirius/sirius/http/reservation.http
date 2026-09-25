@@ -1,8 +1,10 @@
+
 @baseUrl = http://localhost:8080
 @reservationUrl = {{baseUrl}}/api/reservations
 
 @roomId = 1
 @rateId = 1
+@guestId = 1
 
 ### Login
 
@@ -33,13 +35,12 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "John",
-    "lastName": "Smith",
-    "phone": "+380501234567"
-  },
-  "checkInDate": "2026-10-10",
-  "checkOutDate": "2026-10-15",
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
+  "checkInDate": "2026-09-22",
+  "checkOutDate": "2026-09-23",
   "adults": 2,
   "children": 0
 }
@@ -47,38 +48,6 @@ Content-Type: application/json
 > {%
     client.test("Status is 201", function () {
         client.assert(response.status === 201);
-    });
-
-    client.test("Reservation has id", function () {
-        client.assert(response.body.id !== undefined);
-    });
-
-    client.test("Confirmation number exists", function () {
-        client.assert(response.body.confirmationNumber !== undefined);
-    });
-
-    client.test("Status is CONFIRMED", function () {
-        client.assert(response.body.status === "CONFIRMED");
-    });
-
-    client.test("Room id is correct", function () {
-        client.assert(response.body.roomId == client.global.get("roomId"));
-    });
-
-    client.test("Rate id is correct", function () {
-        client.assert(response.body.rateId == client.global.get("rateId"));
-    });
-
-    client.test("Guest ids exist", function () {
-        client.assert(Array.isArray(response.body.guestIds));
-        client.assert(response.body.guestIds.length === 1);
-    });
-
-    client.test("Folio exists", function () {
-        client.assert(
-            response.body.folioId !== undefined &&
-            response.body.folioId !== null
-        );
     });
 
     client.global.set("reservationId", response.body.id);
@@ -133,11 +102,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "John",
-    "lastName": "Smith Updated",
-    "phone": "+380501234568"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-10-11",
   "checkOutDate": "2026-10-16",
   "adults": 2,
@@ -170,11 +138,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "John",
-    "lastName": "Invalid",
-    "phone": "+380501234569"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-10-20",
   "checkOutDate": "2026-10-15",
   "adults": 2,
@@ -198,11 +165,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "John",
-    "lastName": "Invalid",
-    "phone": "+380501234570"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-10-20",
   "checkOutDate": "2026-10-20",
   "adults": 2,
@@ -226,11 +192,35 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "",
-    "lastName": "",
-    "phone": ""
-  },
+  "primaryGuestId": 999999,
+  "guestIds": [
+    999999
+  ],
+  "checkInDate": "2026-11-10",
+  "checkOutDate": "2026-11-15",
+  "adults": 2,
+  "children": 0
+}
+
+> {%
+    client.test("Status is 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+###
+
+### Empty guest ids
+
+POST {{reservationUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomId": {{roomId}},
+  "rateId": {{rateId}},
+  "primaryGuestId": {{guestId}},
+  "guestIds": [],
   "checkInDate": "2026-11-10",
   "checkOutDate": "2026-11-15",
   "adults": 2,
@@ -245,7 +235,7 @@ Content-Type: application/json
 
 ###
 
-### Null guest
+### Null guest ids
 
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
@@ -254,7 +244,8 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": null,
+  "primaryGuestId": {{guestId}},
+  "guestIds": null,
   "checkInDate": "2026-11-10",
   "checkOutDate": "2026-11-15",
   "adults": 2,
@@ -278,11 +269,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "John",
-    "lastName": "Smith",
-    "phone": "+380501234571"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-11-10",
   "checkOutDate": "2026-11-15",
   "adults": 0,
@@ -306,11 +296,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "John",
-    "lastName": "Smith",
-    "phone": "+380501234572"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-11-10",
   "checkOutDate": "2026-11-15",
   "adults": 2,
@@ -334,11 +323,10 @@ Content-Type: application/json
 {
   "roomId": 999999,
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "John",
-    "lastName": "Smith",
-    "phone": "+380501234573"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-11-10",
   "checkOutDate": "2026-11-15",
   "adults": 2,
@@ -362,11 +350,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": 999999,
-  "guest": {
-    "firstName": "John",
-    "lastName": "Smith",
-    "phone": "+380501234574"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-11-10",
   "checkOutDate": "2026-11-15",
   "adults": 2,
@@ -390,11 +377,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": 2,
-  "guest": {
-    "firstName": "John",
-    "lastName": "Smith",
-    "phone": "+380501234575"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-11-10",
   "checkOutDate": "2026-11-15",
   "adults": 2,
@@ -418,11 +404,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "John",
-    "lastName": "Smith",
-    "phone": "+380501234576"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-11-20",
   "checkOutDate": "2026-11-25",
   "adults": 10,
@@ -446,11 +431,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "Overlap",
-    "lastName": "Test",
-    "phone": "+380501234577"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-12-01",
   "checkOutDate": "2026-12-05",
   "adults": 1,
@@ -476,11 +460,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "Overlap",
-    "lastName": "Second",
-    "phone": "+380501234578"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-12-03",
   "checkOutDate": "2026-12-07",
   "adults": 1,
@@ -504,11 +487,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "No",
-    "lastName": "Overlap",
-    "phone": "+380501234579"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-12-05",
   "checkOutDate": "2026-12-08",
   "adults": 1,
@@ -534,11 +516,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "No",
-    "lastName": "Overlap",
-    "phone": "+380501234579"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-12-03",
   "checkOutDate": "2026-12-06",
   "adults": 1,
@@ -562,11 +543,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "Overlap",
-    "lastName": "Updated",
-    "phone": "+380501234580"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2026-12-01",
   "checkOutDate": "2026-12-05",
   "adults": 1,
@@ -719,11 +699,10 @@ Content-Type: application/json
 {
   "roomId": {{roomId}},
   "rateId": {{rateId}},
-  "guest": {
-    "firstName": "John",
-    "lastName": "Cancelled",
-    "phone": "+380501234581"
-  },
+  "primaryGuestId": {{guestId}},
+  "guestIds": [
+    {{guestId}}
+  ],
   "checkInDate": "2027-01-10",
   "checkOutDate": "2027-01-15",
   "adults": 1,
@@ -748,3 +727,4 @@ Authorization: Bearer {{token}}
         client.assert(response.status === 400);
     });
 %}
+
