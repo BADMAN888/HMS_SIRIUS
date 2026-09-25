@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Clock;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -48,17 +48,17 @@ public class ReservationLifecycleService {
             );
         }
 
-        LocalDate today = LocalDate.now(clock);
+        LocalDateTime now = LocalDateTime.now(clock);
 
-        if (today.isBefore(reservation.getCheckInDate())) {
+        if (now.isBefore(reservation.getCheckIn())) {
             throw new BadRequestException(
-                    "Reservation check-in date has not arrived yet"
+                    "Reservation check-in time has not arrived yet"
             );
         }
 
-        if (!today.isBefore(reservation.getCheckOutDate())) {
+        if (!now.isBefore(reservation.getCheckOut())) {
             throw new BadRequestException(
-                    "Reservation check-out date has already arrived"
+                    "Reservation check-out time has already arrived"
             );
         }
 
@@ -108,9 +108,11 @@ public class ReservationLifecycleService {
             );
         }
 
-        if (LocalDate.now(clock).isBefore(reservation.getCheckInDate())) {
+        LocalDateTime now = LocalDateTime.now(clock);
+
+        if (now.isBefore(reservation.getCheckIn())) {
             throw new BadRequestException(
-                    "Reservation check-in date has not arrived yet"
+                    "Reservation check-in time has not arrived yet"
             );
         }
 

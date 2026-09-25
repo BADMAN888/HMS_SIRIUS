@@ -9,7 +9,7 @@ import com.sirius.sirius.store.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -23,18 +23,18 @@ public class ReservationAvailabilityService {
             RateEntity rate,
             Integer adults,
             Integer children,
-            LocalDate checkInDate,
-            LocalDate checkOutDate
+            LocalDateTime checkIn,
+            LocalDateTime checkOut
     ) {
-        validateDates(checkInDate, checkOutDate);
+        validateDates(checkIn, checkOut);
         validateRate(rate);
         validateRateForRoom(rate, room);
         validateRoomStatus(room);
         validateOccupancy(room, adults, children);
         validateRoomAvailability(
                 room.getId(),
-                checkInDate,
-                checkOutDate
+                checkIn,
+                checkOut
         );
     }
 
@@ -44,10 +44,10 @@ public class ReservationAvailabilityService {
             RateEntity rate,
             Integer adults,
             Integer children,
-            LocalDate checkInDate,
-            LocalDate checkOutDate
+            LocalDateTime checkIn,
+            LocalDateTime checkOut
     ) {
-        validateDates(checkInDate, checkOutDate);
+        validateDates(checkIn, checkOut);
         validateRate(rate);
         validateRateForRoom(rate, room);
         validateRoomStatus(room);
@@ -55,18 +55,18 @@ public class ReservationAvailabilityService {
         validateRoomAvailabilityExceptCurrent(
                 reservationId,
                 room.getId(),
-                checkInDate,
-                checkOutDate
+                checkIn,
+                checkOut
         );
     }
 
     public void validateDates(
-            LocalDate checkInDate,
-            LocalDate checkOutDate
+            LocalDateTime checkIn,
+            LocalDateTime checkOut
     ) {
-        if (!checkOutDate.isAfter(checkInDate)) {
+        if (!checkOut.isAfter(checkIn)) {
             throw new BadRequestException(
-                    "Check-out date must be after check-in date"
+                    "Check-out must be after check-in"
             );
         }
     }
@@ -117,13 +117,13 @@ public class ReservationAvailabilityService {
 
     private void validateRoomAvailability(
             Long roomId,
-            LocalDate checkInDate,
-            LocalDate checkOutDate
+            LocalDateTime checkIn,
+            LocalDateTime checkOut
     ) {
         if (reservationRepository.existsOverlappingReservation(
                 roomId,
-                checkInDate,
-                checkOutDate,
+                checkIn,
+                checkOut,
                 List.of(
                         ReservationStatus.CANCELLED,
                         ReservationStatus.COMPLETED,
@@ -131,7 +131,7 @@ public class ReservationAvailabilityService {
                 )
         )) {
             throw new BadRequestException(
-                    "Room is already reserved for the selected dates"
+                    "Room is already reserved for the selected period"
             );
         }
     }
@@ -139,14 +139,14 @@ public class ReservationAvailabilityService {
     private void validateRoomAvailabilityExceptCurrent(
             Long reservationId,
             Long roomId,
-            LocalDate checkInDate,
-            LocalDate checkOutDate
+            LocalDateTime checkIn,
+            LocalDateTime checkOut
     ) {
         if (reservationRepository.existsOverlappingReservationExcludingId(
                 reservationId,
                 roomId,
-                checkInDate,
-                checkOutDate,
+                checkIn,
+                checkOut,
                 List.of(
                         ReservationStatus.CANCELLED,
                         ReservationStatus.COMPLETED,
@@ -154,7 +154,7 @@ public class ReservationAvailabilityService {
                 )
         )) {
             throw new BadRequestException(
-                    "Room is already reserved for the selected dates"
+                    "Room is already reserved for the selected period"
             );
         }
     }

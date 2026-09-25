@@ -2,7 +2,6 @@ package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.ReservationStatus;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -14,8 +13,8 @@ public record ReservationResponse(
         Long rateId,
         Long primaryGuestId,
         Set<Long> guestIds,
-        LocalDate checkInDate,
-        LocalDate checkOutDate,
+        LocalDateTime checkIn,
+        LocalDateTime checkOut,
         Integer adults,
         Integer children,
         ReservationStatus status,

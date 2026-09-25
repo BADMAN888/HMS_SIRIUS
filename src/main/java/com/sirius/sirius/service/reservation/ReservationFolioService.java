@@ -26,8 +26,8 @@ public class ReservationFolioService {
         RateEntity rate = reservation.getRate();
 
         long nights = ChronoUnit.DAYS.between(
-                reservation.getCheckInDate(),
-                reservation.getCheckOutDate()
+                reservation.getCheckIn().toLocalDate(),
+                reservation.getCheckOut().toLocalDate()
         );
 
         BigDecimal quantity = BigDecimal.valueOf(nights);
@@ -37,9 +37,9 @@ public class ReservationFolioService {
                 .type(AccrualType.ROOM)
                 .description(
                         "Room accommodation: "
-                                + reservation.getCheckInDate()
+                                + reservation.getCheckIn()
                                 + " - "
-                                + reservation.getCheckOutDate()
+                                + reservation.getCheckOut()
                 )
                 .unitPrice(rate.getPrice())
                 .quantity(quantity)
@@ -86,8 +86,8 @@ public class ReservationFolioService {
                 );
 
         long nights = ChronoUnit.DAYS.between(
-                reservation.getCheckInDate(),
-                reservation.getCheckOutDate()
+                reservation.getCheckIn().toLocalDate(),
+                reservation.getCheckOut().toLocalDate()
         );
 
         BigDecimal quantity = BigDecimal.valueOf(nights);
@@ -101,9 +101,9 @@ public class ReservationFolioService {
         roomAccrual.setAccruedAt(LocalDateTime.now(clock));
         roomAccrual.setDescription(
                 "Room accommodation: "
-                        + reservation.getCheckInDate()
+                        + reservation.getCheckIn()
                         + " - "
-                        + reservation.getCheckOutDate()
+                        + reservation.getCheckOut()
         );
 
         folio.recalculateTotalAmount();

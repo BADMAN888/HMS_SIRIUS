@@ -1019,8 +1019,8 @@ Content-Type: application/json
     {{profile1Id}},
     {{profile2Id}}
   ],
-  "checkInDate": "2026-09-25",
-  "checkOutDate": "2026-09-28",
+  "checkIn": "2026-09-26T14:00:00",
+  "checkOut": "2026-09-28T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1032,6 +1032,9 @@ Content-Type: application/json
 
     client.assert(response.body.id !== null);
     client.assert(response.body.folioId !== null);
+
+    client.assert(response.body.checkIn === "2026-09-26T14:00:00");
+    client.assert(response.body.checkOut === "2026-09-28T12:00:00");
 
     client.global.set("reservation1Id", response.body.id);
     client.global.set("folio1Id", response.body.folioId);
@@ -1052,8 +1055,8 @@ Content-Type: application/json
     {{profile2Id}},
     {{profile3Id}}
   ],
-  "checkInDate": "2026-09-25",
-  "checkOutDate": "2026-09-27",
+  "checkIn": "2026-09-26T14:00:00",
+  "checkOut": "2026-09-27T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1065,6 +1068,9 @@ Content-Type: application/json
 
     client.assert(response.body.id !== null);
     client.assert(response.body.folioId !== null);
+
+    client.assert(response.body.checkIn === "2026-09-26T14:00:00");
+    client.assert(response.body.checkOut === "2026-09-27T12:00:00");
 
     client.global.set("reservation2Id", response.body.id);
     client.global.set("folio2Id", response.body.folioId);
@@ -1084,8 +1090,8 @@ Content-Type: application/json
   "guestIds": [
     {{profile3Id}}
   ],
-  "checkInDate": "2026-09-25",
-  "checkOutDate": "2026-09-26",
+  "checkIn": "2026-09-26T14:00:00",
+  "checkOut": "2026-09-27T12:00:00",
   "adults": 1,
   "children": 0
 }
@@ -1097,6 +1103,9 @@ Content-Type: application/json
 
     client.assert(response.body.id !== null);
     client.assert(response.body.folioId !== null);
+
+    client.assert(response.body.checkIn === "2026-09-26T14:00:00");
+    client.assert(response.body.checkOut === "2026-09-27T12:00:00");
 
     client.global.set("reservation3Id", response.body.id);
     client.global.set("folio3Id", response.body.folioId);
@@ -1117,8 +1126,8 @@ Content-Type: application/json
     {{profile1Id}},
     {{profile3Id}}
   ],
-  "checkInDate": "2026-09-28",
-  "checkOutDate": "2026-10-02",
+  "checkIn": "2026-09-28T14:00:00",
+  "checkOut": "2026-10-02T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1130,6 +1139,9 @@ Content-Type: application/json
 
     client.assert(response.body.id !== null);
     client.assert(response.body.folioId !== null);
+
+    client.assert(response.body.checkIn === "2026-09-28T14:00:00");
+    client.assert(response.body.checkOut === "2026-10-02T12:00:00");
 
     client.global.set("reservation4Id", response.body.id);
     client.global.set("folio4Id", response.body.folioId);
@@ -1149,8 +1161,8 @@ Content-Type: application/json
   "guestIds": [
     {{profile2Id}}
   ],
-  "checkInDate": "2026-09-25",
-  "checkOutDate": "2026-09-30",
+  "checkIn": "2026-09-26T14:00:00",
+  "checkOut": "2026-09-30T12:00:00",
   "adults": 1,
   "children": 0
 }
@@ -1162,6 +1174,9 @@ Content-Type: application/json
 
     client.assert(response.body.id !== null);
     client.assert(response.body.folioId !== null);
+
+    client.assert(response.body.checkIn === "2026-09-26T14:00:00");
+    client.assert(response.body.checkOut === "2026-09-30T12:00:00");
 
     client.global.set("reservation5Id", response.body.id);
     client.global.set("folio5Id", response.body.folioId);
@@ -1182,8 +1197,8 @@ Content-Type: application/json
     {{profile3Id}},
     {{profile2Id}}
   ],
-  "checkInDate": "2026-10-01",
-  "checkOutDate": "2026-10-05",
+  "checkIn": "2026-10-01T14:00:00",
+  "checkOut": "2026-10-05T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1195,6 +1210,9 @@ Content-Type: application/json
 
     client.assert(response.body.id !== null);
     client.assert(response.body.folioId !== null);
+
+    client.assert(response.body.checkIn === "2026-10-01T14:00:00");
+    client.assert(response.body.checkOut === "2026-10-05T12:00:00");
 
     client.global.set("reservation6Id", response.body.id);
     client.global.set("folio6Id", response.body.folioId);
@@ -1214,8 +1232,8 @@ Content-Type: application/json
   "guestIds": [
     {{profile1Id}}
   ],
-  "checkInDate": "2026-09-26",
-  "checkOutDate": "2026-09-29",
+  "checkIn": "2026-09-27T14:00:00",
+  "checkOut": "2026-09-29T12:00:00",
   "adults": 1,
   "children": 0
 }
@@ -1227,6 +1245,9 @@ Content-Type: application/json
 
     client.assert(response.body.id !== null);
     client.assert(response.body.folioId !== null);
+
+    client.assert(response.body.checkIn === "2026-09-27T14:00:00");
+    client.assert(response.body.checkOut === "2026-09-29T12:00:00");
 
     client.global.set("reservation7Id", response.body.id);
     client.global.set("folio7Id", response.body.folioId);
@@ -1247,8 +1268,8 @@ Content-Type: application/json
     {{profile2Id}},
     {{profile3Id}}
   ],
-  "checkInDate": "2026-09-29",
-  "checkOutDate": "2026-10-03",
+  "checkIn": "2026-09-29T14:00:00",
+  "checkOut": "2026-10-03T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1260,6 +1281,9 @@ Content-Type: application/json
 
     client.assert(response.body.id !== null);
     client.assert(response.body.folioId !== null);
+
+    client.assert(response.body.checkIn === "2026-09-29T14:00:00");
+    client.assert(response.body.checkOut === "2026-10-03T12:00:00");
 
     client.global.set("reservation8Id", response.body.id);
     client.global.set("folio8Id", response.body.folioId);
@@ -1280,8 +1304,8 @@ Content-Type: application/json
     {{profile3Id}},
     {{profile1Id}}
   ],
-  "checkInDate": "2026-10-03",
-  "checkOutDate": "2026-10-07",
+  "checkIn": "2026-10-03T14:00:00",
+  "checkOut": "2026-10-07T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1293,6 +1317,9 @@ Content-Type: application/json
 
     client.assert(response.body.id !== null);
     client.assert(response.body.folioId !== null);
+
+    client.assert(response.body.checkIn === "2026-10-03T14:00:00");
+    client.assert(response.body.checkOut === "2026-10-07T12:00:00");
 
     client.global.set("reservation9Id", response.body.id);
     client.global.set("folio9Id", response.body.folioId);
@@ -1313,9 +1340,9 @@ Authorization: Bearer {{token}}
 %}
 
 
-### RESERVATIONS CHECK-IN 2026-09-25
+### RESERVATIONS CHECK-IN 2026-09-26
 
-GET {{reservationUrl}}/check-in?date=2026-09-25
+GET {{reservationUrl}}/check-in?date=2026-09-26
 Authorization: Bearer {{token}}
 
 > {%
@@ -1345,13 +1372,13 @@ Authorization: Bearer {{token}}
 %}
 
 
-### RESERVATIONS ON 2026-09-25
+### RESERVATIONS ON 2026-09-26
 
-GET {{reservationUrl}}/date?date=2026-09-25
+GET {{reservationUrl}}/date?date=2026-09-26
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Reservations on 2026-09-25 loaded", function () {
+    client.test("Reservations on 2026-09-26 loaded", function () {
         client.assert(response.status === 200);
     });
 
@@ -1395,10 +1422,8 @@ Authorization: Bearer {{token}}
 
 ### RESERVATIONS DATE RANGE
 
-GET {{reservationUrl}}/date-range?startDate=2026-09-25&endDate=2026-09-30
+GET {{reservationUrl}}/date-range?startDate=2026-09-26&endDate=2026-10-01
 Authorization: Bearer {{token}}
-
-
 
 
 ### FOLIO 1
@@ -1562,7 +1587,26 @@ Authorization: Bearer {{token}}
 
     client.assert(response.body.length >= 1);
 %}
+
 ###
-GET http://localhost:8080/api/hotel-grid?startDate=2026-09-25&endDate=2026-10-26
+
+### HOTEL GRID
+
+GET {{baseUrl}}/api/hotel-grid?startDate=2026-09-25&endDate=2026-10-26
 Authorization: Bearer {{token}}
 
+> {%
+    client.test("Hotel grid loaded", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Hotel grid contains rooms", function () {
+        client.assert(response.body.rooms !== null);
+        client.assert(response.body.rooms.length > 0);
+    });
+
+    client.test("Hotel grid has correct date range", function () {
+        client.assert(response.body.startDate === "2026-09-25");
+        client.assert(response.body.endDate === "2026-10-26");
+    });
+%}

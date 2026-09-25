@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,13 +41,16 @@ public class HotelGridService {
             );
         }
 
+        LocalDateTime start = startDate.atStartOfDay();
+        LocalDateTime end = endDate.atStartOfDay();
+
         List<RoomEntity> rooms = roomRepository.findAll();
 
         List<ReservationEntity> reservations =
                 reservationRepository
-                        .findAllByCheckInDateLessThanAndCheckOutDateGreaterThan(
-                                endDate,
-                                startDate
+                        .findAllByCheckInLessThanAndCheckOutGreaterThan(
+                                end,
+                                start
                         );
 
         Map<Long, List<ReservationEntity>> reservationsByRoom =
@@ -101,8 +105,8 @@ public class HotelGridService {
         return new HotelGridReservationResponse(
                 reservation.getId(),
                 reservation.getConfirmationNumber(),
-                reservation.getCheckInDate(),
-                reservation.getCheckOutDate(),
+                reservation.getCheckIn(),
+                reservation.getCheckOut(),
                 reservation.getStatus()
         );
     }

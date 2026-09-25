@@ -53,11 +53,11 @@ public class ReservationEntity {
     @Builder.Default
     Set<ProfileEntity> guests = new HashSet<>();
 
-    @Column(nullable = false, name = "check_in_date")
-    LocalDate checkInDate;
+    @Column(nullable = false, name = "check_in")
+    LocalDateTime checkIn;
 
-    @Column(nullable = false, name = "check_out_date")
-    LocalDate checkOutDate;
+    @Column(nullable = false, name = "check_out")
+    LocalDateTime checkOut;
 
     @Column(nullable = false)
     Integer adults;

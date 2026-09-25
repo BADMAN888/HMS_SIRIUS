@@ -50,8 +50,8 @@ public class ReservationService {
                 rate,
                 request.adults(),
                 request.children(),
-                request.checkInDate(),
-                request.checkOutDate()
+                request.checkIn(),
+                request.checkOut()
         );
 
         Set<ProfileEntity> guests = findGuests(request.guestIds());
@@ -107,8 +107,8 @@ public class ReservationService {
                 rate,
                 request.adults(),
                 request.children(),
-                request.checkInDate(),
-                request.checkOutDate()
+                request.checkIn(),
+                request.checkOut()
         );
 
         Set<ProfileEntity> guests = findGuests(request.guestIds());
@@ -134,24 +134,41 @@ public class ReservationService {
     }
 
     public List<ReservationResponse> getByCheckInDate(LocalDate date) {
-        return reservationRepository.findAllByCheckInDate(date)
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.plusDays(1).atStartOfDay();
+
+        return reservationRepository
+                .findAllByCheckInGreaterThanEqualAndCheckInLessThan(
+                        start,
+                        end
+                )
                 .stream()
                 .map(reservationMapper::toResponse)
                 .toList();
     }
 
     public List<ReservationResponse> getByCheckOutDate(LocalDate date) {
-        return reservationRepository.findAllByCheckOutDate(date)
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.plusDays(1).atStartOfDay();
+
+        return reservationRepository
+                .findAllByCheckOutGreaterThanEqualAndCheckOutLessThan(
+                        start,
+                        end
+                )
                 .stream()
                 .map(reservationMapper::toResponse)
                 .toList();
     }
 
     public List<ReservationResponse> getByDate(LocalDate date) {
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = date.plusDays(1).atStartOfDay();
+
         return reservationRepository
-                .findAllByCheckInDateLessThanEqualAndCheckOutDateGreaterThan(
-                        date,
-                        date
+                .findAllByCheckInLessThanAndCheckOutGreaterThan(
+                        end,
+                        start
                 )
                 .stream()
                 .map(reservationMapper::toResponse)
@@ -162,12 +179,15 @@ public class ReservationService {
             LocalDate startDate,
             LocalDate endDate
     ) {
-        availabilityService.validateDates(startDate, endDate);
+        LocalDateTime start = startDate.atStartOfDay();
+        LocalDateTime end = endDate.atStartOfDay();
+
+        availabilityService.validateDates(start, end);
 
         return reservationRepository
-                .findAllByCheckInDateLessThanAndCheckOutDateGreaterThan(
-                        endDate,
-                        startDate
+                .findAllByCheckInLessThanAndCheckOutGreaterThan(
+                        end,
+                        start
                 )
                 .stream()
                 .map(reservationMapper::toResponse)

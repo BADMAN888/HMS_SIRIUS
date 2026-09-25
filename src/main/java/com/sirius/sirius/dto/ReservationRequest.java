@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 public record ReservationRequest(
@@ -26,11 +26,11 @@ public record ReservationRequest(
 
         @NotNull
         @FutureOrPresent
-        LocalDate checkInDate,
+        LocalDateTime checkIn,
 
         @NotNull
         @Future
-        LocalDate checkOutDate,
+        LocalDateTime checkOut,
 
         @NotNull
         @Positive
