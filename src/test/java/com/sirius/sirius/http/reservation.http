@@ -38,8 +38,8 @@ Content-Type: application/json
   "guestIds": [
     {{guestId}}
   ],
-  "checkIn": "2026-10-01T14:00:00",
-  "checkOut": "2026-10-03T12:00:00",
+ "checkIn": "2026-09-25T14:00:00",
+  "checkOut": "2026-09-26T12:00:00",
   "adults": 2,
   "children": 0
 }

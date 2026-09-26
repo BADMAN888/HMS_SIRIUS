@@ -1,6 +1,5 @@
 package com.sirius.sirius.dto;
 
-import com.sirius.sirius.store.enums.ReservationStatus;
 import com.sirius.sirius.store.enums.RoomStatus;
 import com.sirius.sirius.store.enums.RoomView;
 
@@ -13,7 +12,9 @@ public record HotelGridRoomResponse(
         RoomStatus status,
         RoomView roomView,
         Long hotelId,
+        String hotelName,
         Long categoryId,
+        String categoryName,
         List<HotelGridReservationResponse> reservations
 ) {
 }

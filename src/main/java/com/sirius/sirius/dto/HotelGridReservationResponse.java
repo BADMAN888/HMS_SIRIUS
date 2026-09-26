@@ -9,6 +9,9 @@ public record HotelGridReservationResponse(
         String confirmationNumber,
         LocalDateTime checkIn,
         LocalDateTime checkOut,
-        ReservationStatus status
+        ReservationStatus status,
+        String guestFirstName,
+        String guestLastName,
+        String guestPhone
 ) {
 }

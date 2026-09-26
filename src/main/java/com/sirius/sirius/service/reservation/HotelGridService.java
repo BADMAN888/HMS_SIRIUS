@@ -94,7 +94,9 @@ public class HotelGridService {
                 room.getStatus(),
                 room.getRoomView(),
                 room.getHotel().getId(),
+                room.getHotel().getHotelName(),
                 room.getCategory().getId(),
+                room.getCategory().getName(),
                 reservationResponses
         );
     }
@@ -107,7 +109,10 @@ public class HotelGridService {
                 reservation.getConfirmationNumber(),
                 reservation.getCheckIn(),
                 reservation.getCheckOut(),
-                reservation.getStatus()
+                reservation.getStatus(),
+                reservation.getPrimaryGuest().getFirstName(),
+                reservation.getPrimaryGuest().getLastName(),
+                reservation.getPrimaryGuest().getPhoneNumber()
         );
     }
 }
