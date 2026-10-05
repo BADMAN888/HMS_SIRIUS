@@ -1,5 +1,7 @@
 package com.sirius.sirius.controller;
 
+import com.sirius.sirius.dto.ReservationCheckInResponse;
+import com.sirius.sirius.dto.ReservationCheckOutResponse;
 import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.service.reservation.ReservationLifecycleService;
@@ -96,7 +98,7 @@ public class ReservationController {
     }
 
     @GetMapping("/check-in")
-    public ResponseEntity<List<ReservationResponse>> getByCheckInDate(
+    public ResponseEntity<List<ReservationCheckInResponse>> getByCheckInDate(
             @RequestParam LocalDate date
     ) {
         return ResponseEntity.ok(
@@ -105,7 +107,7 @@ public class ReservationController {
     }
 
     @GetMapping("/check-out")
-    public ResponseEntity<List<ReservationResponse>> getByCheckOutDate(
+    public ResponseEntity<List<ReservationCheckOutResponse>> getByCheckOutDate(
             @RequestParam LocalDate date
     ) {
         return ResponseEntity.ok(

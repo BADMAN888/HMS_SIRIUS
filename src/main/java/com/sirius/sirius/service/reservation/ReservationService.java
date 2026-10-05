@@ -1,5 +1,7 @@
 package com.sirius.sirius.service.reservation;
 
+import com.sirius.sirius.dto.ReservationCheckInResponse;
+import com.sirius.sirius.dto.ReservationCheckOutResponse;
 import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.exeption.BadRequestException;
@@ -133,7 +135,7 @@ public class ReservationService {
         return reservationMapper.toResponse(reservation);
     }
 
-    public List<ReservationResponse> getByCheckInDate(LocalDate date) {
+    public List<ReservationCheckInResponse> getByCheckInDate(LocalDate date) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.plusDays(1).atStartOfDay();
 
@@ -143,11 +145,11 @@ public class ReservationService {
                         end
                 )
                 .stream()
-                .map(reservationMapper::toResponse)
+                .map(reservationMapper::toCheckInResponse)
                 .toList();
     }
 
-    public List<ReservationResponse> getByCheckOutDate(LocalDate date) {
+    public List<ReservationCheckOutResponse> getByCheckOutDate(LocalDate date) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.plusDays(1).atStartOfDay();
 
@@ -157,7 +159,7 @@ public class ReservationService {
                         end
                 )
                 .stream()
-                .map(reservationMapper::toResponse)
+                .map(reservationMapper::toCheckOutResponse)
                 .toList();
     }
 

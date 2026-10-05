@@ -1,5 +1,7 @@
 package com.sirius.sirius.mappers;
 
+import com.sirius.sirius.dto.ReservationCheckInResponse;
+import com.sirius.sirius.dto.ReservationCheckOutResponse;
 import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
@@ -30,6 +32,14 @@ public interface ReservationMapper {
     @Mapping(target = "folioId", source = "folio.id")
     ReservationResponse toResponse(ReservationEntity entity);
 
+    @Mapping(target = "roomId", source = "room.id")
+    @Mapping(target = "totalAmount", source = "folio.totalAmount")
+    ReservationCheckInResponse toCheckInResponse(ReservationEntity entity);
+
+    @Mapping(target = "roomId", source = "room.id")
+    @Mapping(target = "totalAmount", source = "folio.totalAmount")
+    ReservationCheckOutResponse toCheckOutResponse(ReservationEntity entity);
+
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "confirmationNumber", ignore = true)
     @Mapping(target = "room", ignore = true)
@@ -39,5 +49,8 @@ public interface ReservationMapper {
     @Mapping(target = "comments", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "folio", ignore = true)
-    void updateEntity(ReservationRequest request, @MappingTarget ReservationEntity entity);
+    void updateEntity(
+            ReservationRequest request,
+            @MappingTarget ReservationEntity entity
+    );
 }
