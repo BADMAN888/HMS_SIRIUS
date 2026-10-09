@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.ReservationCheckInResponse;
@@ -6,6 +7,7 @@ import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.service.reservation.ReservationLifecycleService;
 import com.sirius.sirius.service.reservation.ReservationService;
+import com.sirius.sirius.store.enums.ReservationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -44,6 +46,14 @@ public class ReservationController {
     public ResponseEntity<List<ReservationResponse>> getAll() {
         return ResponseEntity.ok(
                 reservationService.getAll()
+        );
+    }
+    @GetMapping("/status/{status}")
+    public ResponseEntity<List<ReservationResponse>> getByStatus(
+            @PathVariable ReservationStatus status
+    ) {
+        return ResponseEntity.ok(
+                reservationService.getByStatus(status)
         );
     }
 

@@ -18,6 +18,7 @@ import com.sirius.sirius.store.repository.ReservationRepository;
 import com.sirius.sirius.store.repository.RoomRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -279,5 +280,11 @@ public class ReservationService {
         ));
 
         return confirmationNumber;
+    }
+    public List<ReservationResponse> getByStatus(ReservationStatus status) {
+        return reservationRepository.findByStatus(status)
+                .stream()
+                .map(reservationMapper::toResponse)
+                .toList();
     }
 }
