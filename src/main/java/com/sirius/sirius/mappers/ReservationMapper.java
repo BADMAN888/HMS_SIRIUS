@@ -11,7 +11,6 @@ import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Mapper(componentModel = "spring")
 public interface ReservationMapper {
@@ -27,11 +26,9 @@ public interface ReservationMapper {
     @Mapping(target = "folio", ignore = true)
     ReservationEntity toEntity(ReservationRequest request);
 
-    @Mapping(target = "roomId", source = "room.id")
-    @Mapping(target = "rateId", source = "rate.id")
     @Mapping(
             target = "guestIds",
-            expression = "java(entity.getGuests().stream().map(com.sirius.sirius.store.entity.reservation.ProfileEntity::getId).collect(java.util.stream.Collectors.toSet()))"
+            expression = "java(entity.getGuests().stream().map(ProfileEntity::getId).collect(java.util.stream.Collectors.toSet()))"
     )
     @Mapping(target = "folioId", source = "folio.id")
     ReservationResponse toResponse(ReservationEntity entity);

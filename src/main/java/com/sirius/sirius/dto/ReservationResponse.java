@@ -9,9 +9,9 @@ import java.util.Set;
 public record ReservationResponse(
         Long id,
         String confirmationNumber,
-        Long roomId,
-        Long rateId,
-        Long primaryGuestId,
+        RoomResponse room,
+        RateResponse rate,
+        ProfileResponse primaryGuest,
         Set<Long> guestIds,
         LocalDateTime checkIn,
         LocalDateTime checkOut,

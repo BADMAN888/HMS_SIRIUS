@@ -15,23 +15,26 @@ public class JwtService {
     private static final String SECRET =
             "mysecretkeymysecretkeymysecretkey12";
 
+    private static final long ACCESS_TOKEN_MILLIS =
+            15 * 60 * 1000;
+
     private final SecretKey key =
             Keys.hmacShaKeyFor(SECRET.getBytes());
 
     public String generateToken(String email) {
+        Date now = new Date();
 
         return Jwts.builder()
                 .setSubject(email)
-                .setIssuedAt(new Date())
+                .setIssuedAt(now)
                 .setExpiration(
-                        new Date(System.currentTimeMillis() + 86400000)
+                        new Date(now.getTime() + ACCESS_TOKEN_MILLIS)
                 )
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
 
     public String extractEmail(String token) {
-
         Claims claims = Jwts.parser()
                 .setSigningKey(key)
                 .build()

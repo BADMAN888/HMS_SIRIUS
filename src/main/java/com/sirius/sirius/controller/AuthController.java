@@ -2,6 +2,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.auth.AuthRequest;
 import com.sirius.sirius.dto.auth.AuthResponse;
+import com.sirius.sirius.dto.auth.RefreshTokenRequest;
 import com.sirius.sirius.service.auth.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +10,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 
 @RestController
 @RequestMapping("/auth")
@@ -22,7 +22,6 @@ public class AuthController {
     public AuthResponse register(
             @Valid @RequestBody AuthRequest request
     ) {
-
         return authService.register(request);
     }
 
@@ -30,7 +29,13 @@ public class AuthController {
     public AuthResponse login(
             @Valid @RequestBody AuthRequest request
     ) {
-
         return authService.login(request);
+    }
+
+    @PostMapping("/refresh")
+    public AuthResponse refresh(
+            @Valid @RequestBody RefreshTokenRequest request
+    ) {
+        return authService.refresh(request.refreshToken());
     }
 }
