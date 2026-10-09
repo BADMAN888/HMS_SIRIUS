@@ -73,13 +73,13 @@ public class ReservationLifecycleService {
         }
 
         room.setStatus(RoomStatus.OCCUPIED);
-        reservation.setStatus(ReservationStatus.CHECKED_IN);
+        reservation.setStatus(ReservationStatus.IN_HOUSE);
     }
 
     public void checkOut(Long id) {
         ReservationEntity reservation = findById(id);
 
-        if (reservation.getStatus() != ReservationStatus.CHECKED_IN) {
+        if (reservation.getStatus() != ReservationStatus.IN_HOUSE) {
             throw new BadRequestException(
                     "Reservation cannot be checked out from status: "
                             + reservation.getStatus()
