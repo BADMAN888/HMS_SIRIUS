@@ -3,11 +3,15 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.ReservationCheckInResponse;
 import com.sirius.sirius.dto.ReservationCheckOutResponse;
+import com.sirius.sirius.dto.ReservationCommentRequest;
+import com.sirius.sirius.dto.ReservationCommentResponse;
 import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.dto.ReservationResponse;
+import com.sirius.sirius.service.reservation.ReservationCommentService;
 import com.sirius.sirius.service.reservation.ReservationLifecycleService;
 import com.sirius.sirius.service.reservation.ReservationService;
 import com.sirius.sirius.store.enums.ReservationStatus;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +27,7 @@ public class ReservationController {
 
     private final ReservationService reservationService;
     private final ReservationLifecycleService lifecycleService;
+    private final ReservationCommentService commentService;
 
     @PostMapping
     public ResponseEntity<ReservationResponse> create(
@@ -48,6 +53,7 @@ public class ReservationController {
                 reservationService.getAll()
         );
     }
+
     @GetMapping("/status/{status}")
     public ResponseEntity<List<ReservationResponse>> getByStatus(
             @PathVariable ReservationStatus status
@@ -142,5 +148,44 @@ public class ReservationController {
         return ResponseEntity.ok(
                 reservationService.getByDateRange(startDate, endDate)
         );
+    }
+
+    @GetMapping("/{id}/comments")
+    public ResponseEntity<List<ReservationCommentResponse>> getComments(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(
+                commentService.getAll(id)
+        );
+    }
+
+    @PostMapping("/{id}/comments")
+    public ResponseEntity<ReservationCommentResponse> createComment(
+            @PathVariable Long id,
+            @Valid @RequestBody ReservationCommentRequest request
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(commentService.create(id, request));
+    }
+
+    @PutMapping("/{id}/comments/{commentId}")
+    public ResponseEntity<ReservationCommentResponse> updateComment(
+            @PathVariable Long id,
+            @PathVariable Long commentId,
+            @Valid @RequestBody ReservationCommentRequest request
+    ) {
+        return ResponseEntity.ok(
+                commentService.update(id, commentId, request)
+        );
+    }
+
+    @DeleteMapping("/{id}/comments/{commentId}")
+    public ResponseEntity<Void> deleteComment(
+            @PathVariable Long id,
+            @PathVariable Long commentId
+    ) {
+        commentService.delete(id, commentId);
+        return ResponseEntity.noContent().build();
     }
 }

@@ -20,7 +20,7 @@ Content-Type: application/json
         client.assert(response.status === 200);
     });
 
-    client.global.set("token", response.body.token);
+    client.global.set("token", response.body.accessToken ?? response.body.token);
 %}
 
 ###
@@ -35,11 +35,9 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
-  "checkIn": "2026-10-06T14:00:00",
-  "checkOut": "2026-10-07T12:00:00",
+  "guestIds": [{{guestId}}],
+  "checkIn": "2026-11-10T14:00:00",
+  "checkOut": "2026-11-12T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -50,11 +48,11 @@ Content-Type: application/json
     });
 
     client.test("Check-in is correct", function () {
-        client.assert(response.body.checkIn === "2026-09-25T14:00:00");
+        client.assert(response.body.checkIn === "2026-11-10T14:00:00");
     });
 
     client.test("Check-out is correct", function () {
-        client.assert(response.body.checkOut === "2026-09-26T12:00:00");
+        client.assert(response.body.checkOut === "2026-11-12T12:00:00");
     });
 
     client.global.set("reservationId", response.body.id);
@@ -81,11 +79,11 @@ Authorization: Bearer {{token}}
     });
 
     client.test("Check-in is correct", function () {
-        client.assert(response.body.checkIn === "2026-09-25T14:00:00");
+        client.assert(response.body.checkIn === "2026-11-10T14:00:00");
     });
 
     client.test("Check-out is correct", function () {
-        client.assert(response.body.checkOut === "2026-09-26T12:00:00");
+        client.assert(response.body.checkOut === "2026-11-12T12:00:00");
     });
 %}
 
@@ -108,6 +106,29 @@ Authorization: Bearer {{token}}
 
 ###
 
+### Get reservations by status
+
+GET {{reservationUrl}}/status/CONFIRMED
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Response is array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+
+    client.test("All reservations are CONFIRMED", function () {
+        response.body.forEach(function (reservation) {
+            client.assert(reservation.status === "CONFIRMED");
+        });
+    });
+%}
+
+###
+
 ### Update reservation
 
 PUT {{reservationUrl}}/{{reservationId}}
@@ -118,11 +139,9 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
-  "checkIn": "2026-10-11T14:00:00",
-  "checkOut": "2026-10-16T12:00:00",
+  "guestIds": [{{guestId}}],
+  "checkIn": "2026-11-11T14:00:00",
+  "checkOut": "2026-11-13T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -133,11 +152,11 @@ Content-Type: application/json
     });
 
     client.test("Check-in was updated", function () {
-        client.assert(response.body.checkIn === "2026-10-11T14:00:00");
+        client.assert(response.body.checkIn === "2026-11-11T14:00:00");
     });
 
     client.test("Check-out was updated", function () {
-        client.assert(response.body.checkOut === "2026-10-16T12:00:00");
+        client.assert(response.body.checkOut === "2026-11-13T12:00:00");
     });
 
     client.test("Status remains CONFIRMED", function () {
@@ -157,11 +176,9 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
-  "checkIn": "2026-10-20T14:00:00",
-  "checkOut": "2026-10-15T12:00:00",
+  "guestIds": [{{guestId}}],
+  "checkIn": "2026-11-20T14:00:00",
+  "checkOut": "2026-11-15T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -184,11 +201,9 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
-  "checkIn": "2026-10-20T14:00:00",
-  "checkOut": "2026-10-20T14:00:00",
+  "guestIds": [{{guestId}}],
+  "checkIn": "2026-11-20T14:00:00",
+  "checkOut": "2026-11-20T14:00:00",
   "adults": 2,
   "children": 0
 }
@@ -211,11 +226,9 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": 999999,
-  "guestIds": [
-    999999
-  ],
-  "checkIn": "2026-11-10T14:00:00",
-  "checkOut": "2026-11-15T12:00:00",
+  "guestIds": [999999],
+  "checkIn": "2026-11-20T14:00:00",
+  "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -239,8 +252,8 @@ Content-Type: application/json
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
   "guestIds": [],
-  "checkIn": "2026-11-10T14:00:00",
-  "checkOut": "2026-11-15T12:00:00",
+  "checkIn": "2026-11-20T14:00:00",
+  "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -264,8 +277,8 @@ Content-Type: application/json
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
   "guestIds": null,
-  "checkIn": "2026-11-10T14:00:00",
-  "checkOut": "2026-11-15T12:00:00",
+  "checkIn": "2026-11-20T14:00:00",
+  "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -288,11 +301,9 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
-  "checkIn": "2026-11-10T14:00:00",
-  "checkOut": "2026-11-15T12:00:00",
+  "guestIds": [{{guestId}}],
+  "checkIn": "2026-11-20T14:00:00",
+  "checkOut": "2026-11-22T12:00:00",
   "adults": 0,
   "children": 0
 }
@@ -315,11 +326,9 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
-  "checkIn": "2026-11-10T14:00:00",
-  "checkOut": "2026-11-15T12:00:00",
+  "guestIds": [{{guestId}}],
+  "checkIn": "2026-11-20T14:00:00",
+  "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
   "children": -1
 }
@@ -342,11 +351,9 @@ Content-Type: application/json
   "roomId": 999999,
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
-  "checkIn": "2026-11-10T14:00:00",
-  "checkOut": "2026-11-15T12:00:00",
+  "guestIds": [{{guestId}}],
+  "checkIn": "2026-11-20T14:00:00",
+  "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -369,11 +376,9 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": 999999,
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
-  "checkIn": "2026-11-10T14:00:00",
-  "checkOut": "2026-11-15T12:00:00",
+  "guestIds": [{{guestId}}],
+  "checkIn": "2026-11-20T14:00:00",
+  "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -396,11 +401,9 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": 2,
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
-  "checkIn": "2026-11-10T14:00:00",
-  "checkOut": "2026-11-15T12:00:00",
+  "guestIds": [{{guestId}}],
+  "checkIn": "2026-11-20T14:00:00",
+  "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -423,11 +426,9 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
+  "guestIds": [{{guestId}}],
   "checkIn": "2026-11-20T14:00:00",
-  "checkOut": "2026-11-25T12:00:00",
+  "checkOut": "2026-11-22T12:00:00",
   "adults": 10,
   "children": 5
 }
@@ -450,9 +451,7 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
+  "guestIds": [{{guestId}}],
   "checkIn": "2026-12-01T14:00:00",
   "checkOut": "2026-12-05T12:00:00",
   "adults": 1,
@@ -479,9 +478,7 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
+  "guestIds": [{{guestId}}],
   "checkIn": "2026-12-03T14:00:00",
   "checkOut": "2026-12-07T12:00:00",
   "adults": 1,
@@ -506,9 +503,7 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
+  "guestIds": [{{guestId}}],
   "checkIn": "2026-12-05T12:00:00",
   "checkOut": "2026-12-08T12:00:00",
   "adults": 1,
@@ -535,9 +530,7 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
+  "guestIds": [{{guestId}}],
   "checkIn": "2026-12-03T14:00:00",
   "checkOut": "2026-12-06T12:00:00",
   "adults": 1,
@@ -552,7 +545,7 @@ Content-Type: application/json
 
 ###
 
-### Update reservation without changing its own dates
+### Update reservation without overlapping its own dates
 
 PUT {{reservationUrl}}/{{overlapReservationId}}
 Authorization: Bearer {{token}}
@@ -562,9 +555,7 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
+  "guestIds": [{{guestId}}],
   "checkIn": "2026-12-01T14:00:00",
   "checkOut": "2026-12-05T12:00:00",
   "adults": 1,
@@ -589,7 +580,7 @@ Content-Type: application/json
 
 ### Get reservations by check-in date
 
-GET {{reservationUrl}}/check-in?date=2026-09-26
+GET {{reservationUrl}}/check-in?date=2026-12-01
 Authorization: Bearer {{token}}
 
 > {%
@@ -601,13 +592,13 @@ Authorization: Bearer {{token}}
         client.assert(Array.isArray(response.body));
     });
 
-    client.test("Response contains totalAmount", function () {
+    client.test("Response contains totalAmount when non-empty", function () {
         if (response.body.length > 0) {
             client.assert(response.body[0].totalAmount !== undefined);
         }
     });
 
-    client.test("Response contains roomId", function () {
+    client.test("Response contains roomId when non-empty", function () {
         if (response.body.length > 0) {
             client.assert(response.body[0].roomId !== undefined);
         }
@@ -630,13 +621,13 @@ Authorization: Bearer {{token}}
         client.assert(Array.isArray(response.body));
     });
 
-    client.test("Response contains totalAmount", function () {
+    client.test("Response contains totalAmount when non-empty", function () {
         if (response.body.length > 0) {
             client.assert(response.body[0].totalAmount !== undefined);
         }
     });
 
-    client.test("Response contains roomId", function () {
+    client.test("Response contains roomId when non-empty", function () {
         if (response.body.length > 0) {
             client.assert(response.body[0].roomId !== undefined);
         }
@@ -705,6 +696,179 @@ Authorization: Bearer {{token}}
 
 ###
 
+### Get reservation comments before creating one
+
+GET {{reservationUrl}}/{{reservationId}}/comments
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Comments response is array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+%}
+
+###
+
+### Create reservation comment
+
+POST {{reservationUrl}}/{{reservationId}}/comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Гість попросив підготувати номер до заїзду."
+}
+
+
+###
+
+### Get comments after creating one
+
+GET {{reservationUrl}}/{{reservationId}}/comments
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Response is array", function () {
+        client.assert(Array.isArray(response.body));
+    });
+
+    client.test("Created comment exists", function () {
+        var commentId = client.global.get("commentId");
+
+        client.assert(response.body.some(function (comment) {
+            return comment.id == commentId;
+        }));
+    });
+%}
+
+###
+
+### Update reservation comment
+
+PUT {{reservationUrl}}/{{reservationId}}/comments/{{commentId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Гість підтвердив пізній час прибуття."
+}
+
+> {%
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Comment text was updated", function () {
+        client.assert(response.body.text === "Гість підтвердив пізній час прибуття.");
+    });
+
+    client.test("Comment id remains the same", function () {
+        client.assert(response.body.id == client.global.get("commentId"));
+    });
+
+    client.test("Reservation id is correct", function () {
+        client.assert(response.body.reservationId == client.global.get("reservationId"));
+    });
+%}
+
+###
+
+### Create comment with blank text
+
+POST {{reservationUrl}}/{{reservationId}}/comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "   "
+}
+
+> {%
+    client.test("Status is 400", function () {
+        client.assert(response.status === 400);
+    });
+%}
+
+###
+
+### Create comment for non-existing reservation
+
+POST {{reservationUrl}}/999999/comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Тестовий коментар"
+}
+
+> {%
+    client.test("Status is 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+###
+
+### Update non-existing comment
+
+PUT {{reservationUrl}}/{{reservationId}}/comments/999999
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Оновлений текст"
+}
+
+> {%
+    client.test("Status is 404", function () {
+        client.assert(response.status === 404);
+    });
+%}
+
+###
+
+### Delete reservation comment
+
+DELETE {{reservationUrl}}/{{reservationId}}/comments/{{commentId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 204", function () {
+        client.assert(response.status === 204);
+    });
+%}
+
+###
+
+### Verify deleted comment is absent
+
+GET {{reservationUrl}}/{{reservationId}}/comments
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Status is 200", function () {
+        client.assert(response.status === 200);
+    });
+
+    client.test("Deleted comment is absent", function () {
+        var commentId = client.global.get("commentId");
+
+        client.assert(!response.body.some(function (comment) {
+            return comment.id == commentId;
+        }));
+    });
+%}
+
+###
+
 ### Cancel reservation
 
 PATCH {{reservationUrl}}/{{reservationId}}/cancel
@@ -745,9 +909,7 @@ Content-Type: application/json
   "roomId": {{roomId}},
   "rateId": {{rateId}},
   "primaryGuestId": {{guestId}},
-  "guestIds": [
-    {{guestId}}
-  ],
+  "guestIds": [{{guestId}}],
   "checkIn": "2027-01-10T14:00:00",
   "checkOut": "2027-01-15T12:00:00",
   "adults": 1,
