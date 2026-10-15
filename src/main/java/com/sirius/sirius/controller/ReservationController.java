@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.ReservationCheckInResponse;
@@ -189,3 +188,4 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 }
+
