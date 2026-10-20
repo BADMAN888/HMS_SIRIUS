@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.mappers;
 
 import com.sirius.sirius.dto.ReservationCheckInResponse;
@@ -19,6 +20,7 @@ public interface ReservationMapper {
     @Mapping(target = "confirmationNumber", ignore = true)
     @Mapping(target = "room", ignore = true)
     @Mapping(target = "rate", ignore = true)
+    @Mapping(target = "primaryGuest", ignore = true)
     @Mapping(target = "guests", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "comments", ignore = true)
@@ -31,6 +33,10 @@ public interface ReservationMapper {
             expression = "java(entity.getGuests().stream().map(ProfileEntity::getId).collect(java.util.stream.Collectors.toSet()))"
     )
     @Mapping(target = "folioId", source = "folio.id")
+    @Mapping(target = "externalBookingNumber", source = "externalBookingNumber")
+    @Mapping(target = "bookingSource", source = "bookingSource")
+    @Mapping(target = "company", source = "company")
+    @Mapping(target = "operatorCompany", source = "operatorCompany")
     ReservationResponse toResponse(ReservationEntity entity);
 
     @Mapping(target = "roomId", source = "room.id")
@@ -51,6 +57,7 @@ public interface ReservationMapper {
     @Mapping(target = "confirmationNumber", ignore = true)
     @Mapping(target = "room", ignore = true)
     @Mapping(target = "rate", ignore = true)
+    @Mapping(target = "primaryGuest", ignore = true)
     @Mapping(target = "guests", ignore = true)
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "comments", ignore = true)

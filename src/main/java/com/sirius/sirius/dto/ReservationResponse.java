@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.ReservationStatus;
@@ -20,6 +21,10 @@ public record ReservationResponse(
         ReservationStatus status,
         List<ReservationCommentResponse> comments,
         LocalDateTime createdAt,
-        Long folioId
+        Long folioId,
+        String externalBookingNumber,
+        String bookingSource,
+        String company,
+        String operatorCompany
 ) {
 }

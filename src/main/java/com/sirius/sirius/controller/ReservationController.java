@@ -30,7 +30,7 @@ public class ReservationController {
 
     @PostMapping
     public ResponseEntity<ReservationResponse> create(
-            @RequestBody ReservationRequest request
+            @Valid @RequestBody ReservationRequest request
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -65,7 +65,7 @@ public class ReservationController {
     @PutMapping("/{id}")
     public ResponseEntity<ReservationResponse> update(
             @PathVariable Long id,
-            @RequestBody ReservationRequest request
+            @Valid @RequestBody ReservationRequest request
     ) {
         return ResponseEntity.ok(
                 reservationService.update(id, request)

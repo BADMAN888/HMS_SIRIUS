@@ -45,11 +45,11 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "hotelName": "Olga Grand Hotel",
-  "description": "Hotel in Kozyn",
-  "phone": "+380501234567",
-  "email": "olga.grand.hotel@gmail.com",
-  "address": "Kozyn, Kyiv Region",
+  "hotelName": "Sirius Riverside Hotel",
+  "description": "Modern riverside hotel in Kozyn",
+  "phone": "+380671112233",
+  "email": "sirius.riverside.hotel@gmail.com",
+  "address": "Kozyn, Kyiv Oblast",
   "checkInTime": "14:00:00",
   "checkOutTime": "12:00:00"
 }
@@ -87,7 +87,7 @@ Authorization: Bearer {{token}}
 
 ### GET HOTEL BY NAME
 
-GET {{hotelUrl}}/by-name?name=Olga%20Grand%20Hotel
+GET {{hotelUrl}}/by-name?name=Sirius%20Riverside%20Hotel
 Authorization: Bearer {{token}}
 
 > {%
@@ -96,7 +96,7 @@ Authorization: Bearer {{token}}
     });
 
     client.test("Hotel name is correct", function () {
-        client.assert(response.body.hotelName === "Olga Grand Hotel");
+        client.assert(response.body.hotelName === "Sirius Riverside Hotel");
     });
 %}
 
@@ -110,7 +110,7 @@ Content-Type: application/json
 
 {
   "name": "Standard",
-  "description": "Standard room",
+  "description": "Standard room with riverside view",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
@@ -133,7 +133,7 @@ Content-Type: application/json
 
 {
   "name": "Superior",
-  "description": "Superior room",
+  "description": "Superior room with upgraded amenities",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
@@ -156,7 +156,7 @@ Content-Type: application/json
 
 {
   "name": "Junior Suite",
-  "description": "Junior Suite room",
+  "description": "Junior suite for a comfortable extended stay",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
@@ -179,7 +179,7 @@ Content-Type: application/json
 
 {
   "name": "Suite",
-  "description": "Suite room",
+  "description": "Suite with separate living area",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
@@ -202,7 +202,7 @@ Content-Type: application/json
 
 {
   "name": "Kozyn Corner",
-  "description": "Premium corner room",
+  "description": "Premium panoramic corner room",
   "countOfBeds": 2,
   "hotelId": {{hotelId}}
 }
@@ -217,14 +217,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 101
+### CREATE ROOM 501
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "101",
+  "roomNumber": "501",
   "floor": 1,
   "status": "AVAILABLE",
   "roomView": "CITY",
@@ -242,14 +242,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 102
+### CREATE ROOM 502
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "102",
+  "roomNumber": "502",
   "floor": 1,
   "status": "AVAILABLE",
   "roomView": "GARDEN",
@@ -267,14 +267,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 103
+### CREATE ROOM 503
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "103",
+  "roomNumber": "503",
   "floor": 1,
   "status": "AVAILABLE",
   "roomView": "STREET",
@@ -292,14 +292,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 104
+### CREATE ROOM 504
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "104",
+  "roomNumber": "504",
   "floor": 1,
   "status": "AVAILABLE",
   "roomView": "CITY",
@@ -317,14 +317,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 105
+### CREATE ROOM 505
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "105",
+  "roomNumber": "505",
   "floor": 1,
   "status": "AVAILABLE",
   "roomView": "GARDEN",
@@ -342,14 +342,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 201
+### CREATE ROOM 601
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "201",
+  "roomNumber": "601",
   "floor": 2,
   "status": "AVAILABLE",
   "roomView": "CITY",
@@ -367,14 +367,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 202
+### CREATE ROOM 602
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "202",
+  "roomNumber": "602",
   "floor": 2,
   "status": "AVAILABLE",
   "roomView": "GARDEN",
@@ -392,14 +392,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 301
+### CREATE ROOM 701
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "301",
+  "roomNumber": "701",
   "floor": 3,
   "status": "AVAILABLE",
   "roomView": "CITY",
@@ -417,14 +417,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 302
+### CREATE ROOM 702
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "302",
+  "roomNumber": "702",
   "floor": 3,
   "status": "AVAILABLE",
   "roomView": "GARDEN",
@@ -442,14 +442,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 304
+### CREATE ROOM 704
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "304",
+  "roomNumber": "704",
   "floor": 3,
   "status": "AVAILABLE",
   "roomView": "CITY",
@@ -467,14 +467,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 401
+### CREATE ROOM 801
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "401",
+  "roomNumber": "801",
   "floor": 4,
   "status": "AVAILABLE",
   "roomView": "CITY",
@@ -492,14 +492,14 @@ Content-Type: application/json
 
 ###
 
-### CREATE ROOM 404
+### CREATE ROOM 804
 
 POST {{roomUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "roomNumber": "404",
+  "roomNumber": "804",
   "floor": 4,
   "status": "AVAILABLE",
   "roomView": "PANORAMIC",
@@ -541,8 +541,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR Standard",
-  "description": "Best Available Rate Standard",
+  "name": "RACK Standard",
+  "description": "Flexible Best Available Rate Standard",
   "currency": "UAH",
   "categoryId": {{standardCategoryId}},
   "price": 5000.00,
@@ -550,7 +550,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("BAR Standard created", function () {
+    client.test("RACK Standard created", function () {
         client.assert(response.status === 201);
     });
 
@@ -566,8 +566,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR Superior",
-  "description": "Best Available Rate Superior",
+  "name": "RACK Superior",
+  "description": "Flexible Best Available Rate Superior",
   "currency": "UAH",
   "categoryId": {{superiorCategoryId}},
   "price": 6000.00,
@@ -575,7 +575,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("BAR Superior created", function () {
+    client.test("RACK Superior created", function () {
         client.assert(response.status === 201);
     });
 
@@ -591,8 +591,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR Junior Suite",
-  "description": "Best Available Rate Junior Suite",
+  "name": "RACK Junior Suite",
+  "description": "Flexible Best Available Rate Junior Suite",
   "currency": "UAH",
   "categoryId": {{juniorSuiteCategoryId}},
   "price": 9000.00,
@@ -600,7 +600,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("BAR Junior Suite created", function () {
+    client.test("RACK Junior Suite created", function () {
         client.assert(response.status === 201);
     });
 
@@ -616,8 +616,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR Suite",
-  "description": "Best Available Rate Suite",
+  "name": "RACK Suite",
+  "description": "Flexible Best Available Rate Suite",
   "currency": "UAH",
   "categoryId": {{suiteCategoryId}},
   "price": 10000.00,
@@ -625,7 +625,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("BAR Suite created", function () {
+    client.test("RACK Suite created", function () {
         client.assert(response.status === 201);
     });
 
@@ -641,8 +641,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR Kozyn Corner",
-  "description": "Best Available Rate Kozyn Corner",
+  "name": "RACK Panorama Corner",
+  "description": "Flexible Best Available Rate Kozyn Corner",
   "currency": "UAH",
   "categoryId": {{kozynCornerCategoryId}},
   "price": 15000.00,
@@ -650,7 +650,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("BAR Kozyn Corner created", function () {
+    client.test("RACK Panorama Corner created", function () {
         client.assert(response.status === 201);
     });
 
@@ -666,8 +666,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR10 Standard",
-  "description": "Best Available Rate with 10 percent discount",
+  "name": "FLEX Standard",
+  "description": "Flexible Flexible rate with 10 percent discount",
   "currency": "UAH",
   "categoryId": {{standardCategoryId}},
   "price": 4500.00,
@@ -675,7 +675,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("BAR10 Standard created", function () {
+    client.test("FLEX Standard created", function () {
         client.assert(response.status === 201);
     });
 
@@ -691,8 +691,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR10 Superior",
-  "description": "Best Available Rate with 10 percent discount",
+  "name": "FLEX Superior",
+  "description": "Flexible Flexible rate with 10 percent discount",
   "currency": "UAH",
   "categoryId": {{superiorCategoryId}},
   "price": 5400.00,
@@ -700,7 +700,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("BAR10 Superior created", function () {
+    client.test("FLEX Superior created", function () {
         client.assert(response.status === 201);
     });
 
@@ -716,8 +716,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR10 Junior Suite",
-  "description": "Best Available Rate with 10 percent discount",
+  "name": "FLEX Junior Suite",
+  "description": "Flexible Flexible rate with 10 percent discount",
   "currency": "UAH",
   "categoryId": {{juniorSuiteCategoryId}},
   "price": 8100.00,
@@ -725,7 +725,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("BAR10 Junior Suite created", function () {
+    client.test("FLEX Junior Suite created", function () {
         client.assert(response.status === 201);
     });
 
@@ -741,8 +741,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR10 Suite",
-  "description": "Best Available Rate with 10 percent discount",
+  "name": "FLEX Suite",
+  "description": "Flexible Flexible rate with 10 percent discount",
   "currency": "UAH",
   "categoryId": {{suiteCategoryId}},
   "price": 9000.00,
@@ -750,7 +750,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("BAR10 Suite created", function () {
+    client.test("FLEX Suite created", function () {
         client.assert(response.status === 201);
     });
 
@@ -766,8 +766,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR10 Kozyn Corner",
-  "description": "Best Available Rate with 10 percent discount",
+  "name": "FLEX Panorama Corner",
+  "description": "Flexible Flexible rate with 10 percent discount",
   "currency": "UAH",
   "categoryId": {{kozynCornerCategoryId}},
   "price": 13500.00,
@@ -775,7 +775,7 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("BAR10 Kozyn Corner created", function () {
+    client.test("FLEX Panorama Corner created", function () {
         client.assert(response.status === 201);
     });
 
@@ -794,8 +794,8 @@ Content-Type: application/json
   "rateId": {{barStandardRateId}},
   "roomCategoryId": {{standardCategoryId}},
   "amount": 5000.00,
-  "validFrom": "2026-01-01",
-  "validTo": "2026-12-31",
+  "validFrom": "2026-10-20",
+  "validTo": "2027-12-31",
   "status": "ACTIVE"
 }
 
@@ -819,8 +819,8 @@ Content-Type: application/json
   "rateId": {{barSuperiorRateId}},
   "roomCategoryId": {{superiorCategoryId}},
   "amount": 6000.00,
-  "validFrom": "2026-01-01",
-  "validTo": "2026-12-31",
+  "validFrom": "2026-10-20",
+  "validTo": "2027-12-31",
   "status": "ACTIVE"
 }
 
@@ -842,8 +842,8 @@ Content-Type: application/json
   "rateId": {{barJuniorSuiteRateId}},
   "roomCategoryId": {{juniorSuiteCategoryId}},
   "amount": 9000.00,
-  "validFrom": "2026-01-01",
-  "validTo": "2026-12-31",
+  "validFrom": "2026-10-20",
+  "validTo": "2027-12-31",
   "status": "ACTIVE"
 }
 
@@ -865,8 +865,8 @@ Content-Type: application/json
   "rateId": {{barSuiteRateId}},
   "roomCategoryId": {{suiteCategoryId}},
   "amount": 10000.00,
-  "validFrom": "2026-01-01",
-  "validTo": "2026-12-31",
+  "validFrom": "2026-10-20",
+  "validTo": "2027-12-31",
   "status": "ACTIVE"
 }
 
@@ -888,8 +888,8 @@ Content-Type: application/json
   "rateId": {{barKozynCornerRateId}},
   "roomCategoryId": {{kozynCornerCategoryId}},
   "amount": 15000.00,
-  "validFrom": "2026-01-01",
-  "validTo": "2026-12-31",
+  "validFrom": "2026-10-20",
+  "validTo": "2027-12-31",
   "status": "ACTIVE"
 }
 
@@ -911,13 +911,13 @@ Content-Type: application/json
   "rateId": {{bar10StandardRateId}},
   "roomCategoryId": {{standardCategoryId}},
   "amount": 4500.00,
-  "validFrom": "2026-01-01",
-  "validTo": "2026-12-31",
+  "validFrom": "2026-10-20",
+  "validTo": "2027-12-31",
   "status": "ACTIVE"
 }
 
 > {%
-    client.test("BAR10 Standard price created", function () {
+    client.test("FLEX Standard price created", function () {
         client.assert(response.status === 201);
     });
 %}
@@ -934,13 +934,13 @@ Content-Type: application/json
   "rateId": {{bar10SuperiorRateId}},
   "roomCategoryId": {{superiorCategoryId}},
   "amount": 5400.00,
-  "validFrom": "2026-01-01",
-  "validTo": "2026-12-31",
+  "validFrom": "2026-10-20",
+  "validTo": "2027-12-31",
   "status": "ACTIVE"
 }
 
 > {%
-    client.test("BAR10 Superior price created", function () {
+    client.test("FLEX Superior price created", function () {
         client.assert(response.status === 201);
     });
 %}
@@ -957,13 +957,13 @@ Content-Type: application/json
   "rateId": {{bar10JuniorSuiteRateId}},
   "roomCategoryId": {{juniorSuiteCategoryId}},
   "amount": 8100.00,
-  "validFrom": "2026-01-01",
-  "validTo": "2026-12-31",
+  "validFrom": "2026-10-20",
+  "validTo": "2027-12-31",
   "status": "ACTIVE"
 }
 
 > {%
-    client.test("BAR10 Junior Suite price created", function () {
+    client.test("FLEX Junior Suite price created", function () {
         client.assert(response.status === 201);
     });
 %}
@@ -980,13 +980,13 @@ Content-Type: application/json
   "rateId": {{bar10SuiteRateId}},
   "roomCategoryId": {{suiteCategoryId}},
   "amount": 9000.00,
-  "validFrom": "2026-01-01",
-  "validTo": "2026-12-31",
+  "validFrom": "2026-10-20",
+  "validTo": "2027-12-31",
   "status": "ACTIVE"
 }
 
 > {%
-    client.test("BAR10 Suite price created", function () {
+    client.test("FLEX Suite price created", function () {
         client.assert(response.status === 201);
     });
 %}
@@ -1003,13 +1003,13 @@ Content-Type: application/json
   "rateId": {{bar10KozynCornerRateId}},
   "roomCategoryId": {{kozynCornerCategoryId}},
   "amount": 13500.00,
-  "validFrom": "2026-01-01",
-  "validTo": "2026-12-31",
+  "validFrom": "2026-10-20",
+  "validTo": "2027-12-31",
   "status": "ACTIVE"
 }
 
 > {%
-    client.test("BAR10 Kozyn Corner price created", function () {
+    client.test("FLEX Panorama Corner price created", function () {
         client.assert(response.status === 201);
     });
 %}
@@ -1023,16 +1023,16 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "firstName": "Vlad",
-  "lastName": "Kovalenko",
-  "middleName": "Testovych",
-  "phoneNumber": "+380501234568",
-  "email": "vlad.olga.{{hotelId}}@gmail.com",
+  "firstName": "Maksym",
+  "lastName": "Melnyk",
+  "middleName": "Oleksandrovych",
+  "phoneNumber": "+380671112234",
+  "email": "maksym.sirius.{{hotelId}}@gmail.com",
   "gender": "MALE",
   "address": "Kyiv, Ukraine",
   "guestDocument": {
-    "documentType": "ID_CARD",
-    "documentNumber": "ID{{hotelId}}001",
+    "documentType": "PASSPORT",
+    "documentNumber": "SR{{hotelId}}101",
     "issueDate": "2021-01-01",
     "expiryDate": "2031-01-01"
   }
@@ -1055,16 +1055,16 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "firstName": "John",
-  "lastName": "Smith",
-  "middleName": "Testovych",
-  "phoneNumber": "+380501234569",
-  "email": "john.olga.{{hotelId}}@gmail.com",
+  "firstName": "Sofia",
+  "lastName": "Marchenko",
+  "middleName": "Oleksandrovych",
+  "phoneNumber": "+380671112235",
+  "email": "sofia.sirius.{{hotelId}}@gmail.com",
   "gender": "MALE",
   "address": "London, United Kingdom",
   "guestDocument": {
     "documentType": "PASSPORT",
-    "documentNumber": "PS{{hotelId}}002",
+    "documentNumber": "SR{{hotelId}}102",
     "issueDate": "2020-02-01",
     "expiryDate": "2030-02-01"
   }
@@ -1087,16 +1087,16 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "firstName": "Anna",
-  "lastName": "Smith",
-  "middleName": "Testovych",
-  "phoneNumber": "+380501234570",
-  "email": "anna.olga.{{hotelId}}@gmail.com",
+  "firstName": "Danylo",
+  "lastName": "Marchenko",
+  "middleName": "Oleksandrovych",
+  "phoneNumber": "+380671112236",
+  "email": "danylo.sirius.{{hotelId}}@gmail.com",
   "gender": "FEMALE",
   "address": "Kyiv, Ukraine",
   "guestDocument": {
     "documentType": "PASSPORT",
-    "documentNumber": "PS{{hotelId}}003",
+    "documentNumber": "SR{{hotelId}}103",
     "issueDate": "2020-03-01",
     "expiryDate": "2030-03-01"
   }
@@ -1123,8 +1123,8 @@ Content-Type: application/json
   "rateId": {{barStandardRateId}},
   "primaryGuestId": {{profile1Id}},
   "guestIds": [{{profile1Id}}, {{profile2Id}}],
-  "checkIn": "2026-10-20T14:00:00",
-  "checkOut": "2026-10-22T12:00:00",
+  "checkIn": "2026-10-22T14:00:00",
+  "checkOut": "2026-10-25T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1155,8 +1155,8 @@ Content-Type: application/json
   "rateId": {{barSuperiorRateId}},
   "primaryGuestId": {{profile2Id}},
   "guestIds": [{{profile2Id}}, {{profile3Id}}],
-  "checkIn": "2026-10-20T14:00:00",
-  "checkOut": "2026-10-21T12:00:00",
+  "checkIn": "2026-10-22T14:00:00",
+  "checkOut": "2026-10-23T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1183,8 +1183,8 @@ Content-Type: application/json
   "rateId": {{barJuniorSuiteRateId}},
   "primaryGuestId": {{profile3Id}},
   "guestIds": [{{profile3Id}}],
-  "checkIn": "2026-10-21T14:00:00",
-  "checkOut": "2026-10-23T12:00:00",
+  "checkIn": "2026-10-24T14:00:00",
+  "checkOut": "2026-10-27T12:00:00",
   "adults": 1,
   "children": 0
 }
@@ -1211,8 +1211,8 @@ Content-Type: application/json
   "rateId": {{barSuiteRateId}},
   "primaryGuestId": {{profile1Id}},
   "guestIds": [{{profile1Id}}, {{profile3Id}}],
-  "checkIn": "2026-10-22T14:00:00",
-  "checkOut": "2026-10-25T12:00:00",
+  "checkIn": "2026-10-26T14:00:00",
+  "checkOut": "2026-10-30T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1239,8 +1239,8 @@ Content-Type: application/json
   "rateId": {{barKozynCornerRateId}},
   "primaryGuestId": {{profile2Id}},
   "guestIds": [{{profile2Id}}],
-  "checkIn": "2026-10-20T14:00:00",
-  "checkOut": "2026-10-24T12:00:00",
+  "checkIn": "2026-10-22T14:00:00",
+  "checkOut": "2026-10-28T12:00:00",
   "adults": 1,
   "children": 0
 }
@@ -1267,8 +1267,8 @@ Content-Type: application/json
   "rateId": {{barStandardRateId}},
   "primaryGuestId": {{profile3Id}},
   "guestIds": [{{profile3Id}}, {{profile2Id}}],
-  "checkIn": "2026-10-24T14:00:00",
-  "checkOut": "2026-10-27T12:00:00",
+  "checkIn": "2026-10-29T14:00:00",
+  "checkOut": "2026-11-01T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1295,8 +1295,8 @@ Content-Type: application/json
   "rateId": {{barStandardRateId}},
   "primaryGuestId": {{profile1Id}},
   "guestIds": [{{profile1Id}}],
-  "checkIn": "2026-10-25T14:00:00",
-  "checkOut": "2026-10-28T12:00:00",
+  "checkIn": "2026-10-31T14:00:00",
+  "checkOut": "2026-11-03T12:00:00",
   "adults": 1,
   "children": 0
 }
@@ -1323,8 +1323,8 @@ Content-Type: application/json
   "rateId": {{barSuperiorRateId}},
   "primaryGuestId": {{profile2Id}},
   "guestIds": [{{profile2Id}}, {{profile3Id}}],
-  "checkIn": "2026-10-27T14:00:00",
-  "checkOut": "2026-10-30T12:00:00",
+  "checkIn": "2026-11-02T14:00:00",
+  "checkOut": "2026-11-05T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1351,8 +1351,8 @@ Content-Type: application/json
   "rateId": {{barJuniorSuiteRateId}},
   "primaryGuestId": {{profile3Id}},
   "guestIds": [{{profile3Id}}, {{profile1Id}}],
-  "checkIn": "2026-10-29T14:00:00",
-  "checkOut": "2026-10-31T12:00:00",
+  "checkIn": "2026-11-06T14:00:00",
+  "checkOut": "2026-11-09T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1450,7 +1450,7 @@ Authorization: Bearer {{token}}
 
 ### GET RESERVATIONS BY CHECK-IN DATE
 
-GET {{reservationUrl}}/check-in?date=2026-10-20
+GET {{reservationUrl}}/check-in?date=2026-10-22
 Authorization: Bearer {{token}}
 
 > {%
@@ -1467,7 +1467,7 @@ Authorization: Bearer {{token}}
 
 ### GET RESERVATIONS BY CHECK-OUT DATE
 
-GET {{reservationUrl}}/check-out?date=2026-10-22
+GET {{reservationUrl}}/check-out?date=2026-10-25
 Authorization: Bearer {{token}}
 
 > {%
@@ -1484,7 +1484,7 @@ Authorization: Bearer {{token}}
 
 ### GET RESERVATIONS BY DATE
 
-GET {{reservationUrl}}/date?date=2026-10-22
+GET {{reservationUrl}}/date?date=2026-10-26
 Authorization: Bearer {{token}}
 
 > {%
@@ -1501,7 +1501,7 @@ Authorization: Bearer {{token}}
 
 ### GET RESERVATIONS BY DATE RANGE
 
-GET {{reservationUrl}}/date-range?startDate=2026-10-15&endDate=2026-11-15
+GET {{reservationUrl}}/date-range?startDate=2026-10-20&endDate=2026-11-20
 Authorization: Bearer {{token}}
 
 > {%
@@ -1518,7 +1518,7 @@ Authorization: Bearer {{token}}
 
 ### INVALID RESERVATION DATE RANGE
 
-GET {{reservationUrl}}/date-range?startDate=2026-11-15&endDate=2026-10-15
+GET {{reservationUrl}}/date-range?startDate=2026-11-20&endDate=2026-10-20
 Authorization: Bearer {{token}}
 
 > {%
@@ -1553,7 +1553,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "text": "Гість попросив підготувати номер до заїзду."
+  "text": "Гість попросив підготувати номер із видом на річку до заїзду."
 }
 
 > {%
@@ -1562,7 +1562,7 @@ Content-Type: application/json
     });
 
     client.test("Comment text is correct", function () {
-        client.assert(response.body.text === "Гість попросив підготувати номер до заїзду.");
+        client.assert(response.body.text === "Гість попросив підготувати номер із видом на річку до заїзду.");
     });
 
     client.test("Comment has id", function () {
@@ -1589,7 +1589,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "text": "Гість підтвердив пізній час прибуття."
+  "text": "Гість підтвердив прибуття після 20:00."
 }
 
 > {%
@@ -1598,7 +1598,7 @@ Content-Type: application/json
     });
 
     client.test("Updated text is correct", function () {
-        client.assert(response.body.text === "Гість підтвердив пізній час прибуття.");
+        client.assert(response.body.text === "Гість підтвердив прибуття після 20:00.");
     });
 
     client.test("Comment id is unchanged", function () {
@@ -1720,7 +1720,7 @@ Content-Type: application/json
 {
   "folioId": {{folio1Id}},
   "type": "BREAKFAST",
-  "description": "Breakfast",
+  "description": "Riverside breakfast package",
   "unitPrice": 500.00,
   "quantity": 2
 }
@@ -1779,7 +1779,7 @@ Content-Type: application/json
   "folioId": {{folio1Id}},
   "method": "CARD",
   "amount": 1000.00,
-  "description": "Payment for breakfast"
+  "description": "Partial payment for accommodation services"
 }
 
 > {%
@@ -1845,7 +1845,7 @@ Authorization: Bearer {{token}}
 
 ### HOTEL GRID - OCTOBER TO NOVEMBER 2026
 
-GET {{hotelGridUrl}}?startDate=2026-10-15&endDate=2026-11-15
+GET {{hotelGridUrl}}?startDate=2026-10-20&endDate=2026-11-25
 Authorization: Bearer {{token}}
 
 > {%

@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.store.entity.reservation;
 
 import com.sirius.sirius.store.entity.biling.FolioEntity;
@@ -8,7 +9,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,6 +31,18 @@ public class ReservationEntity {
 
     @Column(nullable = false, unique = true, length = 30)
     String confirmationNumber;
+
+    @Column(name = "external_booking_number", length = 100)
+    String externalBookingNumber;
+
+    @Column(name = "booking_source", length = 100)
+    String bookingSource;
+
+    @Column(name = "company", length = 150)
+    String company;
+
+    @Column(name = "operator_company", length = 150)
+    String operatorCompany;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "room_id", nullable = false)

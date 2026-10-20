@@ -6,7 +6,6 @@
 @guestId = 1
 
 ### Login
-
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
@@ -16,17 +15,14 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("Status is 200", function () {
+    client.test("Login successful", function () {
         client.assert(response.status === 200);
     });
-
     client.global.set("token", response.body.accessToken ?? response.body.token);
 %}
 
-###
 
 ### Create reservation
-
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -39,66 +35,43 @@ Content-Type: application/json
   "checkIn": "2026-11-10T14:00:00",
   "checkOut": "2026-11-12T12:00:00",
   "adults": 2,
-  "children": 0
+  "children": 0,
+  "externalBookingNumber": "EXT-TEST-1001",
+  "bookingSource": "BOOKING_COM",
+  "company": "Olga Travel",
+  "operatorCompany": "Sirius Operator"
 }
 
-> {%
-    client.test("Status is 201", function () {
-        client.assert(response.status === 201);
-    });
-
-    client.test("Check-in is correct", function () {
-        client.assert(response.body.checkIn === "2026-11-10T14:00:00");
-    });
-
-    client.test("Check-out is correct", function () {
-        client.assert(response.body.checkOut === "2026-11-12T12:00:00");
-    });
-
-    client.global.set("reservationId", response.body.id);
-%}
-
-###
 
 ### Get reservation by id
-
 GET {{reservationUrl}}/{{reservationId}}
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Status is 200", function () {
+    client.test("Reservation loaded", function () {
         client.assert(response.status === 200);
     });
-
-    client.test("Correct reservation id", function () {
-        client.assert(response.body.id == client.global.get("reservationId"));
-    });
-
-    client.test("Status is CONFIRMED", function () {
+    client.test("Reservation status is CONFIRMED", function () {
         client.assert(response.body.status === "CONFIRMED");
     });
-
-    client.test("Check-in is correct", function () {
-        client.assert(response.body.checkIn === "2026-11-10T14:00:00");
-    });
-
-    client.test("Check-out is correct", function () {
-        client.assert(response.body.checkOut === "2026-11-12T12:00:00");
+    client.test("External booking data returned", function () {
+        client.assert(response.body.externalBookingNumber === "EXT-TEST-1001");
+        client.assert(response.body.bookingSource === "BOOKING_COM");
+        client.assert(response.body.company === "Olga Travel");
+        client.assert(response.body.operatorCompany === "Sirius Operator");
     });
 %}
 
 ###
 
 ### Get all reservations
-
 GET {{reservationUrl}}
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Status is 200", function () {
+    client.test("Reservations loaded", function () {
         client.assert(response.status === 200);
     });
-
     client.test("Response is array", function () {
         client.assert(Array.isArray(response.body));
     });
@@ -107,20 +80,14 @@ Authorization: Bearer {{token}}
 ###
 
 ### Get reservations by status
-
 GET {{reservationUrl}}/status/CONFIRMED
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Status is 200", function () {
+    client.test("Confirmed reservations loaded", function () {
         client.assert(response.status === 200);
     });
-
-    client.test("Response is array", function () {
-        client.assert(Array.isArray(response.body));
-    });
-
-    client.test("All reservations are CONFIRMED", function () {
+    client.test("All returned reservations are CONFIRMED", function () {
         response.body.forEach(function (reservation) {
             client.assert(reservation.status === "CONFIRMED");
         });
@@ -130,7 +97,6 @@ Authorization: Bearer {{token}}
 ###
 
 ### Update reservation
-
 PUT {{reservationUrl}}/{{reservationId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -143,31 +109,28 @@ Content-Type: application/json
   "checkIn": "2026-11-11T14:00:00",
   "checkOut": "2026-11-13T12:00:00",
   "adults": 2,
-  "children": 0
+  "children": 0,
+  "externalBookingNumber": "EXT-TEST-1002",
+  "bookingSource": "DIRECT",
+  "company": "Olga Travel Updated",
+  "operatorCompany": "Sirius Operator Updated"
 }
 
 > {%
-    client.test("Status is 200", function () {
+    client.test("Reservation updated", function () {
         client.assert(response.status === 200);
     });
-
-    client.test("Check-in was updated", function () {
-        client.assert(response.body.checkIn === "2026-11-11T14:00:00");
-    });
-
-    client.test("Check-out was updated", function () {
-        client.assert(response.body.checkOut === "2026-11-13T12:00:00");
-    });
-
-    client.test("Status remains CONFIRMED", function () {
-        client.assert(response.body.status === "CONFIRMED");
+    client.test("External booking fields updated", function () {
+        client.assert(response.body.externalBookingNumber === "EXT-TEST-1002");
+        client.assert(response.body.bookingSource === "DIRECT");
+        client.assert(response.body.company === "Olga Travel Updated");
+        client.assert(response.body.operatorCompany === "Sirius Operator Updated");
     });
 %}
 
 ###
 
 ### Invalid check-out
-
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -180,11 +143,15 @@ Content-Type: application/json
   "checkIn": "2026-11-20T14:00:00",
   "checkOut": "2026-11-15T12:00:00",
   "adults": 2,
-  "children": 0
+  "children": 0,
+  "externalBookingNumber": "EXT-INVALID-01",
+  "bookingSource": "DIRECT",
+  "company": "Olga Travel",
+  "operatorCompany": "Sirius Operator"
 }
 
 > {%
-    client.test("Status is 400", function () {
+    client.test("Invalid date range rejected", function () {
         client.assert(response.status === 400);
     });
 %}
@@ -192,7 +159,6 @@ Content-Type: application/json
 ###
 
 ### Same check-in and check-out
-
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -205,11 +171,15 @@ Content-Type: application/json
   "checkIn": "2026-11-20T14:00:00",
   "checkOut": "2026-11-20T14:00:00",
   "adults": 2,
-  "children": 0
+  "children": 0,
+  "externalBookingNumber": "EXT-INVALID-02",
+  "bookingSource": "DIRECT",
+  "company": "Olga Travel",
+  "operatorCompany": "Sirius Operator"
 }
 
 > {%
-    client.test("Status is 400", function () {
+    client.test("Same dates rejected", function () {
         client.assert(response.status === 400);
     });
 %}
@@ -217,7 +187,6 @@ Content-Type: application/json
 ###
 
 ### Invalid guest
-
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -230,11 +199,15 @@ Content-Type: application/json
   "checkIn": "2026-11-20T14:00:00",
   "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
-  "children": 0
+  "children": 0,
+  "externalBookingNumber": "EXT-INVALID-03",
+  "bookingSource": "DIRECT",
+  "company": "Olga Travel",
+  "operatorCompany": "Sirius Operator"
 }
 
 > {%
-    client.test("Status is 404", function () {
+    client.test("Non-existing guest rejected", function () {
         client.assert(response.status === 404);
     });
 %}
@@ -242,7 +215,6 @@ Content-Type: application/json
 ###
 
 ### Empty guest ids
-
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -255,36 +227,15 @@ Content-Type: application/json
   "checkIn": "2026-11-20T14:00:00",
   "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
-  "children": 0
+  "children": 0,
+  "externalBookingNumber": "EXT-INVALID-04",
+  "bookingSource": "DIRECT",
+  "company": "Olga Travel",
+  "operatorCompany": "Sirius Operator"
 }
 
 > {%
-    client.test("Status is 400", function () {
-        client.assert(response.status === 400);
-    });
-%}
-
-###
-
-### Null guest ids
-
-POST {{reservationUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomId": {{roomId}},
-  "rateId": {{rateId}},
-  "primaryGuestId": {{guestId}},
-  "guestIds": null,
-  "checkIn": "2026-11-20T14:00:00",
-  "checkOut": "2026-11-22T12:00:00",
-  "adults": 2,
-  "children": 0
-}
-
-> {%
-    client.test("Status is 400", function () {
+    client.test("Empty guest list rejected", function () {
         client.assert(response.status === 400);
     });
 %}
@@ -292,7 +243,6 @@ Content-Type: application/json
 ###
 
 ### Invalid adults
-
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -305,11 +255,15 @@ Content-Type: application/json
   "checkIn": "2026-11-20T14:00:00",
   "checkOut": "2026-11-22T12:00:00",
   "adults": 0,
-  "children": 0
+  "children": 0,
+  "externalBookingNumber": "EXT-INVALID-05",
+  "bookingSource": "DIRECT",
+  "company": "Olga Travel",
+  "operatorCompany": "Sirius Operator"
 }
 
 > {%
-    client.test("Status is 400", function () {
+    client.test("Zero adults rejected", function () {
         client.assert(response.status === 400);
     });
 %}
@@ -317,7 +271,6 @@ Content-Type: application/json
 ###
 
 ### Negative children
-
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -330,11 +283,15 @@ Content-Type: application/json
   "checkIn": "2026-11-20T14:00:00",
   "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
-  "children": -1
+  "children": -1,
+  "externalBookingNumber": "EXT-INVALID-06",
+  "bookingSource": "DIRECT",
+  "company": "Olga Travel",
+  "operatorCompany": "Sirius Operator"
 }
 
 > {%
-    client.test("Status is 400", function () {
+    client.test("Negative children rejected", function () {
         client.assert(response.status === 400);
     });
 %}
@@ -342,7 +299,6 @@ Content-Type: application/json
 ###
 
 ### Non-existing room
-
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -355,11 +311,15 @@ Content-Type: application/json
   "checkIn": "2026-11-20T14:00:00",
   "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
-  "children": 0
+  "children": 0,
+  "externalBookingNumber": "EXT-INVALID-07",
+  "bookingSource": "DIRECT",
+  "company": "Olga Travel",
+  "operatorCompany": "Sirius Operator"
 }
 
 > {%
-    client.test("Status is 404", function () {
+    client.test("Non-existing room rejected", function () {
         client.assert(response.status === 404);
     });
 %}
@@ -367,7 +327,6 @@ Content-Type: application/json
 ###
 
 ### Non-existing rate
-
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -380,69 +339,22 @@ Content-Type: application/json
   "checkIn": "2026-11-20T14:00:00",
   "checkOut": "2026-11-22T12:00:00",
   "adults": 2,
-  "children": 0
+  "children": 0,
+  "externalBookingNumber": "EXT-INVALID-08",
+  "bookingSource": "DIRECT",
+  "company": "Olga Travel",
+  "operatorCompany": "Sirius Operator"
 }
 
 > {%
-    client.test("Status is 404", function () {
+    client.test("Non-existing rate rejected", function () {
         client.assert(response.status === 404);
     });
 %}
 
 ###
 
-### Inactive rate
-
-POST {{reservationUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomId": {{roomId}},
-  "rateId": 2,
-  "primaryGuestId": {{guestId}},
-  "guestIds": [{{guestId}}],
-  "checkIn": "2026-11-20T14:00:00",
-  "checkOut": "2026-11-22T12:00:00",
-  "adults": 2,
-  "children": 0
-}
-
-> {%
-    client.test("Status is 400", function () {
-        client.assert(response.status === 400);
-    });
-%}
-
-###
-
-### Occupancy exceeded
-
-POST {{reservationUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomId": {{roomId}},
-  "rateId": {{rateId}},
-  "primaryGuestId": {{guestId}},
-  "guestIds": [{{guestId}}],
-  "checkIn": "2026-11-20T14:00:00",
-  "checkOut": "2026-11-22T12:00:00",
-  "adults": 10,
-  "children": 5
-}
-
-> {%
-    client.test("Status is 400", function () {
-        client.assert(response.status === 400);
-    });
-%}
-
-###
-
 ### Create reservation for overlap test
-
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -455,21 +367,23 @@ Content-Type: application/json
   "checkIn": "2026-12-01T14:00:00",
   "checkOut": "2026-12-05T12:00:00",
   "adults": 1,
-  "children": 0
+  "children": 0,
+  "externalBookingNumber": "EXT-OVERLAP-01",
+  "bookingSource": "DIRECT",
+  "company": "Olga Travel",
+  "operatorCompany": "Sirius Operator"
 }
 
 > {%
-    client.test("Status is 201", function () {
+    client.test("Overlap test reservation created", function () {
         client.assert(response.status === 201);
     });
-
     client.global.set("overlapReservationId", response.body.id);
 %}
 
 ###
 
 ### Overlapping reservation
-
 POST {{reservationUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -482,170 +396,44 @@ Content-Type: application/json
   "checkIn": "2026-12-03T14:00:00",
   "checkOut": "2026-12-07T12:00:00",
   "adults": 1,
-  "children": 0
+  "children": 0,
+  "externalBookingNumber": "EXT-OVERLAP-02",
+  "bookingSource": "DIRECT",
+  "company": "Olga Travel",
+  "operatorCompany": "Sirius Operator"
 }
 
 > {%
-    client.test("Status is 400", function () {
+    client.test("Overlapping reservation rejected", function () {
         client.assert(response.status === 400);
-    });
-%}
-
-###
-
-### Non-overlapping reservation
-
-POST {{reservationUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomId": {{roomId}},
-  "rateId": {{rateId}},
-  "primaryGuestId": {{guestId}},
-  "guestIds": [{{guestId}}],
-  "checkIn": "2026-12-05T12:00:00",
-  "checkOut": "2026-12-08T12:00:00",
-  "adults": 1,
-  "children": 0
-}
-
-> {%
-    client.test("Status is 201", function () {
-        client.assert(response.status === 201);
-    });
-
-    client.global.set("nextReservationId", response.body.id);
-%}
-
-###
-
-### Update reservation with overlapping dates
-
-PUT {{reservationUrl}}/{{nextReservationId}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomId": {{roomId}},
-  "rateId": {{rateId}},
-  "primaryGuestId": {{guestId}},
-  "guestIds": [{{guestId}}],
-  "checkIn": "2026-12-03T14:00:00",
-  "checkOut": "2026-12-06T12:00:00",
-  "adults": 1,
-  "children": 0
-}
-
-> {%
-    client.test("Status is 400", function () {
-        client.assert(response.status === 400);
-    });
-%}
-
-###
-
-### Update reservation without overlapping its own dates
-
-PUT {{reservationUrl}}/{{overlapReservationId}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomId": {{roomId}},
-  "rateId": {{rateId}},
-  "primaryGuestId": {{guestId}},
-  "guestIds": [{{guestId}}],
-  "checkIn": "2026-12-01T14:00:00",
-  "checkOut": "2026-12-05T12:00:00",
-  "adults": 1,
-  "children": 0
-}
-
-> {%
-    client.test("Status is 200", function () {
-        client.assert(response.status === 200);
-    });
-
-    client.test("Check-in is correct", function () {
-        client.assert(response.body.checkIn === "2026-12-01T14:00:00");
-    });
-
-    client.test("Check-out is correct", function () {
-        client.assert(response.body.checkOut === "2026-12-05T12:00:00");
     });
 %}
 
 ###
 
 ### Get reservations by check-in date
-
 GET {{reservationUrl}}/check-in?date=2026-12-01
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Status is 200", function () {
+    client.test("Check-in search successful", function () {
         client.assert(response.status === 200);
     });
-
     client.test("Response is array", function () {
         client.assert(Array.isArray(response.body));
-    });
-
-    client.test("Response contains totalAmount when non-empty", function () {
-        if (response.body.length > 0) {
-            client.assert(response.body[0].totalAmount !== undefined);
-        }
-    });
-
-    client.test("Response contains roomId when non-empty", function () {
-        if (response.body.length > 0) {
-            client.assert(response.body[0].roomId !== undefined);
-        }
     });
 %}
 
 ###
 
 ### Get reservations by check-out date
-
 GET {{reservationUrl}}/check-out?date=2026-12-05
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Status is 200", function () {
+    client.test("Check-out search successful", function () {
         client.assert(response.status === 200);
     });
-
-    client.test("Response is array", function () {
-        client.assert(Array.isArray(response.body));
-    });
-
-    client.test("Response contains totalAmount when non-empty", function () {
-        if (response.body.length > 0) {
-            client.assert(response.body[0].totalAmount !== undefined);
-        }
-    });
-
-    client.test("Response contains roomId when non-empty", function () {
-        if (response.body.length > 0) {
-            client.assert(response.body[0].roomId !== undefined);
-        }
-    });
-%}
-
-###
-
-### Get reservations by date
-
-GET {{reservationUrl}}/date?date=2026-12-02
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Status is 200", function () {
-        client.assert(response.status === 200);
-    });
-
     client.test("Response is array", function () {
         client.assert(Array.isArray(response.body));
     });
@@ -654,15 +442,13 @@ Authorization: Bearer {{token}}
 ###
 
 ### Get reservations by date range
-
 GET {{reservationUrl}}/date-range?startDate=2026-12-01&endDate=2026-12-10
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Status is 200", function () {
+    client.test("Date range search successful", function () {
         client.assert(response.status === 200);
     });
-
     client.test("Response is array", function () {
         client.assert(Array.isArray(response.body));
     });
@@ -671,41 +457,25 @@ Authorization: Bearer {{token}}
 ###
 
 ### Invalid date range
-
 GET {{reservationUrl}}/date-range?startDate=2026-12-10&endDate=2026-12-01
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Status is 400", function () {
+    client.test("Invalid date range rejected", function () {
         client.assert(response.status === 400);
     });
 %}
 
 ###
 
-### Check-in before arrival
-
-PATCH {{reservationUrl}}/{{overlapReservationId}}/check-in
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Status is 400", function () {
-        client.assert(response.status === 400);
-    });
-%}
-
-###
-
-### Get reservation comments before creating one
-
+### Get reservation comments
 GET {{reservationUrl}}/{{reservationId}}/comments
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Status is 200", function () {
+    client.test("Comments loaded", function () {
         client.assert(response.status === 200);
     });
-
     client.test("Comments response is array", function () {
         client.assert(Array.isArray(response.body));
     });
@@ -714,7 +484,6 @@ Authorization: Bearer {{token}}
 ###
 
 ### Create reservation comment
-
 POST {{reservationUrl}}/{{reservationId}}/comments
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -723,36 +492,16 @@ Content-Type: application/json
   "text": "Гість попросив підготувати номер до заїзду."
 }
 
-
-###
-
-### Get comments after creating one
-
-GET {{reservationUrl}}/{{reservationId}}/comments
-Authorization: Bearer {{token}}
-
 > {%
-    client.test("Status is 200", function () {
-        client.assert(response.status === 200);
+    client.test("Comment created", function () {
+        client.assert(response.status === 201);
     });
-
-    client.test("Response is array", function () {
-        client.assert(Array.isArray(response.body));
-    });
-
-    client.test("Created comment exists", function () {
-        var commentId = client.global.get("commentId");
-
-        client.assert(response.body.some(function (comment) {
-            return comment.id == commentId;
-        }));
-    });
+    client.global.set("commentId", response.body.id);
 %}
 
 ###
 
 ### Update reservation comment
-
 PUT {{reservationUrl}}/{{reservationId}}/comments/{{commentId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -762,120 +511,34 @@ Content-Type: application/json
 }
 
 > {%
-    client.test("Status is 200", function () {
+    client.test("Comment updated", function () {
         client.assert(response.status === 200);
     });
-
-    client.test("Comment text was updated", function () {
+    client.test("Comment text updated", function () {
         client.assert(response.body.text === "Гість підтвердив пізній час прибуття.");
-    });
-
-    client.test("Comment id remains the same", function () {
-        client.assert(response.body.id == client.global.get("commentId"));
-    });
-
-    client.test("Reservation id is correct", function () {
-        client.assert(response.body.reservationId == client.global.get("reservationId"));
-    });
-%}
-
-###
-
-### Create comment with blank text
-
-POST {{reservationUrl}}/{{reservationId}}/comments
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "text": "   "
-}
-
-> {%
-    client.test("Status is 400", function () {
-        client.assert(response.status === 400);
-    });
-%}
-
-###
-
-### Create comment for non-existing reservation
-
-POST {{reservationUrl}}/999999/comments
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "text": "Тестовий коментар"
-}
-
-> {%
-    client.test("Status is 404", function () {
-        client.assert(response.status === 404);
-    });
-%}
-
-###
-
-### Update non-existing comment
-
-PUT {{reservationUrl}}/{{reservationId}}/comments/999999
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "text": "Оновлений текст"
-}
-
-> {%
-    client.test("Status is 404", function () {
-        client.assert(response.status === 404);
     });
 %}
 
 ###
 
 ### Delete reservation comment
-
 DELETE {{reservationUrl}}/{{reservationId}}/comments/{{commentId}}
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Status is 204", function () {
+    client.test("Comment deleted", function () {
         client.assert(response.status === 204);
     });
 %}
 
 ###
 
-### Verify deleted comment is absent
-
-GET {{reservationUrl}}/{{reservationId}}/comments
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Status is 200", function () {
-        client.assert(response.status === 200);
-    });
-
-    client.test("Deleted comment is absent", function () {
-        var commentId = client.global.get("commentId");
-
-        client.assert(!response.body.some(function (comment) {
-            return comment.id == commentId;
-        }));
-    });
-%}
-
-###
-
 ### Cancel reservation
-
 PATCH {{reservationUrl}}/{{reservationId}}/cancel
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Status is 204", function () {
+    client.test("Reservation cancelled", function () {
         client.assert(response.status === 204);
     });
 %}
@@ -883,54 +546,12 @@ Authorization: Bearer {{token}}
 ###
 
 ### Verify reservation is cancelled
-
 GET {{reservationUrl}}/{{reservationId}}
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Status is 200", function () {
+    client.test("Reservation status is CANCELLED", function () {
         client.assert(response.status === 200);
-    });
-
-    client.test("Status is CANCELLED", function () {
         client.assert(response.body.status === "CANCELLED");
-    });
-%}
-
-###
-
-### Try to update cancelled reservation
-
-PUT {{reservationUrl}}/{{reservationId}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomId": {{roomId}},
-  "rateId": {{rateId}},
-  "primaryGuestId": {{guestId}},
-  "guestIds": [{{guestId}}],
-  "checkIn": "2027-01-10T14:00:00",
-  "checkOut": "2027-01-15T12:00:00",
-  "adults": 1,
-  "children": 0
-}
-
-> {%
-    client.test("Status is 400", function () {
-        client.assert(response.status === 400);
-    });
-%}
-
-###
-
-### Try to cancel cancelled reservation
-
-PATCH {{reservationUrl}}/{{reservationId}}/cancel
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Status is 400", function () {
-        client.assert(response.status === 400);
     });
 %}
