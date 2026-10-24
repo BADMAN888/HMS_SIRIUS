@@ -2,6 +2,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.RoomRequest;
 import com.sirius.sirius.dto.RoomResponse;
+import com.sirius.sirius.dto.RoomStatusRequest;
 import com.sirius.sirius.service.hotel.RoomService;
 import com.sirius.sirius.store.enums.RoomStatus;
 import jakarta.validation.Valid;
@@ -89,6 +90,15 @@ public class RoomController {
 
         return ResponseEntity.ok(
                 "Room with id: " + id + " successfully deleted"
+        );
+    }
+    @PatchMapping("/{id}/status")
+    public ResponseEntity<RoomResponse> updateRoomStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody RoomStatusRequest request
+    ) {
+        return ResponseEntity.ok(
+                roomService.updateStatus(id, request)
         );
     }
 }

@@ -2,6 +2,7 @@ package com.sirius.sirius.service.hotel;
 
 import com.sirius.sirius.dto.RoomRequest;
 import com.sirius.sirius.dto.RoomResponse;
+import com.sirius.sirius.dto.RoomStatusRequest;
 import com.sirius.sirius.exeption.BadRequestException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.RoomMapper;
@@ -199,5 +200,18 @@ public class RoomService {
                 );
 
         roomRepository.delete(room);
+    }
+    @Transactional
+    public RoomResponse updateStatus(Long id, RoomStatusRequest request) {
+        RoomEntity room = roomRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "Room with id: " + id + " not found"
+                ));
+
+        room.setStatus(request.status());
+
+        RoomEntity updatedRoom = roomRepository.save(room);
+
+        return roomMapper.toResponse(updatedRoom);
     }
 }
