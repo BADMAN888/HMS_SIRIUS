@@ -1,5 +1,7 @@
+
 package com.sirius.sirius.service.auth;
 
+import com.sirius.sirius.exeption.UnauthorizedException;
 import com.sirius.sirius.store.entity.RefreshTokenEntity;
 import com.sirius.sirius.store.entity.UserEntity;
 import com.sirius.sirius.store.repository.RefreshTokenRepository;
@@ -35,14 +37,17 @@ public class RefreshTokenService {
 
     @Transactional
     public RefreshTokenEntity rotate(String token) {
-        RefreshTokenEntity current = refreshTokenRepository.findByToken(token)
-                .orElseThrow(() ->
-                        new IllegalArgumentException("Invalid refresh token")
-                );
+        RefreshTokenEntity current =
+                refreshTokenRepository.findByToken(token)
+                        .orElseThrow(() ->
+                                new UnauthorizedException(
+                                        "Invalid refresh token"
+                                )
+                        );
 
-        if (current.isRevoked() ||
-                !current.getExpiresAt().isAfter(Instant.now())) {
-            throw new IllegalArgumentException(
+        if (current.isRevoked()
+                || !current.getExpiresAt().isAfter(Instant.now())) {
+            throw new UnauthorizedException(
                     "Refresh token is expired or revoked"
             );
         }
