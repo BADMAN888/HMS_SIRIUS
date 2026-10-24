@@ -12,6 +12,8 @@ public record ReservationResponse(
         String confirmationNumber,
         RoomResponse room,
         RateResponse rate,
+        Long paymentCategoryId,
+        String paymentCategoryName,
         ProfileResponse primaryGuest,
         Set<Long> guestIds,
         LocalDateTime checkIn,

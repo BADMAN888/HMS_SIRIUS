@@ -3,6 +3,7 @@ package com.sirius.sirius.store.entity.reservation;
 
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.RateEntity;
+import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.enums.ReservationStatus;
 import jakarta.persistence.*;
@@ -47,6 +48,10 @@ public class ReservationEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "room_id", nullable = false)
     RoomEntity room;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_category_id", nullable = false)
+    private RoomCategoryEntity paymentCategory;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "rate_id", nullable = false)

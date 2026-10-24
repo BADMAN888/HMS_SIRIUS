@@ -1121,10 +1121,11 @@ Content-Type: application/json
 {
   "roomId": {{room101Id}},
   "rateId": {{barStandardRateId}},
+  "paymentCategoryId": 1,
   "primaryGuestId": {{profile1Id}},
   "guestIds": [{{profile1Id}}, {{profile2Id}}],
-  "checkIn": "2026-10-22T14:00:00",
-  "checkOut": "2026-10-25T12:00:00",
+  "checkIn": "2026-10-30T14:00:00",
+  "checkOut": "2026-10-31T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1153,10 +1154,11 @@ Content-Type: application/json
 {
   "roomId": {{room201Id}},
   "rateId": {{barSuperiorRateId}},
+  "paymentCategoryId": 2,
   "primaryGuestId": {{profile2Id}},
   "guestIds": [{{profile2Id}}, {{profile3Id}}],
-  "checkIn": "2026-10-22T14:00:00",
-  "checkOut": "2026-10-23T12:00:00",
+ "checkIn": "2026-10-28T14:00:00",
+  "checkOut": "2026-10-30T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1181,10 +1183,11 @@ Content-Type: application/json
 {
   "roomId": {{room301Id}},
   "rateId": {{barJuniorSuiteRateId}},
+  "paymentCategoryId": 3,
   "primaryGuestId": {{profile3Id}},
   "guestIds": [{{profile3Id}}],
-  "checkIn": "2026-10-24T14:00:00",
-  "checkOut": "2026-10-27T12:00:00",
+  "checkIn": "2026-10-28T14:00:00",
+  "checkOut": "2026-10-30T12:00:00",
   "adults": 1,
   "children": 0
 }
@@ -1209,9 +1212,10 @@ Content-Type: application/json
 {
   "roomId": {{room401Id}},
   "rateId": {{barSuiteRateId}},
+  "paymentCategoryId": 4,
   "primaryGuestId": {{profile1Id}},
   "guestIds": [{{profile1Id}}, {{profile3Id}}],
-  "checkIn": "2026-10-26T14:00:00",
+  "checkIn": "2026-10-28T14:00:00",
   "checkOut": "2026-10-30T12:00:00",
   "adults": 2,
   "children": 0
@@ -1237,10 +1241,11 @@ Content-Type: application/json
 {
   "roomId": {{room404Id}},
   "rateId": {{barKozynCornerRateId}},
+  "paymentCategoryId": 5,
   "primaryGuestId": {{profile2Id}},
   "guestIds": [{{profile2Id}}],
-  "checkIn": "2026-10-22T14:00:00",
-  "checkOut": "2026-10-28T12:00:00",
+ "checkIn": "2026-10-28T14:00:00",
+  "checkOut": "2026-10-30T12:00:00",
   "adults": 1,
   "children": 0
 }
@@ -1265,10 +1270,11 @@ Content-Type: application/json
 {
   "roomId": {{room102Id}},
   "rateId": {{barStandardRateId}},
+  "paymentCategoryId": 1,
   "primaryGuestId": {{profile3Id}},
   "guestIds": [{{profile3Id}}, {{profile2Id}}],
-  "checkIn": "2026-10-29T14:00:00",
-  "checkOut": "2026-11-01T12:00:00",
+  "checkIn": "2026-10-28T14:00:00",
+  "checkOut": "2026-10-30T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1293,10 +1299,11 @@ Content-Type: application/json
 {
   "roomId": {{room103Id}},
   "rateId": {{barStandardRateId}},
+  "paymentCategoryId": 1,
   "primaryGuestId": {{profile1Id}},
   "guestIds": [{{profile1Id}}],
-  "checkIn": "2026-10-31T14:00:00",
-  "checkOut": "2026-11-03T12:00:00",
+  "checkIn": "2026-10-28T14:00:00",
+  "checkOut": "2026-10-30T12:00:00",
   "adults": 1,
   "children": 0
 }
@@ -1321,10 +1328,11 @@ Content-Type: application/json
 {
   "roomId": {{room202Id}},
   "rateId": {{barSuperiorRateId}},
+  "paymentCategoryId": 2,
   "primaryGuestId": {{profile2Id}},
   "guestIds": [{{profile2Id}}, {{profile3Id}}],
-  "checkIn": "2026-11-02T14:00:00",
-  "checkOut": "2026-11-05T12:00:00",
+ "checkIn": "2026-10-28T14:00:00",
+  "checkOut": "2026-10-30T12:00:00",
   "adults": 2,
   "children": 0
 }
@@ -1349,10 +1357,11 @@ Content-Type: application/json
 {
   "roomId": {{room302Id}},
   "rateId": {{barJuniorSuiteRateId}},
+  "paymentCategoryId": 3,
   "primaryGuestId": {{profile3Id}},
   "guestIds": [{{profile3Id}}, {{profile1Id}}],
-  "checkIn": "2026-11-06T14:00:00",
-  "checkOut": "2026-11-09T12:00:00",
+  "checkIn": "2026-10-28T14:00:00",
+  "checkOut": "2026-10-30T12:00:00",
   "adults": 2,
   "children": 0
 }

@@ -67,6 +67,7 @@ public class ReservationService {
 
         reservation.setRoom(room);
         reservation.setRate(rate);
+        reservation.setPaymentCategory(room.getCategory());
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
         reservation.setConfirmationNumber(generateConfirmationNumber());
@@ -124,6 +125,7 @@ public class ReservationService {
 
         reservation.setRoom(room);
         reservation.setRate(rate);
+        reservation.setPaymentCategory(room.getCategory());
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
 
