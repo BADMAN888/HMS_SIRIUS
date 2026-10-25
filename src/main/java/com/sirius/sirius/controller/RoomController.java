@@ -101,13 +101,16 @@ public class RoomController {
                 roomService.updateStatus(id, request)
         );
     }
-    @GetMapping("/{id}/available")
-    public ResponseEntity<RoomResponse> getAvailableRooms(
-            @PathVariable Long id,
-            @RequestParam RoomStatus status
+    @GetMapping("/category/{categoryId}/status/{status}")
+    public ResponseEntity<List<RoomResponse>> getAllByCategoryIdAndStatus(
+            @PathVariable Long categoryId,
+            @PathVariable RoomStatus status
     ) {
         return ResponseEntity.ok(
-                roomService.getAvailableRooms(id, status)
+                roomService.getAllByCategoryIdAndStatus(
+                        categoryId,
+                        status
+                )
         );
     }
 }

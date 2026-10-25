@@ -224,4 +224,22 @@ public class RoomService {
 
         return roomMapper.toResponse(room);
     }
+    public List<RoomResponse> getAllByCategoryIdAndStatus(
+            Long categoryId,
+            RoomStatus status
+    ) {
+        if (!roomCategoryRepository.existsById(categoryId)) {
+            throw new NotFoundException(
+                    "Room category with id: " + categoryId + " not found"
+            );
+        }
+
+        return roomRepository.findByIdAndStatus(
+                        categoryId,
+                        status
+                )
+                .stream()
+                .map(roomMapper::toResponse)
+                .toList();
+    }
 }

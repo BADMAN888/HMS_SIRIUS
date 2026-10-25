@@ -23,5 +23,8 @@ public interface RoomRepository extends JpaRepository<RoomEntity, Long> {
             Long hotelId
     );
 
-    Optional<RoomEntity> findByIdAndStatus(Long id, RoomStatus status);
+    Optional<RoomEntity> findByIdAndStatus(
+            Long id,
+            RoomStatus status
+    );
 }
