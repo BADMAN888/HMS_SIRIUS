@@ -14,6 +14,7 @@ import com.sirius.sirius.store.repository.HotelRepository;
 import com.sirius.sirius.store.repository.RoomCategoryRepository;
 import com.sirius.sirius.store.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -213,5 +214,14 @@ public class RoomService {
         RoomEntity updatedRoom = roomRepository.save(room);
 
         return roomMapper.toResponse(updatedRoom);
+    }
+
+    public RoomResponse getAvailableRooms(Long id, RoomStatus status) {
+        RoomEntity room = roomRepository.findByIdAndStatus(id, status)
+                .orElseThrow(() -> new NotFoundException(
+                        "Available room with id: " + id + " not found"
+                ));
+
+        return roomMapper.toResponse(room);
     }
 }

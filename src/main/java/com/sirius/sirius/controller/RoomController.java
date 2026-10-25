@@ -101,4 +101,13 @@ public class RoomController {
                 roomService.updateStatus(id, request)
         );
     }
+    @GetMapping("/{id}/available")
+    public ResponseEntity<RoomResponse> getAvailableRooms(
+            @PathVariable Long id,
+            @RequestParam RoomStatus status
+    ) {
+        return ResponseEntity.ok(
+                roomService.getAvailableRooms(id, status)
+        );
+    }
 }

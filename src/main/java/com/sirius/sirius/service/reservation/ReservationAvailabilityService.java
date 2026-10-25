@@ -29,7 +29,6 @@ public class ReservationAvailabilityService {
         validateDates(checkIn, checkOut);
         validateRate(rate);
         validateRateForRoom(rate, room);
-        validateRoomStatus(room);
         validateOccupancy(room, adults, children);
         validateRoomAvailability(
                 room.getId(),
@@ -50,7 +49,6 @@ public class ReservationAvailabilityService {
         validateDates(checkIn, checkOut);
         validateRate(rate);
         validateRateForRoom(rate, room);
-        validateRoomStatus(room);
         validateOccupancy(room, adults, children);
         validateRoomAvailabilityExceptCurrent(
                 reservationId,
@@ -86,16 +84,6 @@ public class ReservationAvailabilityService {
         if (!rate.getCategory().getId().equals(room.getCategory().getId())) {
             throw new BadRequestException(
                     "Rate does not belong to the selected room category"
-            );
-        }
-    }
-
-    private void validateRoomStatus(RoomEntity room) {
-        if (room.getStatus() == RoomStatus.OUT_OF_SERVICE
-                || room.getStatus() == RoomStatus.OUT_OF_ORDER) {
-            throw new BadRequestException(
-                    "Room cannot be reserved. Current status: "
-                            + room.getStatus()
             );
         }
     }
