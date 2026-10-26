@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.hotel;
 
 import com.sirius.sirius.dto.RoomRequest;
@@ -14,7 +15,6 @@ import com.sirius.sirius.store.repository.HotelRepository;
 import com.sirius.sirius.store.repository.RoomCategoryRepository;
 import com.sirius.sirius.store.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -49,7 +49,6 @@ public class RoomService {
     }
 
     public List<RoomResponse> getAllByHotelId(Long hotelId) {
-
         if (!hotelRepository.existsById(hotelId)) {
             throw new NotFoundException(
                     "Hotel with id: " + hotelId + " not found"
@@ -63,7 +62,6 @@ public class RoomService {
     }
 
     public List<RoomResponse> getAllByCategoryId(Long categoryId) {
-
         if (!roomCategoryRepository.existsById(categoryId)) {
             throw new NotFoundException(
                     "Room category with id: " + categoryId + " not found"
@@ -80,17 +78,13 @@ public class RoomService {
             Long hotelId,
             RoomStatus status
     ) {
-
         if (!hotelRepository.existsById(hotelId)) {
             throw new NotFoundException(
                     "Hotel with id: " + hotelId + " not found"
             );
         }
 
-        return roomRepository.findAllByHotelIdAndStatus(
-                        hotelId,
-                        status
-                )
+        return roomRepository.findAllByHotelIdAndStatus(hotelId, status)
                 .stream()
                 .map(roomMapper::toResponse)
                 .toList();
@@ -98,7 +92,6 @@ public class RoomService {
 
     @Transactional
     public RoomResponse create(RoomRequest request) {
-
         HotelEntity hotel = hotelRepository.findById(request.hotelId())
                 .orElseThrow(() ->
                         new NotFoundException(
@@ -128,7 +121,6 @@ public class RoomService {
         }
 
         RoomEntity room = roomMapper.toEntity(request);
-
         room.setHotel(hotel);
         room.setCategory(category);
 
@@ -138,11 +130,7 @@ public class RoomService {
     }
 
     @Transactional
-    public RoomResponse update(
-            Long id,
-            RoomRequest request
-    ) {
-
+    public RoomResponse update(Long id, RoomRequest request) {
         RoomEntity room = roomRepository.findById(id)
                 .orElseThrow(() ->
                         new NotFoundException(
@@ -181,7 +169,6 @@ public class RoomService {
         }
 
         roomMapper.updateEntity(request, room);
-
         room.setHotel(hotel);
         room.setCategory(category);
 
@@ -192,7 +179,6 @@ public class RoomService {
 
     @Transactional
     public void delete(Long id) {
-
         RoomEntity room = roomRepository.findById(id)
                 .orElseThrow(() ->
                         new NotFoundException(
@@ -202,12 +188,18 @@ public class RoomService {
 
         roomRepository.delete(room);
     }
+
     @Transactional
-    public RoomResponse updateStatus(Long id, RoomStatusRequest request) {
+    public RoomResponse updateStatus(
+            Long id,
+            RoomStatusRequest request
+    ) {
         RoomEntity room = roomRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException(
-                        "Room with id: " + id + " not found"
-                ));
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Room with id: " + id + " not found"
+                        )
+                );
 
         room.setStatus(request.status());
 
@@ -218,12 +210,15 @@ public class RoomService {
 
     public RoomResponse getAvailableRooms(Long id, RoomStatus status) {
         RoomEntity room = roomRepository.findByIdAndStatus(id, status)
-                .orElseThrow(() -> new NotFoundException(
-                        "Available room with id: " + id + " not found"
-                ));
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Room with id: " + id + " not found"
+                        )
+                );
 
         return roomMapper.toResponse(room);
     }
+
     public List<RoomResponse> getAllByCategoryIdAndStatus(
             Long categoryId,
             RoomStatus status
@@ -234,7 +229,7 @@ public class RoomService {
             );
         }
 
-        return roomRepository.findByIdAndStatus(
+        return roomRepository.findAllByCategoryIdAndStatus(
                         categoryId,
                         status
                 )

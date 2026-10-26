@@ -76,3 +76,6 @@ Authorization: Bearer {{token}}
 
     client.assert(response.body.id == client.global.get("folioId"));
 %}
+###
+GET http://localhost:8080/api/rooms/category/1/status/AVAILABLE
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyQGdtYWlsLmNvbSIsImlhdCI6MTc5Mjk0MTc2NiwiZXhwIjoxNzkyOTQyNjY2fQ.naMjPuObDtmxZHvUVGhXiq7Z_uU4geYYJa9twalLO1k
