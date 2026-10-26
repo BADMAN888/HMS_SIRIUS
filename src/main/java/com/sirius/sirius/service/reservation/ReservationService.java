@@ -8,6 +8,7 @@ import com.sirius.sirius.exeption.BadRequestException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.ReservationMapper;
 import com.sirius.sirius.store.entity.biling.RateEntity;
+import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
@@ -15,10 +16,10 @@ import com.sirius.sirius.store.enums.ReservationStatus;
 import com.sirius.sirius.store.repository.ProfileRepository;
 import com.sirius.sirius.store.repository.RateRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
+import com.sirius.sirius.store.repository.RoomCategoryRepository;
 import com.sirius.sirius.store.repository.RoomRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -36,6 +37,7 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final RoomRepository roomRepository;
+    private final RoomCategoryRepository roomCategoryRepository;
     private final RateRepository rateRepository;
     private final ProfileRepository profileRepository;
     private final ReservationMapper reservationMapper;
@@ -47,6 +49,8 @@ public class ReservationService {
     public ReservationResponse create(ReservationRequest request) {
         RoomEntity room = findRoom(request.roomId());
         RateEntity rate = findRate(request.rateId());
+        RoomCategoryEntity paymentCategory =
+                findPaymentCategory(request.paymentCategoryId());
 
         availabilityService.validate(
                 room,
@@ -67,7 +71,7 @@ public class ReservationService {
 
         reservation.setRoom(room);
         reservation.setRate(rate);
-        reservation.setPaymentCategory(room.getCategory());
+        reservation.setPaymentCategory(paymentCategory);
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
         reservation.setConfirmationNumber(generateConfirmationNumber());
@@ -104,6 +108,8 @@ public class ReservationService {
 
         RoomEntity room = findRoom(request.roomId());
         RateEntity rate = findRate(request.rateId());
+        RoomCategoryEntity paymentCategory =
+                findPaymentCategory(request.paymentCategoryId());
 
         availabilityService.validateForUpdate(
                 reservation.getId(),
@@ -125,7 +131,7 @@ public class ReservationService {
 
         reservation.setRoom(room);
         reservation.setRate(rate);
-        reservation.setPaymentCategory(room.getCategory());
+        reservation.setPaymentCategory(paymentCategory);
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
 
@@ -199,6 +205,13 @@ public class ReservationService {
                 .toList();
     }
 
+    public List<ReservationResponse> getByStatus(ReservationStatus status) {
+        return reservationRepository.findByStatus(status)
+                .stream()
+                .map(reservationMapper::toResponse)
+                .toList();
+    }
+
     private Set<ProfileEntity> findGuests(Set<Long> guestIds) {
         if (guestIds == null || guestIds.isEmpty()) {
             throw new BadRequestException(
@@ -236,6 +249,17 @@ public class ReservationService {
                 .orElseThrow(() ->
                         new NotFoundException(
                                 "Room with id: " + roomId + " not found"
+                        )
+                );
+    }
+
+    private RoomCategoryEntity findPaymentCategory(Long categoryId) {
+        return roomCategoryRepository.findById(categoryId)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Payment category with id: "
+                                        + categoryId
+                                        + " not found"
                         )
                 );
     }
@@ -282,11 +306,5 @@ public class ReservationService {
         ));
 
         return confirmationNumber;
-    }
-    public List<ReservationResponse> getByStatus(ReservationStatus status) {
-        return reservationRepository.findByStatus(status)
-                .stream()
-                .map(reservationMapper::toResponse)
-                .toList();
     }
 }
