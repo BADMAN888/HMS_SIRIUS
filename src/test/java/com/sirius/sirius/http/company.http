@@ -1,0 +1,66 @@
+### LOGIN
+POST http://localhost:8080/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@gmail.com",
+  "password": "123456"
+}
+
+> {%
+    client.global.set("accessToken", response.body.accessToken);
+%}
+
+###
+
+### CREATE COMPANY
+POST http://localhost:8080/api/companies
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "fullName": "ТОВАРИСТВО З ОБМЕЖЕНОЮ ВІДПОВІДАЛЬНІСТЮ СОФІЯ",
+  "shortName": "ТОВ \"СОФІЯ\"",
+  "edrpou": "03764146",
+  "registrationDate": "2001-01-04",
+  "organizationalLegalForm": "LLC"
+}
+
+> {%
+    client.global.set("companyId", response.body.id);
+%}
+
+###
+
+### GET ALL COMPANIES
+GET http://localhost:8080/api/companies
+Authorization: Bearer {{accessToken}}
+
+###
+
+### GET COMPANY BY ID
+GET http://localhost:8080/api/companies/{{companyId}}
+Authorization: Bearer {{accessToken}}
+
+###
+
+### UPDATE COMPANY
+PUT http://localhost:8080/api/companies/{{companyId}}
+Authorization: Bearer {{accessToken}}
+Content-Type: application/json
+
+{
+  "fullName": "ТОВАРИСТВО З ОБМЕЖЕНОЮ ВІДПОВІДАЛЬНІСТЮ СОФІЯ",
+  "shortName": "ТОВ \"СОФІЯ\"",
+  "edrpou": "03764146",
+  "registrationDate": "2001-01-04",
+  "organizationalLegalForm": "LLC"
+}
+
+###
+
+### DEACTIVATE COMPANY
+PATCH http://localhost:8080/api/companies/{{companyId}}/deactivate
+Authorization: Bearer {{accessToken}}
+
+###
