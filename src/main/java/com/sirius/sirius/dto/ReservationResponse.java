@@ -26,7 +26,7 @@ public record ReservationResponse(
         Long folioId,
         String externalBookingNumber,
         String bookingSource,
-        String company,
-        String operatorCompany
+        CompanyResponse sourceCompany,
+        CompanyResponse operatorCompany
 ) {
 }

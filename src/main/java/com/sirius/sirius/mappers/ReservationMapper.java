@@ -27,6 +27,8 @@ public interface ReservationMapper {
     @Mapping(target = "comments", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "folio", ignore = true)
+    @Mapping(target = "sourceCompany", ignore = true)
+    @Mapping(target = "operatorCompany", ignore = true)
     ReservationEntity toEntity(ReservationRequest request);
 
     @Mapping(

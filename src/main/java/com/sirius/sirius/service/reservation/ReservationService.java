@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.dto.ReservationCheckInResponse;
@@ -7,12 +8,14 @@ import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.exeption.BadRequestException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.ReservationMapper;
+import com.sirius.sirius.store.entity.CompanyEntity;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.ReservationStatus;
+import com.sirius.sirius.store.repository.CompanyRepository;
 import com.sirius.sirius.store.repository.ProfileRepository;
 import com.sirius.sirius.store.repository.RateRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
@@ -40,6 +43,7 @@ public class ReservationService {
     private final RoomCategoryRepository roomCategoryRepository;
     private final RateRepository rateRepository;
     private final ProfileRepository profileRepository;
+    private final CompanyRepository companyRepository;
     private final ReservationMapper reservationMapper;
     private final ReservationAvailabilityService availabilityService;
     private final ReservationFolioService folioService;
@@ -51,6 +55,9 @@ public class ReservationService {
         RateEntity rate = findRate(request.rateId());
         RoomCategoryEntity paymentCategory =
                 findPaymentCategory(request.paymentCategoryId());
+
+        CompanyEntity sourceCompany = findCompany(request.sourceCompanyId());
+        CompanyEntity operatorCompany = findCompany(request.operatorCompanyId());
 
         availabilityService.validate(
                 room,
@@ -72,6 +79,8 @@ public class ReservationService {
         reservation.setRoom(room);
         reservation.setRate(rate);
         reservation.setPaymentCategory(paymentCategory);
+        reservation.setSourceCompany(sourceCompany);
+        reservation.setOperatorCompany(operatorCompany);
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
         reservation.setConfirmationNumber(generateConfirmationNumber());
@@ -111,6 +120,9 @@ public class ReservationService {
         RoomCategoryEntity paymentCategory =
                 findPaymentCategory(request.paymentCategoryId());
 
+        CompanyEntity sourceCompany = findCompany(request.sourceCompanyId());
+        CompanyEntity operatorCompany = findCompany(request.operatorCompanyId());
+
         availabilityService.validateForUpdate(
                 reservation.getId(),
                 room,
@@ -132,6 +144,8 @@ public class ReservationService {
         reservation.setRoom(room);
         reservation.setRate(rate);
         reservation.setPaymentCategory(paymentCategory);
+        reservation.setSourceCompany(sourceCompany);
+        reservation.setOperatorCompany(operatorCompany);
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
 
@@ -269,6 +283,19 @@ public class ReservationService {
                 .orElseThrow(() ->
                         new NotFoundException(
                                 "Rate with id: " + rateId + " not found"
+                        )
+                );
+    }
+
+    private CompanyEntity findCompany(Long companyId) {
+        if (companyId == null) {
+            return null;
+        }
+
+        return companyRepository.findById(companyId)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Company with id: " + companyId + " not found"
                         )
                 );
     }

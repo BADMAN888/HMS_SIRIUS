@@ -52,10 +52,8 @@ public record ReservationRequest(
         @Size(max = 100)
         String bookingSource,
 
-        @Size(max = 150)
-        String company,
+        Long sourceCompanyId,
 
-        @Size(max = 150)
-        String operatorCompany
+        Long operatorCompanyId
 ) {
 }

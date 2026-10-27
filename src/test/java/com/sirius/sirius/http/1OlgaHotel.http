@@ -11,6 +11,7 @@
 @accrualUrl = {{baseUrl}}/api/accruals
 @paymentUrl = {{baseUrl}}/api/payments
 @hotelGridUrl = {{baseUrl}}/api/hotel-grid
+@companyUrl = {{baseUrl}}/api/companies
 
 ### AUTH
 
@@ -1112,6 +1113,62 @@ Content-Type: application/json
 
 ###
 
+### CREATE SOURCE COMPANY
+
+POST {{companyUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Olga Travel LLC",
+  "shortName": "Olga Travel",
+  "edrpou": "12345678",
+  "registrationDate": "2020-01-15",
+  "organizationalLegalForm": "LLC"
+}
+
+> {%
+    client.test("Source company created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.test("Source company id exists", function () {
+        client.assert(response.body.id !== null && response.body.id !== undefined);
+    });
+
+    client.global.set("sourceCompanyId", response.body.id);
+%}
+
+###
+
+### CREATE OPERATOR COMPANY
+
+POST {{companyUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Sirius Hotel Operator LLC",
+  "shortName": "Sirius Operator",
+  "edrpou": "87654321",
+  "registrationDate": "2021-03-10",
+  "organizationalLegalForm": "LLC"
+}
+
+> {%
+    client.test("Operator company created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.test("Operator company id exists", function () {
+        client.assert(response.body.id !== null && response.body.id !== undefined);
+    });
+
+    client.global.set("operatorCompanyId", response.body.id);
+%}
+
+###
+
 ### CREATE RESERVATION 1 - STANDARD
 
 POST {{reservationUrl}}
@@ -1127,12 +1184,24 @@ Content-Type: application/json
   "checkIn": "2026-10-30T14:00:00",
   "checkOut": "2026-10-31T12:00:00",
   "adults": 2,
+  "sourceCompanyId": {{sourceCompanyId}},
+  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
 > {%
     client.test("Reservation 1 created", function () {
         client.assert(response.status === 201);
+    });
+
+    client.test("Reservation 1 has source company", function () {
+        client.assert(response.body.sourceCompany !== null && response.body.sourceCompany !== undefined);
+        client.assert(response.body.sourceCompany.id == client.global.get("sourceCompanyId"));
+    });
+
+    client.test("Reservation 1 has operator company", function () {
+        client.assert(response.body.operatorCompany !== null && response.body.operatorCompany !== undefined);
+        client.assert(response.body.operatorCompany.id == client.global.get("operatorCompanyId"));
     });
 
     client.test("Reservation 1 has folio", function () {
@@ -1160,6 +1229,8 @@ Content-Type: application/json
  "checkIn": "2026-10-28T14:00:00",
   "checkOut": "2026-10-30T12:00:00",
   "adults": 2,
+  "sourceCompanyId": {{sourceCompanyId}},
+  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1189,6 +1260,8 @@ Content-Type: application/json
   "checkIn": "2026-10-28T14:00:00",
   "checkOut": "2026-10-30T12:00:00",
   "adults": 1,
+  "sourceCompanyId": {{sourceCompanyId}},
+  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1218,6 +1291,8 @@ Content-Type: application/json
   "checkIn": "2026-10-28T14:00:00",
   "checkOut": "2026-10-30T12:00:00",
   "adults": 2,
+  "sourceCompanyId": {{sourceCompanyId}},
+  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1247,6 +1322,8 @@ Content-Type: application/json
  "checkIn": "2026-10-28T14:00:00",
   "checkOut": "2026-10-30T12:00:00",
   "adults": 1,
+  "sourceCompanyId": {{sourceCompanyId}},
+  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1276,6 +1353,8 @@ Content-Type: application/json
   "checkIn": "2026-10-28T14:00:00",
   "checkOut": "2026-10-30T12:00:00",
   "adults": 2,
+  "sourceCompanyId": {{sourceCompanyId}},
+  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1305,6 +1384,8 @@ Content-Type: application/json
   "checkIn": "2026-10-28T14:00:00",
   "checkOut": "2026-10-30T12:00:00",
   "adults": 1,
+  "sourceCompanyId": {{sourceCompanyId}},
+  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1334,6 +1415,8 @@ Content-Type: application/json
  "checkIn": "2026-10-28T14:00:00",
   "checkOut": "2026-10-30T12:00:00",
   "adults": 2,
+  "sourceCompanyId": {{sourceCompanyId}},
+  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1363,6 +1446,8 @@ Content-Type: application/json
   "checkIn": "2026-10-28T14:00:00",
   "checkOut": "2026-10-30T12:00:00",
   "adults": 2,
+  "sourceCompanyId": {{sourceCompanyId}},
+  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 

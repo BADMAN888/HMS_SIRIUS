@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.store.entity.reservation;
 
+import com.sirius.sirius.store.entity.CompanyEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
@@ -39,11 +40,13 @@ public class ReservationEntity {
     @Column(name = "booking_source", length = 100)
     String bookingSource;
 
-    @Column(name = "company", length = 150)
-    String company;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_company_id")
+    private CompanyEntity sourceCompany;
 
-    @Column(name = "operator_company", length = 150)
-    String operatorCompany;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "operator_company_id")
+    private CompanyEntity operatorCompany;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "room_id", nullable = false)
