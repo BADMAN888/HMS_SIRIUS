@@ -76,6 +76,7 @@ public class ReservationLifecycleService {
         reservation.setStatus(ReservationStatus.IN_HOUSE);
     }
 
+
     public void checkOut(Long id) {
         ReservationEntity reservation = findById(id);
 
@@ -87,15 +88,16 @@ public class ReservationLifecycleService {
         }
 
         RoomEntity room = reservation.getRoom();
-
         room.setStatus(RoomStatus.CLEANING);
         reservation.setStatus(ReservationStatus.COMPLETED);
 
         if (reservation.getFolio() != null
-                && reservation.getFolio().getBalance().compareTo(BigDecimal.ZERO) <= 0) {
+                && reservation.getFolio().getBalance()
+                .compareTo(BigDecimal.ZERO) == 0) {
             reservation.getFolio().setStatus(FolioStatus.CLOSED);
         }
     }
+
 
     public void noShow(Long id) {
         ReservationEntity reservation = findById(id);

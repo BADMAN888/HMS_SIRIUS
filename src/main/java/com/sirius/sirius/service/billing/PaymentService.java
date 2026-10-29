@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.PaymentRequest;
@@ -5,8 +6,10 @@ import com.sirius.sirius.dto.PaymentResponse;
 import com.sirius.sirius.mappers.PaymentMapper;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.PaymentEntity;
+import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.repository.FolioRepository;
 import com.sirius.sirius.store.repository.PaymentRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,10 +28,8 @@ public class PaymentService {
     private final PaymentMapper paymentMapper;
 
     public PaymentResponse create(PaymentRequest request) {
-        FolioEntity folio = folioRepository.findById(request.folioId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Folio with id: " + request.folioId() + " not found"
-                ));
+        FolioEntity folio = findFolio(request.folioId());
+        ensureFolioIsOpen(folio);
 
         PaymentEntity payment = paymentMapper.toEntity(request);
         payment.setFolio(folio);
@@ -44,7 +45,7 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public PaymentResponse getById(Long id) {
         PaymentEntity payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "Payment with id: " + id + " not found"
                 ));
 
@@ -62,7 +63,7 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public List<PaymentResponse> getByFolioId(Long folioId) {
         if (!folioRepository.existsById(folioId)) {
-            throw new IllegalArgumentException(
+            throw new EntityNotFoundException(
                     "Folio with id: " + folioId + " not found"
             );
         }
@@ -75,16 +76,15 @@ public class PaymentService {
 
     public PaymentResponse update(Long id, PaymentRequest request) {
         PaymentEntity payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "Payment with id: " + id + " not found"
                 ));
 
         FolioEntity oldFolio = payment.getFolio();
+        FolioEntity newFolio = findFolio(request.folioId());
 
-        FolioEntity newFolio = folioRepository.findById(request.folioId())
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Folio with id: " + request.folioId() + " not found"
-                ));
+        ensureFolioIsOpen(oldFolio);
+        ensureFolioIsOpen(newFolio);
 
         payment.setFolio(newFolio);
         payment.setMethod(request.method());
@@ -104,16 +104,32 @@ public class PaymentService {
 
     public void delete(Long id) {
         PaymentEntity payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException(
+                .orElseThrow(() -> new EntityNotFoundException(
                         "Payment with id: " + id + " not found"
                 ));
 
         FolioEntity folio = payment.getFolio();
+        ensureFolioIsOpen(folio);
 
         paymentRepository.delete(payment);
         paymentRepository.flush();
 
         recalculatePaidAmount(folio);
+    }
+
+    private FolioEntity findFolio(Long folioId) {
+        return folioRepository.findById(folioId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Folio with id: " + folioId + " not found"
+                ));
+    }
+
+    private void ensureFolioIsOpen(FolioEntity folio) {
+        if (folio.getStatus() == FolioStatus.CLOSED) {
+            throw new IllegalStateException(
+                    "Cannot modify payments of a closed folio"
+            );
+        }
     }
 
     private void recalculatePaidAmount(FolioEntity folio) {

@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.FolioStatus;
@@ -11,6 +12,8 @@ public record FolioResponse(
         FolioStatus status,
         BigDecimal totalAmount,
         BigDecimal paidAmount,
+        BigDecimal balance,
+        BigDecimal advanceAmount,
         List<AccrualResponse> accruals,
         List<PaymentResponse> payments
 ) {

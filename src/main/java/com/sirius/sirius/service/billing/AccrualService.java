@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.AccrualRequest;
@@ -5,6 +6,7 @@ import com.sirius.sirius.dto.AccrualResponse;
 import com.sirius.sirius.mappers.AccrualMapper;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
+import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.repository.AccrualRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -42,9 +44,14 @@ public class AccrualService {
     }
 
     public List<AccrualResponse> getByFolioId(Long folioId) {
-        return accrualRepository.findAll()
+        if (!folioRepository.existsById(folioId)) {
+            throw new EntityNotFoundException(
+                    "Folio with id: " + folioId + " not found"
+            );
+        }
+
+        return accrualRepository.findAllByFolioId(folioId)
                 .stream()
-                .filter(accrual -> accrual.getFolio().getId().equals(folioId))
                 .map(accrualMapper::toResponse)
                 .toList();
     }
@@ -55,6 +62,8 @@ public class AccrualService {
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Folio with id: " + request.folioId() + " not found"
                 ));
+
+        ensureFolioIsOpen(folio);
 
         BigDecimal amount = request.unitPrice()
                 .multiply(request.quantity());
@@ -81,9 +90,18 @@ public class AccrualService {
 
         FolioEntity folio = accrual.getFolio();
 
+        ensureFolioIsOpen(folio);
+
         folio.getAccruals().remove(accrual);
         accrualRepository.delete(accrual);
-
         folio.recalculateTotalAmount();
+    }
+
+    private void ensureFolioIsOpen(FolioEntity folio) {
+        if (folio.getStatus() == FolioStatus.CLOSED) {
+            throw new IllegalStateException(
+                    "Cannot modify accruals of a closed folio"
+            );
+        }
     }
 }

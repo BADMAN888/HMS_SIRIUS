@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.store.entity.biling;
 
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
@@ -59,6 +60,12 @@ public class FolioEntity {
     }
 
     public BigDecimal getBalance() {
-        return totalAmount.subtract(paidAmount);
+        BigDecimal balance = totalAmount.subtract(paidAmount);
+        return balance.max(BigDecimal.ZERO);
+    }
+
+    public BigDecimal getAdvanceAmount() {
+        BigDecimal advance = paidAmount.subtract(totalAmount);
+        return advance.max(BigDecimal.ZERO);
     }
 }

@@ -18,7 +18,7 @@ public interface FolioMapper {
     FolioEntity toEntity(FolioRequest request);
 
     @Mapping(target = "reservationId", source = "reservation.id")
-    @Mapping(target = "accruals", source = "accruals")
-    @Mapping(target = "payments", source = "payments")
+    @Mapping(target = "balance", source = "balance")
+    @Mapping(target = "advanceAmount", source = "advanceAmount")
     FolioResponse toResponse(FolioEntity entity);
 }
