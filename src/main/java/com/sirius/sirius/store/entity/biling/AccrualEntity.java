@@ -55,4 +55,9 @@ public class AccrualEntity {
 
     @Column(nullable = false, name = "accrued_at")
     LocalDateTime accruedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "folio_id")
+    FolioEntity folio;
+
 }

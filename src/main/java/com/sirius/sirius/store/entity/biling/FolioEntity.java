@@ -1,7 +1,6 @@
 package com.sirius.sirius.store.entity.biling;
 
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
-import com.sirius.sirius.store.entity.reservation.ProfileEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.FolioStatus;
 import jakarta.persistence.*;
@@ -36,8 +35,8 @@ public class FolioEntity {
     ReservationEntity reservation;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recipient_profile_id")
-    ProfileEntity recipient;
+    @JoinColumn(name = "recipient_id")
+    CustomerEntity recipient;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "payer_id")
@@ -59,11 +58,17 @@ public class FolioEntity {
     @Column(name = "closed_at")
     LocalDateTime closedAt;
 
-    @OneToMany(mappedBy = "folio", cascade = CascadeType.ALL)
+    @OneToMany(
+            mappedBy = "folio",
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE}
+    )
     @Builder.Default
     List<AccrualEntity> accruals = new ArrayList<>();
 
-    @OneToMany(mappedBy = "folio", cascade = CascadeType.ALL)
+    @OneToMany(
+            mappedBy = "folio",
+            cascade = {CascadeType.PERSIST, CascadeType.MERGE}
+    )
     @Builder.Default
     List<PaymentEntity> payments = new ArrayList<>();
 
@@ -89,12 +94,14 @@ public class FolioEntity {
     public void recalculateTotalAmount() {
         totalAmount = accruals.stream()
                 .map(AccrualEntity::getAmount)
+                .filter(amount -> amount != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public void recalculatePaidAmount() {
         paidAmount = payments.stream()
                 .map(PaymentEntity::getAmount)
+                .filter(amount -> amount != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
