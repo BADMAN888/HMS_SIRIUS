@@ -1,7 +1,7 @@
 
 package com.sirius.sirius.store.entity.reservation;
 
-import com.sirius.sirius.store.entity.CompanyEntity;
+import com.sirius.sirius.store.entity.biling.CompanyEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
@@ -100,11 +100,8 @@ public class ReservationEntity {
     @Column(nullable = false, name = "created_at")
     LocalDateTime createdAt;
 
-    @OneToOne(
-            mappedBy = "reservation",
-            fetch = FetchType.LAZY,
-            cascade = CascadeType.ALL,
-            orphanRemoval = true
-    )
-    FolioEntity folio;
+
+    @OneToMany(mappedBy = "reservation")
+    @Builder.Default
+    List<FolioEntity> folios = new ArrayList<>();
 }

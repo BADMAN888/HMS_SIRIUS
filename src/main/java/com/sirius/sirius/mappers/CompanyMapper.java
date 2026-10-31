@@ -2,7 +2,7 @@ package com.sirius.sirius.mappers;
 
 import com.sirius.sirius.dto.CompanyRequest;
 import com.sirius.sirius.dto.CompanyResponse;
-import com.sirius.sirius.store.entity.CompanyEntity;
+import com.sirius.sirius.store.entity.biling.CompanyEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingTarget;
 

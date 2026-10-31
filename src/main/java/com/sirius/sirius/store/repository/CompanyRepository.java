@@ -1,7 +1,7 @@
 package com.sirius.sirius.store.repository;
 
 
-import com.sirius.sirius.store.entity.CompanyEntity;
+import com.sirius.sirius.store.entity.biling.CompanyEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

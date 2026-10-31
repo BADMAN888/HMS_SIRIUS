@@ -1,0 +1,138 @@
+
+@baseUrl = http://localhost:8080
+@reservationId = 1
+
+### AUTH
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "user@gmail.com",
+  "password": "123456"
+}
+
+> {%
+    const token = response.body.accessToken ?? response.body.token;
+    client.global.set("token", token);
+%}
+
+### 1. Отримати фоліо бронювання
+GET {{baseUrl}}/api/folios/reservation/{{reservationId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.global.set("folioId", response.body.id);
+%}
+
+### 2. Створити нарахування
+POST {{baseUrl}}/api/accruals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": {{folioId}},
+  "type": "SERVICE",
+  "description": "HTTP test service",
+  "unitPrice": 1000,
+  "quantity": 2
+}
+
+> {%
+    client.global.set("accrualId", response.body.id);
+%}
+
+### 3. Перевірити фоліо після нарахування
+GET {{baseUrl}}/api/folios/{{folioId}}
+Authorization: Bearer {{token}}
+
+### 4. Створити оплату
+POST {{baseUrl}}/api/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": {{folioId}},
+  "method": "CARD",
+  "amount": 1000,
+  "description": "HTTP test payment"
+}
+
+> {%
+    client.global.set("paymentId", response.body.id);
+%}
+
+### 5. Перевірити фоліо після оплати
+GET {{baseUrl}}/api/folios/{{folioId}}
+Authorization: Bearer {{token}}
+
+### 6. Перевірити переплату
+POST {{baseUrl}}/api/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": {{folioId}},
+  "method": "CASH",
+  "amount": 100000,
+  "description": "HTTP overpayment test"
+}
+
+### 7. Перевірити баланс і передоплату
+GET {{baseUrl}}/api/folios/{{folioId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Баланс не від'ємний", function () {
+        client.assert(
+            Number(response.body.balance) >= 0,
+            "Баланс фоліо не повинен бути від'ємним"
+        );
+    });
+
+    client.test("Переплата відображається", function () {
+        client.assert(
+            Number(response.body.advanceAmount) > 0,
+            "Очікувалася позитивна сума переплати"
+        );
+    });
+%}
+
+### 8. Отримати всі оплати фоліо
+GET {{baseUrl}}/api/payments/folio/{{folioId}}
+Authorization: Bearer {{token}}
+
+### 9. Отримати всі нарахування фоліо
+GET {{baseUrl}}/api/accruals/folio/{{folioId}}
+Authorization: Bearer {{token}}
+
+### 10. Оновити оплату
+PUT {{baseUrl}}/api/payments/{{paymentId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": {{folioId}},
+  "method": "BANK_TRANSFER",
+  "amount": 1500,
+  "description": "Updated HTTP test payment"
+}
+
+### 11. Перевірити фоліо після оновлення оплати
+GET {{baseUrl}}/api/folios/{{folioId}}
+Authorization: Bearer {{token}}
+
+### 12. Видалити нарахування
+DELETE {{baseUrl}}/api/accruals/{{accrualId}}
+Authorization: Bearer {{token}}
+
+### 13. Перевірити фоліо після видалення нарахування
+GET {{baseUrl}}/api/folios/{{folioId}}
+Authorization: Bearer {{token}}
+
+### 14. Видалити оплату
+DELETE {{baseUrl}}/api/payments/{{paymentId}}
+Authorization: Bearer {{token}}
+
+### 15. Перевірити фоліо після видалення оплати
+GET {{baseUrl}}/api/folios/{{folioId}}
+Authorization: Bearer {{token}}

@@ -1,5 +1,6 @@
 package com.sirius.sirius.store.entity.reservation;
 
+import com.sirius.sirius.store.entity.biling.CustomerEntity;
 import com.sirius.sirius.store.enums.Gender;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -13,17 +14,14 @@ import java.util.Set;
 
 @Entity
 @Table(name = "profiles")
+@DiscriminatorValue("PROFILE")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
-public class ProfileEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Long id;
+public class ProfileEntity extends CustomerEntity {
 
     @Column(name = "first_name", length = 20)
     @Size(max = 20)
@@ -55,6 +53,7 @@ public class ProfileEntity {
     String address;
 
     @ManyToMany(mappedBy = "guests")
+    @Builder.Default
     Set<ReservationEntity> reservations = new HashSet<>();
 
     @OneToOne(cascade = CascadeType.ALL)

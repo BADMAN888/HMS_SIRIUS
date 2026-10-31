@@ -1,5 +1,4 @@
-
-package com.sirius.sirius.store.entity;
+package com.sirius.sirius.store.entity.biling;
 
 import com.sirius.sirius.store.enums.OrganizationalLegalForm;
 import jakarta.persistence.*;
@@ -21,14 +20,11 @@ import java.time.LocalDateTime;
                 )
         }
 )
+@DiscriminatorValue("COMPANY")
 @Getter
 @Setter
 @NoArgsConstructor
-public class CompanyEntity {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class CompanyEntity extends CustomerEntity {
 
     @Column(name = "full_name", nullable = false, length = 500)
     private String fullName;
@@ -36,7 +32,10 @@ public class CompanyEntity {
     @Column(name = "short_name", nullable = false, length = 255)
     private String shortName;
 
-    @Pattern(regexp = "\\d{8}", message = "ЄДРПОУ повинен містити 8 цифр")
+    @Pattern(
+            regexp = "\\d{8}",
+            message = "ЄДРПОУ повинен містити 8 цифр"
+    )
     @Column(name = "edrpou", nullable = false, length = 8)
     private String edrpou;
 

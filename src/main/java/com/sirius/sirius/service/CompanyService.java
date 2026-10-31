@@ -4,7 +4,7 @@ package com.sirius.sirius.service;
 import com.sirius.sirius.dto.CompanyRequest;
 import com.sirius.sirius.dto.CompanyResponse;
 import com.sirius.sirius.mappers.CompanyMapper;
-import com.sirius.sirius.store.entity.CompanyEntity;
+import com.sirius.sirius.store.entity.biling.CompanyEntity;
 import com.sirius.sirius.store.repository.CompanyRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;

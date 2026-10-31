@@ -37,16 +37,12 @@ public class AccrualEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "folio_id", nullable = false)
-    FolioEntity folio;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30, name = "type")
     AccrualType type;
 
-    @Column(nullable = false, length = 255, name = "description")
-    String description;
+    @Column(nullable = false, length = 255, name = "name")
+    String name;
 
     @Column(nullable = false, precision = 12, scale = 2, name = "unit_price")
     BigDecimal unitPrice;

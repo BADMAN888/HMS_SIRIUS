@@ -8,7 +8,7 @@ import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.exeption.BadRequestException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.ReservationMapper;
-import com.sirius.sirius.store.entity.CompanyEntity;
+import com.sirius.sirius.store.entity.biling.CompanyEntity;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
