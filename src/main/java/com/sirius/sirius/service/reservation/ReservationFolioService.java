@@ -51,6 +51,7 @@ public class ReservationFolioService {
                 .build();
 
         FolioEntity folio = FolioEntity.builder()
+                .hotel(reservation.getRoom().getHotel())
                 .reservation(reservation)
                 .status(FolioStatus.OPEN)
                 .totalAmount(amount)
