@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.dto.ReservationCheckInResponse;
@@ -87,11 +86,11 @@ public class ReservationService {
         reservation.setStatus(ReservationStatus.CONFIRMED);
         reservation.setCreatedAt(LocalDateTime.now(clock));
 
-        folioService.create(reservation);
-
         ReservationEntity saved = conflictService.saveAndFlush(
                 () -> reservationRepository.saveAndFlush(reservation)
         );
+
+        folioService.create(saved);
 
         return reservationMapper.toResponse(saved);
     }

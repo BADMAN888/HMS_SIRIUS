@@ -11,7 +11,6 @@
 @accrualUrl = {{baseUrl}}/api/accruals
 @paymentUrl = {{baseUrl}}/api/payments
 @hotelGridUrl = {{baseUrl}}/api/hotel-grid
-@companyUrl = {{baseUrl}}/api/companies
 
 ### AUTH
 
@@ -1113,62 +1112,6 @@ Content-Type: application/json
 
 ###
 
-### CREATE SOURCE COMPANY
-
-POST {{companyUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "fullName": "Olga Travel LLC",
-  "shortName": "Olga Travel",
-  "edrpou": "12345678",
-  "registrationDate": "2020-01-15",
-  "organizationalLegalForm": "LLC"
-}
-
-> {%
-    client.test("Source company created", function () {
-        client.assert(response.status === 201);
-    });
-
-    client.test("Source company id exists", function () {
-        client.assert(response.body.id !== null && response.body.id !== undefined);
-    });
-
-    client.global.set("sourceCompanyId", response.body.id);
-%}
-
-###
-
-### CREATE OPERATOR COMPANY
-
-POST {{companyUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "fullName": "Sirius Hotel Operator LLC",
-  "shortName": "Sirius Operator",
-  "edrpou": "87654321",
-  "registrationDate": "2021-03-10",
-  "organizationalLegalForm": "LLC"
-}
-
-> {%
-    client.test("Operator company created", function () {
-        client.assert(response.status === 201);
-    });
-
-    client.test("Operator company id exists", function () {
-        client.assert(response.body.id !== null && response.body.id !== undefined);
-    });
-
-    client.global.set("operatorCompanyId", response.body.id);
-%}
-
-###
-
 ### CREATE RESERVATION 1 - STANDARD
 
 POST {{reservationUrl}}
@@ -1178,30 +1121,18 @@ Content-Type: application/json
 {
   "roomId": {{room101Id}},
   "rateId": {{barStandardRateId}},
-  "paymentCategoryId": 1,
+  "paymentCategoryId": {{standardCategoryId}},
   "primaryGuestId": {{profile1Id}},
   "guestIds": [{{profile1Id}}, {{profile2Id}}],
-  "checkIn": "2026-10-30T14:00:00",
-  "checkOut": "2026-10-31T12:00:00",
+  "checkIn": "2026-11-03T14:00:00",
+  "checkOut": "2026-11-06T12:00:00",
   "adults": 2,
-  "sourceCompanyId": {{sourceCompanyId}},
-  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
 > {%
     client.test("Reservation 1 created", function () {
         client.assert(response.status === 201);
-    });
-
-    client.test("Reservation 1 has source company", function () {
-        client.assert(response.body.sourceCompany !== null && response.body.sourceCompany !== undefined);
-        client.assert(response.body.sourceCompany.id == client.global.get("sourceCompanyId"));
-    });
-
-    client.test("Reservation 1 has operator company", function () {
-        client.assert(response.body.operatorCompany !== null && response.body.operatorCompany !== undefined);
-        client.assert(response.body.operatorCompany.id == client.global.get("operatorCompanyId"));
     });
 
     client.test("Reservation 1 has folio", function () {
@@ -1223,14 +1154,12 @@ Content-Type: application/json
 {
   "roomId": {{room201Id}},
   "rateId": {{barSuperiorRateId}},
-  "paymentCategoryId": 2,
+  "paymentCategoryId": {{superiorCategoryId}},
   "primaryGuestId": {{profile2Id}},
   "guestIds": [{{profile2Id}}, {{profile3Id}}],
- "checkIn": "2026-10-28T14:00:00",
-  "checkOut": "2026-10-30T12:00:00",
+  "checkIn": "2026-11-03T14:00:00",
+  "checkOut": "2026-11-04T12:00:00",
   "adults": 2,
-  "sourceCompanyId": {{sourceCompanyId}},
-  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1254,14 +1183,12 @@ Content-Type: application/json
 {
   "roomId": {{room301Id}},
   "rateId": {{barJuniorSuiteRateId}},
-  "paymentCategoryId": 3,
+  "paymentCategoryId": {{juniorSuiteCategoryId}},
   "primaryGuestId": {{profile3Id}},
   "guestIds": [{{profile3Id}}],
-  "checkIn": "2026-10-28T14:00:00",
-  "checkOut": "2026-10-30T12:00:00",
+  "checkIn": "2026-11-05T14:00:00",
+  "checkOut": "2026-11-08T12:00:00",
   "adults": 1,
-  "sourceCompanyId": {{sourceCompanyId}},
-  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1285,14 +1212,12 @@ Content-Type: application/json
 {
   "roomId": {{room401Id}},
   "rateId": {{barSuiteRateId}},
-  "paymentCategoryId": 4,
+  "paymentCategoryId": {{suiteCategoryId}},
   "primaryGuestId": {{profile1Id}},
   "guestIds": [{{profile1Id}}, {{profile3Id}}],
-  "checkIn": "2026-10-28T14:00:00",
-  "checkOut": "2026-10-30T12:00:00",
+  "checkIn": "2026-11-07T14:00:00",
+  "checkOut": "2026-11-11T12:00:00",
   "adults": 2,
-  "sourceCompanyId": {{sourceCompanyId}},
-  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1316,14 +1241,12 @@ Content-Type: application/json
 {
   "roomId": {{room404Id}},
   "rateId": {{barKozynCornerRateId}},
-  "paymentCategoryId": 5,
+  "paymentCategoryId": {{kozynCornerCategoryId}},
   "primaryGuestId": {{profile2Id}},
   "guestIds": [{{profile2Id}}],
- "checkIn": "2026-10-28T14:00:00",
-  "checkOut": "2026-10-30T12:00:00",
+  "checkIn": "2026-11-03T14:00:00",
+  "checkOut": "2026-11-09T12:00:00",
   "adults": 1,
-  "sourceCompanyId": {{sourceCompanyId}},
-  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1347,14 +1270,12 @@ Content-Type: application/json
 {
   "roomId": {{room102Id}},
   "rateId": {{barStandardRateId}},
-  "paymentCategoryId": 1,
+  "paymentCategoryId": {{standardCategoryId}},
   "primaryGuestId": {{profile3Id}},
   "guestIds": [{{profile3Id}}, {{profile2Id}}],
-  "checkIn": "2026-10-28T14:00:00",
-  "checkOut": "2026-10-30T12:00:00",
+  "checkIn": "2026-11-10T14:00:00",
+  "checkOut": "2026-11-13T12:00:00",
   "adults": 2,
-  "sourceCompanyId": {{sourceCompanyId}},
-  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1378,14 +1299,12 @@ Content-Type: application/json
 {
   "roomId": {{room103Id}},
   "rateId": {{barStandardRateId}},
-  "paymentCategoryId": 1,
+  "paymentCategoryId": {{standardCategoryId}},
   "primaryGuestId": {{profile1Id}},
   "guestIds": [{{profile1Id}}],
-  "checkIn": "2026-10-28T14:00:00",
-  "checkOut": "2026-10-30T12:00:00",
+  "checkIn": "2026-11-12T14:00:00",
+  "checkOut": "2026-11-15T12:00:00",
   "adults": 1,
-  "sourceCompanyId": {{sourceCompanyId}},
-  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1409,14 +1328,12 @@ Content-Type: application/json
 {
   "roomId": {{room202Id}},
   "rateId": {{barSuperiorRateId}},
-  "paymentCategoryId": 2,
+  "paymentCategoryId": {{superiorCategoryId}},
   "primaryGuestId": {{profile2Id}},
   "guestIds": [{{profile2Id}}, {{profile3Id}}],
- "checkIn": "2026-10-28T14:00:00",
-  "checkOut": "2026-10-30T12:00:00",
+  "checkIn": "2026-11-14T14:00:00",
+  "checkOut": "2026-11-17T12:00:00",
   "adults": 2,
-  "sourceCompanyId": {{sourceCompanyId}},
-  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1440,14 +1357,12 @@ Content-Type: application/json
 {
   "roomId": {{room302Id}},
   "rateId": {{barJuniorSuiteRateId}},
-  "paymentCategoryId": 3,
+  "paymentCategoryId": {{juniorSuiteCategoryId}},
   "primaryGuestId": {{profile3Id}},
   "guestIds": [{{profile3Id}}, {{profile1Id}}],
-  "checkIn": "2026-10-28T14:00:00",
-  "checkOut": "2026-10-30T12:00:00",
+  "checkIn": "2026-11-18T14:00:00",
+  "checkOut": "2026-11-21T12:00:00",
   "adults": 2,
-  "sourceCompanyId": {{sourceCompanyId}},
-  "operatorCompanyId": {{operatorCompanyId}},
   "children": 0
 }
 
@@ -1544,7 +1459,7 @@ Authorization: Bearer {{token}}
 
 ### GET RESERVATIONS BY CHECK-IN DATE
 
-GET {{reservationUrl}}/check-in?date=2026-10-22
+GET {{reservationUrl}}/check-in?date=2026-11-03
 Authorization: Bearer {{token}}
 
 > {%
@@ -1561,7 +1476,7 @@ Authorization: Bearer {{token}}
 
 ### GET RESERVATIONS BY CHECK-OUT DATE
 
-GET {{reservationUrl}}/check-out?date=2026-10-25
+GET {{reservationUrl}}/check-out?date=2026-11-06
 Authorization: Bearer {{token}}
 
 > {%
@@ -1578,7 +1493,7 @@ Authorization: Bearer {{token}}
 
 ### GET RESERVATIONS BY DATE
 
-GET {{reservationUrl}}/date?date=2026-10-26
+GET {{reservationUrl}}/date?date=2026-11-07
 Authorization: Bearer {{token}}
 
 > {%
@@ -1595,7 +1510,7 @@ Authorization: Bearer {{token}}
 
 ### GET RESERVATIONS BY DATE RANGE
 
-GET {{reservationUrl}}/date-range?startDate=2026-10-20&endDate=2026-11-20
+GET {{reservationUrl}}/date-range?startDate=2026-11-01&endDate=2026-12-02
 Authorization: Bearer {{token}}
 
 > {%
@@ -1612,7 +1527,7 @@ Authorization: Bearer {{token}}
 
 ### INVALID RESERVATION DATE RANGE
 
-GET {{reservationUrl}}/date-range?startDate=2026-11-20&endDate=2026-10-20
+GET {{reservationUrl}}/date-range?startDate=2026-12-02&endDate=2026-11-01
 Authorization: Bearer {{token}}
 
 > {%
@@ -1782,7 +1697,14 @@ Authorization: Bearer {{token}}
     });
 
     client.test("Correct folio returned", function () {
-        client.assert(response.body.id == client.global.get("folio1Id"));
+        client.assert(
+            response.body.length > 0 &&
+            response.body[0].id == client.global.get("folio1Id")
+        );
+    });
+
+    client.test("Correct reservation linked to folio", function () {
+        client.assert(response.body[0].reservationId == client.global.get("reservation1Id"));
     });
 %}
 
@@ -1807,13 +1729,17 @@ Authorization: Bearer {{token}}
 
 ### CREATE ACCRUAL
 
+### CREATE ACCRUAL
+
 POST {{accrualUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
+  "hotelId": {{hotelId}},
   "folioId": {{folio1Id}},
   "type": "BREAKFAST",
+  "name": "Сніданок",
   "description": "Riverside breakfast package",
   "unitPrice": 500.00,
   "quantity": 2
@@ -1939,7 +1865,7 @@ Authorization: Bearer {{token}}
 
 ### HOTEL GRID - OCTOBER TO NOVEMBER 2026
 
-GET {{hotelGridUrl}}?startDate=2026-10-20&endDate=2026-11-25
+GET {{hotelGridUrl}}?startDate=2026-11-01&endDate=2026-12-07
 Authorization: Bearer {{token}}
 
 > {%
