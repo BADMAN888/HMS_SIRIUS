@@ -1,16 +1,18 @@
-
 package com.sirius.sirius.mappers;
 
 import com.sirius.sirius.dto.ReservationCheckInResponse;
 import com.sirius.sirius.dto.ReservationCheckOutResponse;
 import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.dto.ReservationResponse;
+import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Set;
 
 @Mapper(componentModel = "spring")
@@ -26,7 +28,7 @@ public interface ReservationMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "comments", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "folio", ignore = true)
+    @Mapping(target = "folios", ignore = true)
     @Mapping(target = "sourceCompany", ignore = true)
     @Mapping(target = "operatorCompany", ignore = true)
     ReservationEntity toEntity(ReservationRequest request);
@@ -35,7 +37,10 @@ public interface ReservationMapper {
             target = "guestIds",
             expression = "java(entity.getGuests().stream().map(ProfileEntity::getId).collect(java.util.stream.Collectors.toSet()))"
     )
-    @Mapping(target = "folioId", source = "folio.id")
+    @Mapping(
+            target = "folioId",
+            expression = "java(getFirstFolioId(entity.getFolios()))"
+    )
     @Mapping(target = "paymentCategoryId", source = "paymentCategory.id")
     @Mapping(target = "paymentCategoryName", source = "paymentCategory.name")
     ReservationResponse toResponse(ReservationEntity entity);
@@ -44,14 +49,20 @@ public interface ReservationMapper {
     @Mapping(target = "guestFirstName", expression = "java(getFirstName(entity.getGuests()))")
     @Mapping(target = "guestLastName", expression = "java(getLastName(entity.getGuests()))")
     @Mapping(target = "guestMiddleName", expression = "java(getMiddleName(entity.getGuests()))")
-    @Mapping(target = "totalAmount", source = "folio.totalAmount")
+    @Mapping(
+            target = "totalAmount",
+            expression = "java(getTotalAmount(entity.getFolios()))"
+    )
     ReservationCheckInResponse toCheckInResponse(ReservationEntity entity);
 
     @Mapping(target = "roomId", source = "room.id")
     @Mapping(target = "guestFirstName", expression = "java(getFirstName(entity.getGuests()))")
     @Mapping(target = "guestLastName", expression = "java(getLastName(entity.getGuests()))")
     @Mapping(target = "guestMiddleName", expression = "java(getMiddleName(entity.getGuests()))")
-    @Mapping(target = "totalAmount", source = "folio.totalAmount")
+    @Mapping(
+            target = "totalAmount",
+            expression = "java(getTotalAmount(entity.getFolios()))"
+    )
     ReservationCheckOutResponse toCheckOutResponse(ReservationEntity entity);
 
     @Mapping(target = "id", ignore = true)
@@ -64,11 +75,32 @@ public interface ReservationMapper {
     @Mapping(target = "status", ignore = true)
     @Mapping(target = "comments", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "folio", ignore = true)
+    @Mapping(target = "folios", ignore = true)
+    @Mapping(target = "sourceCompany", ignore = true)
+    @Mapping(target = "operatorCompany", ignore = true)
     void updateEntity(
             ReservationRequest request,
             @MappingTarget ReservationEntity entity
     );
+
+    default Long getFirstFolioId(List<FolioEntity> folios) {
+        if (folios == null || folios.isEmpty()) {
+            return null;
+        }
+
+        return folios.get(0).getId();
+    }
+
+    default BigDecimal getTotalAmount(List<FolioEntity> folios) {
+        if (folios == null || folios.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+
+        return folios.stream()
+                .map(FolioEntity::getTotalAmount)
+                .filter(amount -> amount != null)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
 
     default ProfileEntity getPrimaryGuest(Set<ProfileEntity> guests) {
         if (guests == null || guests.isEmpty()) {

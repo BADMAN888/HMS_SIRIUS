@@ -27,6 +27,11 @@ public class FolioController {
                 .body(folioService.create(request));
     }
 
+    @GetMapping
+    public ResponseEntity<List<FolioResponse>> getAll() {
+        return ResponseEntity.ok(folioService.getAll());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<FolioResponse> getById(
             @PathVariable Long id
@@ -35,23 +40,38 @@ public class FolioController {
     }
 
     @GetMapping("/reservation/{reservationId}")
-    public ResponseEntity<FolioResponse> getByReservationId(
+    public ResponseEntity<List<FolioResponse>> getByReservationId(
             @PathVariable Long reservationId
     ) {
-        return ResponseEntity.ok(folioService.getByReservationId(reservationId));
+        return ResponseEntity.ok(
+                folioService.getByReservationId(reservationId)
+        );
     }
 
-    @GetMapping
-    public ResponseEntity<List<FolioResponse>> getAll() {
-        return ResponseEntity.ok(folioService.getAll());
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<FolioResponse> update(
-            @PathVariable Long id,
-            @Valid @RequestBody FolioRequest request
+    @GetMapping("/hotel/{hotelId}")
+    public ResponseEntity<List<FolioResponse>> getByHotelId(
+            @PathVariable Long hotelId
     ) {
-        return ResponseEntity.ok(folioService.update(id, request));
+        return ResponseEntity.ok(
+                folioService.getByHotelId(hotelId)
+        );
+    }
+
+    @PutMapping("/{id}/accruals")
+    public ResponseEntity<FolioResponse> attachAccruals(
+            @PathVariable Long id,
+            @RequestBody List<Long> accrualIds
+    ) {
+        return ResponseEntity.ok(
+                folioService.attachAccruals(id, accrualIds)
+        );
+    }
+
+    @PatchMapping("/{id}/close")
+    public ResponseEntity<FolioResponse> close(
+            @PathVariable Long id
+    ) {
+        return ResponseEntity.ok(folioService.close(id));
     }
 
     @DeleteMapping("/{id}")

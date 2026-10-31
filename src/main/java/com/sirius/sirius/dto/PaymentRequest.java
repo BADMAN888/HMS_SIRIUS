@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record PaymentRequest(
+
         @NotNull
         Long folioId,
 
@@ -15,10 +16,11 @@ public record PaymentRequest(
         PaymentMethod method,
 
         @NotNull
-        @DecimalMin(value = "0.01")
+        @DecimalMin("0.01")
         BigDecimal amount,
 
         @Size(max = 255)
         String description
+
 ) {
 }

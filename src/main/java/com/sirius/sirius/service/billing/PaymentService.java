@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.PaymentRequest;
@@ -28,18 +27,33 @@ public class PaymentService {
     private final PaymentMapper paymentMapper;
 
     public PaymentResponse create(PaymentRequest request) {
-        FolioEntity folio = findFolio(request.folioId());
+        FolioEntity folio = folioRepository.findById(request.folioId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Folio with id: " + request.folioId() + " not found"
+                ));
+
         ensureFolioIsOpen(folio);
 
-        PaymentEntity payment = paymentMapper.toEntity(request);
-        payment.setFolio(folio);
-        payment.setPaidAt(LocalDateTime.now());
+        BigDecimal amount = request.amount()
+                .setScale(2, java.math.RoundingMode.HALF_UP);
 
-        PaymentEntity savedPayment = paymentRepository.save(payment);
+        PaymentEntity payment = PaymentEntity.builder()
+                .folio(folio)
+                .method(request.method())
+                .amount(amount)
+                .description(request.description())
+                .paidAt(LocalDateTime.now())
+                .build();
 
-        recalculatePaidAmount(folio);
+        PaymentEntity saved = paymentRepository.save(payment);
 
-        return paymentMapper.toResponse(savedPayment);
+        folio.setPaidAmount(
+                folio.getPaidAmount().add(amount)
+        );
+
+        folioRepository.save(folio);
+
+        return paymentMapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -74,71 +88,11 @@ public class PaymentService {
                 .toList();
     }
 
-    public PaymentResponse update(Long id, PaymentRequest request) {
-        PaymentEntity payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Payment with id: " + id + " not found"
-                ));
-
-        FolioEntity oldFolio = payment.getFolio();
-        FolioEntity newFolio = findFolio(request.folioId());
-
-        ensureFolioIsOpen(oldFolio);
-        ensureFolioIsOpen(newFolio);
-
-        payment.setFolio(newFolio);
-        payment.setMethod(request.method());
-        payment.setAmount(request.amount());
-        payment.setDescription(request.description());
-
-        PaymentEntity savedPayment = paymentRepository.save(payment);
-
-        recalculatePaidAmount(oldFolio);
-
-        if (!oldFolio.getId().equals(newFolio.getId())) {
-            recalculatePaidAmount(newFolio);
-        }
-
-        return paymentMapper.toResponse(savedPayment);
-    }
-
-    public void delete(Long id) {
-        PaymentEntity payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Payment with id: " + id + " not found"
-                ));
-
-        FolioEntity folio = payment.getFolio();
-        ensureFolioIsOpen(folio);
-
-        paymentRepository.delete(payment);
-        paymentRepository.flush();
-
-        recalculatePaidAmount(folio);
-    }
-
-    private FolioEntity findFolio(Long folioId) {
-        return folioRepository.findById(folioId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Folio with id: " + folioId + " not found"
-                ));
-    }
-
     private void ensureFolioIsOpen(FolioEntity folio) {
         if (folio.getStatus() == FolioStatus.CLOSED) {
             throw new IllegalStateException(
-                    "Cannot modify payments of a closed folio"
+                    "Cannot add payments to a closed folio"
             );
         }
-    }
-
-    private void recalculatePaidAmount(FolioEntity folio) {
-        BigDecimal paidAmount = paymentRepository.findAllByFolioId(folio.getId())
-                .stream()
-                .map(PaymentEntity::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        folio.setPaidAmount(paidAmount);
-        folioRepository.save(folio);
     }
 }

@@ -27,6 +27,11 @@ public class PaymentController {
                 .body(paymentService.create(request));
     }
 
+    @GetMapping
+    public ResponseEntity<List<PaymentResponse>> getAll() {
+        return ResponseEntity.ok(paymentService.getAll());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<PaymentResponse> getById(
             @PathVariable Long id
@@ -34,31 +39,12 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getById(id));
     }
 
-    @GetMapping
-    public ResponseEntity<List<PaymentResponse>> getAll() {
-        return ResponseEntity.ok(paymentService.getAll());
-    }
-
     @GetMapping("/folio/{folioId}")
     public ResponseEntity<List<PaymentResponse>> getByFolioId(
             @PathVariable Long folioId
     ) {
-        return ResponseEntity.ok(paymentService.getByFolioId(folioId));
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<PaymentResponse> update(
-            @PathVariable Long id,
-            @Valid @RequestBody PaymentRequest request
-    ) {
-        return ResponseEntity.ok(paymentService.update(id, request));
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @PathVariable Long id
-    ) {
-        paymentService.delete(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(
+                paymentService.getByFolioId(folioId)
+        );
     }
 }

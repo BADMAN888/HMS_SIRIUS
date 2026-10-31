@@ -1,6 +1,7 @@
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.FolioStatus;
@@ -76,7 +77,6 @@ public class ReservationLifecycleService {
         reservation.setStatus(ReservationStatus.IN_HOUSE);
     }
 
-
     public void checkOut(Long id) {
         ReservationEntity reservation = findById(id);
 
@@ -87,17 +87,23 @@ public class ReservationLifecycleService {
             );
         }
 
+        LocalDateTime now = LocalDateTime.now(clock);
+
         RoomEntity room = reservation.getRoom();
         room.setStatus(RoomStatus.CLEANING);
+
         reservation.setStatus(ReservationStatus.COMPLETED);
 
-        if (reservation.getFolio() != null
-                && reservation.getFolio().getBalance()
-                .compareTo(BigDecimal.ZERO) == 0) {
-            reservation.getFolio().setStatus(FolioStatus.CLOSED);
+        if (reservation.getFolios() != null) {
+            for (FolioEntity folio : reservation.getFolios()) {
+                if (folio.getStatus() == FolioStatus.OPEN
+                        && folio.getBalance().compareTo(BigDecimal.ZERO) == 0) {
+                    folio.setStatus(FolioStatus.CLOSED);
+                    folio.setClosedAt(now);
+                }
+            }
         }
     }
-
 
     public void noShow(Long id) {
         ReservationEntity reservation = findById(id);

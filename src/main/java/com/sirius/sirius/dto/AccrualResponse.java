@@ -9,11 +9,17 @@ public record AccrualResponse(
 
         Long id,
 
+        Long hotelId,
+
+        Long reservationId,
+
+        Long recipientId,
+
         Long folioId,
 
         AccrualType type,
 
-        String description,
+        String name,
 
         BigDecimal unitPrice,
 
@@ -22,5 +28,6 @@ public record AccrualResponse(
         BigDecimal amount,
 
         LocalDateTime accruedAt
+
 ) {
 }

@@ -1,24 +1,22 @@
 package com.sirius.sirius.mappers;
 
-import com.sirius.sirius.dto.FolioRequest;
 import com.sirius.sirius.dto.FolioResponse;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+        componentModel = "spring",
+        uses = {
+                AccrualMapper.class,
+                PaymentMapper.class
+        }
+)
 public interface FolioMapper {
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "reservation", ignore = true)
-    @Mapping(target = "totalAmount", ignore = true)
-    @Mapping(target = "paidAmount", ignore = true)
-    @Mapping(target = "accruals", ignore = true)
-    @Mapping(target = "payments", ignore = true)
-    FolioEntity toEntity(FolioRequest request);
-
+    @Mapping(target = "hotelId", source = "hotel.id")
     @Mapping(target = "reservationId", source = "reservation.id")
-    @Mapping(target = "balance", source = "balance")
-    @Mapping(target = "advanceAmount", source = "advanceAmount")
+    @Mapping(target = "recipientId", source = "recipient.id")
+    @Mapping(target = "payerId", source = "payer.id")
     FolioResponse toResponse(FolioEntity entity);
 }
