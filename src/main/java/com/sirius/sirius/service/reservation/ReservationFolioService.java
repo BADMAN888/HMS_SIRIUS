@@ -117,6 +117,13 @@ public class ReservationFolioService {
             );
         }
 
+        if (!folio.getHotel().getId()
+                .equals(reservation.getRoom().getHotel().getId())) {
+            throw new BadRequestException(
+                    "Cannot move reservation folio to another hotel"
+            );
+        }
+
         FacilityEntity accommodationFacility =
                 getAccommodationFacility(reservation);
 
@@ -157,7 +164,6 @@ public class ReservationFolioService {
         allAccruals.addAll(savedNewAccruals);
 
         folio.setAccruals(allAccruals);
-        folio.setHotel(reservation.getRoom().getHotel());
         folio.recalculateTotalAmount();
 
         folioRepository.save(folio);
