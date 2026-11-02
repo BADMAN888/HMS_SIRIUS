@@ -8,6 +8,7 @@ import lombok.*;
 import lombok.experimental.FieldDefaults;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -40,14 +41,14 @@ public class AccrualEntity {
     @JoinColumn(name = "folio_id")
     FolioEntity folio;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 30)
-    AccrualType type;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "facility_id", nullable = false)
+    FacilityEntity facility;
 
     @Column(nullable = false, length = 255)
     String name;
 
-    @Column(nullable = false, precision = 12, scale = 2, name = "unit_price")
+    @Column(nullable = false, precision = 12, scale = 2)
     BigDecimal unitPrice;
 
     @Column(nullable = false, precision = 10, scale = 3)
@@ -55,6 +56,9 @@ public class AccrualEntity {
 
     @Column(nullable = false, precision = 12, scale = 2)
     BigDecimal amount;
+
+    @Column(nullable = false, name = "service_date")
+    LocalDate serviceDate;
 
     @Column(nullable = false, name = "accrued_at")
     LocalDateTime accruedAt;

@@ -15,7 +15,10 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+        componentModel = "spring",
+        uses = RoomMapper.class
+)
 public interface ReservationMapper {
 
     @Mapping(target = "id", ignore = true)
