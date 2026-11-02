@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
@@ -31,6 +30,7 @@ import java.util.List;
 public class ReservationFolioService {
 
     private static final String ACCOMMODATION_NAME = "Проживання";
+    private static final String REVERSAL_PREFIX = "Сторно: ";
 
     private static final BigDecimal ONE_NIGHT =
             BigDecimal.ONE.setScale(3, RoundingMode.UNNECESSARY);
@@ -38,14 +38,11 @@ public class ReservationFolioService {
     private final FolioRepository folioRepository;
     private final AccrualRepository accrualRepository;
     private final FacilityRepository facilityRepository;
-    private final PriceService ratePriceService;
+    private final PriceService priceService;
     private final Clock clock;
 
     public void create(ReservationEntity reservation) {
         validateReservation(reservation);
-
-        FacilityEntity accommodationFacility =
-                getAccommodationFacility(reservation);
 
         if (reservation.getFolios() != null
                 && reservation.getFolios().stream()
@@ -54,6 +51,9 @@ public class ReservationFolioService {
                     "Accommodation folio already exists for reservation"
             );
         }
+
+        FacilityEntity accommodationFacility =
+                getAccommodationFacility(reservation);
 
         FolioEntity folio = FolioEntity.builder()
                 .hotel(reservation.getRoom().getHotel())
@@ -92,17 +92,26 @@ public class ReservationFolioService {
             return;
         }
 
-        FolioEntity accommodationFolio = reservation.getFolios()
+        FolioEntity existingFolio = reservation.getFolios()
                 .stream()
                 .filter(this::containsAccommodationAccrual)
                 .findFirst()
+                .orElse(null);
+
+        if (existingFolio == null) {
+            create(reservation);
+            return;
+        }
+
+        FolioEntity folio = folioRepository
+                .findByIdForUpdate(existingFolio.getId())
                 .orElseThrow(() ->
-                        new BadRequestException(
-                                "Accommodation folio not found for reservation"
+                        new EntityNotFoundException(
+                                "Accommodation folio not found"
                         )
                 );
 
-        if (accommodationFolio.getStatus() == FolioStatus.CLOSED) {
+        if (folio.getStatus() == FolioStatus.CLOSED) {
             throw new BadRequestException(
                     "Closed folio cannot be recalculated"
             );
@@ -111,31 +120,69 @@ public class ReservationFolioService {
         FacilityEntity accommodationFacility =
                 getAccommodationFacility(reservation);
 
-        List<AccrualEntity> oldAccruals =
-                accommodationFolio.getAccruals()
-                        .stream()
-                        .filter(this::isAccommodationAccrual)
-                        .toList();
+        List<AccrualEntity> allAccruals =
+                accrualRepository.findAllByFolioId(folio.getId());
 
-        accrualRepository.deleteAll(oldAccruals);
-        accrualRepository.flush();
+        List<AccrualEntity> currentAccruals = allAccruals.stream()
+                .filter(this::isAccommodationAccrual)
+                .filter(accrual -> !accrual.isReversed())
+                .filter(accrual -> accrual.getReversalOf() == null)
+                .toList();
 
-        accommodationFolio.getAccruals().removeAll(oldAccruals);
+        LocalDateTime accruedAt = LocalDateTime.now(clock);
+
+        List<AccrualEntity> reversals =
+                createReversalAccruals(currentAccruals, accruedAt);
+
+        currentAccruals.forEach(accrual -> accrual.setReversed(true));
+
+        if (!currentAccruals.isEmpty()) {
+            accrualRepository.saveAll(currentAccruals);
+        }
+
+        List<AccrualEntity> savedReversals =
+                accrualRepository.saveAll(reversals);
 
         List<AccrualEntity> newAccruals =
                 createAccommodationAccruals(
                         reservation,
-                        accommodationFolio,
+                        folio,
                         accommodationFacility
                 );
 
-        accrualRepository.saveAll(newAccruals);
-        accommodationFolio.getAccruals().addAll(newAccruals);
+        List<AccrualEntity> savedNewAccruals =
+                accrualRepository.saveAll(newAccruals);
 
-        accommodationFolio.setHotel(reservation.getRoom().getHotel());
-        accommodationFolio.recalculateTotalAmount();
+        allAccruals.addAll(savedReversals);
+        allAccruals.addAll(savedNewAccruals);
 
-        folioRepository.save(accommodationFolio);
+        folio.setAccruals(allAccruals);
+        folio.setHotel(reservation.getRoom().getHotel());
+        folio.recalculateTotalAmount();
+
+        folioRepository.save(folio);
+    }
+
+    private List<AccrualEntity> createReversalAccruals(
+            List<AccrualEntity> accruals,
+            LocalDateTime accruedAt
+    ) {
+        return accruals.stream()
+                .map(original -> AccrualEntity.builder()
+                        .hotel(original.getHotel())
+                        .reservation(original.getReservation())
+                        .recipient(original.getRecipient())
+                        .folio(original.getFolio())
+                        .facility(original.getFacility())
+                        .reversalOf(original)
+                        .name(REVERSAL_PREFIX + original.getName())
+                        .unitPrice(original.getUnitPrice())
+                        .quantity(original.getQuantity().negate())
+                        .amount(original.getAmount().negate())
+                        .serviceDate(original.getServiceDate())
+                        .accruedAt(accruedAt)
+                        .build())
+                .toList();
     }
 
     private List<AccrualEntity> createAccommodationAccruals(
@@ -153,7 +200,7 @@ public class ReservationFolioService {
              serviceDate.isBefore(checkOut);
              serviceDate = serviceDate.plusDays(1)) {
 
-            BigDecimal unitPrice = ratePriceService.getPriceAmountForDate(
+            BigDecimal unitPrice = priceService.getPriceAmountForDate(
                     reservation.getRate().getId(),
                     serviceDate
             ).setScale(2, RoundingMode.HALF_UP);

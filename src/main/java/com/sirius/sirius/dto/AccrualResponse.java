@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.dto;
 
 import java.math.BigDecimal;
@@ -17,6 +16,8 @@ public record AccrualResponse(
         BigDecimal quantity,
         BigDecimal amount,
         LocalDate serviceDate,
-        LocalDateTime accruedAt
+        LocalDateTime accruedAt,
+        boolean reversed,
+        Long reversalOfId
 ) {
 }

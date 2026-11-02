@@ -2,7 +2,6 @@ package com.sirius.sirius.store.entity.biling;
 
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
-import com.sirius.sirius.store.enums.AccrualType;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -44,6 +43,14 @@ public class AccrualEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "facility_id", nullable = false)
     FacilityEntity facility;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reversal_of_id")
+    AccrualEntity reversalOf;
+
+    @Column(nullable = false)
+    @Builder.Default
+    boolean reversed = false;
 
     @Column(nullable = false, length = 255)
     String name;
