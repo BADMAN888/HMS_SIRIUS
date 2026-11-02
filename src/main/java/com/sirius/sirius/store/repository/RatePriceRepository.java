@@ -42,4 +42,5 @@ public interface RatePriceRepository
             @Param("rateId") Long rateId,
             @Param("date") LocalDate date
     );
+
 }

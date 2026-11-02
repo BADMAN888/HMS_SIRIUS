@@ -106,6 +106,7 @@ public class ReservationService {
                 .toList();
     }
 
+
     public ReservationResponse update(
             Long id,
             ReservationRequest request
@@ -116,11 +117,16 @@ public class ReservationService {
 
         RoomEntity room = findRoom(request.roomId());
         RateEntity rate = findRate(request.rateId());
+
         RoomCategoryEntity paymentCategory =
                 findPaymentCategory(request.paymentCategoryId());
 
         CompanyEntity sourceCompany = findCompany(request.sourceCompanyId());
         CompanyEntity operatorCompany = findCompany(request.operatorCompanyId());
+
+        boolean keepCurrentRate = reservation.getRate()
+                .getId()
+                .equals(rate.getId());
 
         availabilityService.validateForUpdate(
                 reservation.getId(),
@@ -129,10 +135,12 @@ public class ReservationService {
                 request.adults(),
                 request.children(),
                 request.checkIn(),
-                request.checkOut()
+                request.checkOut(),
+                keepCurrentRate
         );
 
         Set<ProfileEntity> guests = findGuests(request.guestIds());
+
         ProfileEntity primaryGuest = findPrimaryGuest(
                 request.primaryGuestId(),
                 guests
@@ -156,6 +164,7 @@ public class ReservationService {
 
         return reservationMapper.toResponse(reservation);
     }
+
 
     public List<ReservationCheckInResponse> getByCheckInDate(LocalDate date) {
         LocalDateTime start = date.atStartOfDay();

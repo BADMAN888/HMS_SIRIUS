@@ -1,7 +1,9 @@
+
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.RatePriceRequest;
 import com.sirius.sirius.dto.RatePriceResponse;
+import com.sirius.sirius.exeption.BadRequestException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.RatePriceMapper;
 import com.sirius.sirius.store.entity.biling.RateEntity;
@@ -13,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -25,19 +29,16 @@ public class RatePriceService {
     private final RatePriceRepository ratePriceRepository;
     private final RateRepository rateRepository;
     private final RatePriceMapper ratePriceMapper;
+    private final Clock clock;
 
     @Transactional
     public RatePriceResponse create(RatePriceRequest request) {
-        validatePrice(request.price());
-        validatePeriod(request.validFrom(), request.validTo());
+        validateRequest(request);
 
-        RateEntity rate = findRate(request.rateId());
+        RateEntity rate = findRateForUpdate(request.rateId());
 
-        if (!rate.isActive()) {
-            throw new IllegalArgumentException(
-                    "Cannot add a price to an inactive rate"
-            );
-        }
+        BigDecimal normalizedPrice = request.price()
+                .setScale(2, RoundingMode.UNNECESSARY);
 
         validateNoOverlappingPrice(
                 rate.getId(),
@@ -47,7 +48,7 @@ public class RatePriceService {
 
         RatePriceEntity entity = RatePriceEntity.builder()
                 .rate(rate)
-                .price(request.price())
+                .price(normalizedPrice)
                 .validFrom(request.validFrom())
                 .validTo(request.validTo())
                 .build();
@@ -84,9 +85,21 @@ public class RatePriceService {
     }
 
     public Optional<BigDecimal> getCurrentPrice(Long rateId) {
-        return ratePriceRepository
-                .findApplicablePrices(rateId, LocalDate.now())
-                .stream()
+        findRate(rateId);
+
+        LocalDate today = LocalDate.now(clock);
+
+        List<RatePriceEntity> prices =
+                ratePriceRepository.findApplicablePrices(rateId, today);
+
+        if (prices.size() > 1) {
+            throw new IllegalStateException(
+                    "Multiple prices found for rate " + rateId
+                            + " on date " + today
+            );
+        }
+
+        return prices.stream()
                 .findFirst()
                 .map(RatePriceEntity::getPrice);
     }
@@ -98,8 +111,8 @@ public class RatePriceService {
         findRate(rateId);
 
         if (date == null) {
-            throw new IllegalArgumentException(
-                    "Price date must not be null"
+            throw new BadRequestException(
+                    "Price date must be specified"
             );
         }
 
@@ -124,6 +137,12 @@ public class RatePriceService {
     }
 
     private RateEntity findRate(Long id) {
+        if (id == null) {
+            throw new BadRequestException(
+                    "Rate id must be specified"
+            );
+        }
+
         return rateRepository.findById(id)
                 .orElseThrow(() ->
                         new NotFoundException(
@@ -132,10 +151,48 @@ public class RatePriceService {
                 );
     }
 
+    private RateEntity findRateForUpdate(Long id) {
+        if (id == null) {
+            throw new BadRequestException(
+                    "Rate id must be specified"
+            );
+        }
+
+        return rateRepository.findByIdForUpdate(id)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Rate with id: " + id + " not found"
+                        )
+                );
+    }
+
+    private void validateRequest(RatePriceRequest request) {
+        if (request == null) {
+            throw new BadRequestException(
+                    "Rate price request must be specified"
+            );
+        }
+
+        validatePrice(request.price());
+
+        validatePeriod(
+                request.validFrom(),
+                request.validTo()
+        );
+    }
+
     private void validatePrice(BigDecimal price) {
         if (price == null || price.signum() <= 0) {
-            throw new IllegalArgumentException(
+            throw new BadRequestException(
                     "Rate price must be greater than zero"
+            );
+        }
+
+        try {
+            price.setScale(2, RoundingMode.UNNECESSARY);
+        } catch (ArithmeticException exception) {
+            throw new BadRequestException(
+                    "Rate price cannot have more than 2 decimal places"
             );
         }
     }
@@ -145,13 +202,13 @@ public class RatePriceService {
             LocalDate validTo
     ) {
         if (validFrom == null) {
-            throw new IllegalArgumentException(
+            throw new BadRequestException(
                     "Price start date is required"
             );
         }
 
         if (validTo != null && validTo.isBefore(validFrom)) {
-            throw new IllegalArgumentException(
+            throw new BadRequestException(
                     "Price end date cannot be before start date"
             );
         }
@@ -167,7 +224,7 @@ public class RatePriceService {
                 validFrom,
                 validTo
         )) {
-            throw new IllegalArgumentException(
+            throw new BadRequestException(
                     "Price period overlaps an existing price period"
             );
         }

@@ -1,10 +1,10 @@
+
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.enums.ReservationStatus;
-import com.sirius.sirius.store.enums.RoomStatus;
 import com.sirius.sirius.store.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,10 +46,37 @@ public class ReservationAvailabilityService {
             LocalDateTime checkIn,
             LocalDateTime checkOut
     ) {
+        validateForUpdate(
+                reservationId,
+                room,
+                rate,
+                adults,
+                children,
+                checkIn,
+                checkOut,
+                false
+        );
+    }
+
+    public void validateForUpdate(
+            Long reservationId,
+            RoomEntity room,
+            RateEntity rate,
+            Integer adults,
+            Integer children,
+            LocalDateTime checkIn,
+            LocalDateTime checkOut,
+            boolean allowInactiveRate
+    ) {
         validateDates(checkIn, checkOut);
-        validateRate(rate);
+
+        if (!allowInactiveRate) {
+            validateRate(rate);
+        }
+
         validateRateForRoom(rate, room);
         validateOccupancy(room, adults, children);
+
         validateRoomAvailabilityExceptCurrent(
                 reservationId,
                 room.getId(),
@@ -62,14 +89,32 @@ public class ReservationAvailabilityService {
             LocalDateTime checkIn,
             LocalDateTime checkOut
     ) {
+        if (checkIn == null || checkOut == null) {
+            throw new BadRequestException(
+                    "Check-in and check-out dates are required"
+            );
+        }
+
         if (!checkOut.isAfter(checkIn)) {
             throw new BadRequestException(
                     "Check-out must be after check-in"
             );
         }
+
+        if (!checkOut.toLocalDate().isAfter(checkIn.toLocalDate())) {
+            throw new BadRequestException(
+                    "Reservation must contain at least one night"
+            );
+        }
     }
 
     private void validateRate(RateEntity rate) {
+        if (rate == null) {
+            throw new BadRequestException(
+                    "Rate must be specified"
+            );
+        }
+
         if (!rate.isActive()) {
             throw new BadRequestException(
                     "Rate with id: " + rate.getId() + " is inactive"
@@ -81,7 +126,16 @@ public class ReservationAvailabilityService {
             RateEntity rate,
             RoomEntity room
     ) {
-        if (!rate.getCategory().getId().equals(room.getCategory().getId())) {
+        if (rate == null || room == null
+                || rate.getCategory() == null
+                || room.getCategory() == null) {
+            throw new BadRequestException(
+                    "Rate and room category must be specified"
+            );
+        }
+
+        if (!rate.getCategory().getId()
+                .equals(room.getCategory().getId())) {
             throw new BadRequestException(
                     "Rate does not belong to the selected room category"
             );
@@ -93,6 +147,15 @@ public class ReservationAvailabilityService {
             Integer adults,
             Integer children
     ) {
+        if (room == null || room.getCategory() == null
+                || adults == null || children == null
+                || adults < 0 || children < 0
+                || adults + children <= 0) {
+            throw new BadRequestException(
+                    "Invalid room occupancy"
+            );
+        }
+
         int guests = adults + children;
         int capacity = room.getCategory().getCountOfBeds();
 
