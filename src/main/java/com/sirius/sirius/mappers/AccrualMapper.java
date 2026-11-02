@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.mappers;
 
 import com.sirius.sirius.dto.AccrualResponse;
@@ -12,5 +13,6 @@ public interface AccrualMapper {
     @Mapping(target = "reservationId", source = "reservation.id")
     @Mapping(target = "recipientId", source = "recipient.id")
     @Mapping(target = "folioId", source = "folio.id")
+    @Mapping(target = "facilityId", source = "facility.id")
     AccrualResponse toResponse(AccrualEntity entity);
 }

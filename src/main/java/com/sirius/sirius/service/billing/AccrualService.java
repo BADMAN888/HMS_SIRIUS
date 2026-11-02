@@ -8,7 +8,9 @@ import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.CustomerEntity;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
+import com.sirius.sirius.store.entity.hotel.HotelEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
+import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.repository.AccrualRepository;
 import com.sirius.sirius.store.repository.CustomerRepository;
 import com.sirius.sirius.store.repository.FacilityRepository;
@@ -57,22 +59,6 @@ public class AccrualService {
                 .toList();
     }
 
-    public List<AccrualResponse> getUnassignedByHotelAndReservation(
-            Long hotelId,
-            Long reservationId
-    ) {
-        return accrualRepository.findAll()
-                .stream()
-                .filter(accrual ->
-                        accrual.getHotel().getId().equals(hotelId)
-                                && accrual.getReservation() != null
-                                && accrual.getReservation().getId().equals(reservationId)
-                                && accrual.getFolio() == null
-                )
-                .map(accrualMapper::toResponse)
-                .toList();
-    }
-
     @Transactional
     public AccrualResponse create(AccrualRequest request) {
         FacilityEntity facility = getFacility(request.facilityId());
@@ -95,8 +81,14 @@ public class AccrualService {
                 ? null
                 : getFolio(request.folioId());
 
-        validateReservationHotel(reservation, facility);
-        validateFolioCompatibility(folio, facility, reservation);
+        if (reservation == null && folio != null) {
+            reservation = folio.getReservation();
+        }
+
+        HotelEntity hotel = facility.getHotel();
+
+        validateReservationHotel(reservation, hotel);
+        validateFolioCompatibility(folio, hotel, reservation);
 
         if (folio != null) {
             ensureFolioIsOpen(folio);
@@ -114,7 +106,7 @@ public class AccrualService {
                 .setScale(2, RoundingMode.HALF_UP);
 
         AccrualEntity accrual = AccrualEntity.builder()
-                .hotel(facility.getHotel())
+                .hotel(hotel)
                 .reservation(reservation)
                 .recipient(recipient)
                 .folio(folio)
@@ -196,13 +188,13 @@ public class AccrualService {
 
     private void validateReservationHotel(
             ReservationEntity reservation,
-            FacilityEntity facility
+            HotelEntity hotel
     ) {
         if (reservation == null) {
             return;
         }
 
-        if (!reservation.getHotel().getId().equals(facility.getHotel().getId())) {
+        if (!reservation.getRoom().getHotel().getId().equals(hotel.getId())) {
             throw new IllegalArgumentException(
                     "Бронювання та послуга належать до різних готелів"
             );
@@ -211,40 +203,52 @@ public class AccrualService {
 
     private void validateFolioCompatibility(
             FolioEntity folio,
-            FacilityEntity facility,
+            HotelEntity hotel,
             ReservationEntity reservation
     ) {
         if (folio == null) {
             return;
         }
 
-        ReservationEntity folioReservation = folio.getReservation();
-
-        if (folioReservation == null) {
-            throw new IllegalArgumentException(
-                    "Folio не прив'язаний до бронювання"
-            );
-        }
-
-        if (!folioReservation.getHotel().getId().equals(facility.getHotel().getId())) {
+        if (!folio.getHotel().getId().equals(hotel.getId())) {
             throw new IllegalArgumentException(
                     "Folio та послуга належать до різних готелів"
             );
         }
 
         if (reservation != null
-                && !folioReservation.getId().equals(reservation.getId())) {
+                && folio.getReservation() != null
+                && !folio.getReservation().getId().equals(reservation.getId())) {
             throw new IllegalArgumentException(
                     "Folio та бронювання не відповідають одне одному"
+            );
+        }
+
+        if (reservation != null && folio.getReservation() == null) {
+            throw new IllegalArgumentException(
+                    "Folio не прив'язаний до переданого бронювання"
             );
         }
     }
 
     private void ensureFolioIsOpen(FolioEntity folio) {
-        if ("CLOSED".equals(folio.getStatus().name())) {
+        if (folio.getStatus() == FolioStatus.CLOSED) {
             throw new IllegalStateException(
                     "Неможливо додати нарахування до закритого Folio"
             );
         }
+    }
+    public List<AccrualResponse> getUnassignedByHotelId(Long hotelId) {
+        return accrualRepository.findAllByHotelIdAndFolioIsNull(hotelId)
+                .stream()
+                .map(accrualMapper::toResponse)
+                .toList();
+    }
+
+    public List<AccrualResponse> getUnassignedByReservationId(Long reservationId) {
+        return accrualRepository.findAllByReservationIdAndFolioIsNull(reservationId)
+                .stream()
+                .map(accrualMapper::toResponse)
+                .toList();
     }
 }

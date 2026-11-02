@@ -1,12 +1,16 @@
+
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
+import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
-import com.sirius.sirius.store.enums.AccrualType;
+import com.sirius.sirius.store.enums.FacilitySystemCode;
 import com.sirius.sirius.store.enums.FolioStatus;
+import com.sirius.sirius.store.repository.FacilityRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,33 +21,41 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ReservationFolioService {
 
-    private static final String ROOM_ACCRUAL_NAME = "Проживання";
+    private static final String ROOM_FACILITY_NAME = "Проживання";
 
     private final FolioRepository folioRepository;
+    private final FacilityRepository facilityRepository;
     private final Clock clock;
 
     public void create(ReservationEntity reservation) {
         validateReservation(reservation);
 
+        FacilityEntity accommodationFacility =
+                getAccommodationFacility(reservation);
+
         BigDecimal quantity = calculateNights(reservation);
         BigDecimal unitPrice = reservation.getRate().getPrice();
         BigDecimal amount = calculateAmount(unitPrice, quantity);
 
+        LocalDateTime now = LocalDateTime.now(clock);
+
         AccrualEntity accrual = AccrualEntity.builder()
                 .hotel(reservation.getRoom().getHotel())
                 .reservation(reservation)
-                .type(AccrualType.ROOM)
-                .name(ROOM_ACCRUAL_NAME)
+                .facility(accommodationFacility)
+                .name(ROOM_FACILITY_NAME)
                 .unitPrice(unitPrice)
                 .quantity(quantity)
                 .amount(amount)
-                .accruedAt(LocalDateTime.now(clock))
+                .serviceDate(reservation.getCheckIn().toLocalDate())
+                .accruedAt(now)
                 .build();
 
         FolioEntity folio = FolioEntity.builder()
@@ -79,27 +91,21 @@ public class ReservationFolioService {
         FolioEntity roomFolio = reservation.getFolios()
                 .stream()
                 .filter(folio -> folio.getStatus() == FolioStatus.OPEN)
-                .filter(folio -> folio.getAccruals() != null
-                        && folio.getAccruals().stream()
-                        .anyMatch(accrual ->
-                                accrual.getType() == AccrualType.ROOM
-                        ))
+                .filter(this::containsAccommodationAccrual)
                 .findFirst()
                 .orElseThrow(() ->
                         new BadRequestException(
-                                "Open room folio not found for reservation"
+                                "Open accommodation folio not found for reservation"
                         )
                 );
 
         AccrualEntity roomAccrual = roomFolio.getAccruals()
                 .stream()
-                .filter(accrual ->
-                        accrual.getType() == AccrualType.ROOM
-                )
+                .filter(this::isAccommodationAccrual)
                 .findFirst()
                 .orElseThrow(() ->
                         new BadRequestException(
-                                "Room accrual not found for reservation"
+                                "Accommodation accrual not found for reservation"
                         )
                 );
 
@@ -109,16 +115,52 @@ public class ReservationFolioService {
 
         roomAccrual.setHotel(reservation.getRoom().getHotel());
         roomAccrual.setReservation(reservation);
-        roomAccrual.setName(ROOM_ACCRUAL_NAME);
+        roomAccrual.setName(ROOM_FACILITY_NAME);
         roomAccrual.setUnitPrice(unitPrice);
         roomAccrual.setQuantity(quantity);
         roomAccrual.setAmount(amount);
+        roomAccrual.setServiceDate(
+                reservation.getCheckIn().toLocalDate()
+        );
 
         roomFolio.setHotel(reservation.getRoom().getHotel());
         roomFolio.recalculateTotalAmount();
     }
 
+    private FacilityEntity getAccommodationFacility(
+            ReservationEntity reservation
+    ) {
+        return facilityRepository
+                .findByHotelIdAndSystemCodeAndActiveTrue(
+                        reservation.getRoom().getHotel().getId(),
+                        FacilitySystemCode.ACCOMMODATION
+                )
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Для готелю не налаштована активна системна послуга проживання"
+                        )
+                );
+    }
+
+    private boolean containsAccommodationAccrual(FolioEntity folio) {
+        return folio.getAccruals() != null
+                && folio.getAccruals().stream()
+                .anyMatch(this::isAccommodationAccrual);
+    }
+
+    private boolean isAccommodationAccrual(AccrualEntity accrual) {
+        return accrual.getFacility() != null
+                && accrual.getFacility().getSystemCode()
+                == FacilitySystemCode.ACCOMMODATION;
+    }
+
     private void validateReservation(ReservationEntity reservation) {
+        if (reservation == null) {
+            throw new BadRequestException(
+                    "Reservation must be specified"
+            );
+        }
+
         if (reservation.getRoom() == null
                 || reservation.getRoom().getHotel() == null) {
             throw new BadRequestException(
