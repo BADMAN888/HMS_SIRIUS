@@ -21,7 +21,6 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -44,8 +43,6 @@ public class ReservationFolioService {
         BigDecimal unitPrice = reservation.getRate().getPrice();
         BigDecimal amount = calculateAmount(unitPrice, quantity);
 
-        LocalDateTime now = LocalDateTime.now(clock);
-
         AccrualEntity accrual = AccrualEntity.builder()
                 .hotel(reservation.getRoom().getHotel())
                 .reservation(reservation)
@@ -55,7 +52,7 @@ public class ReservationFolioService {
                 .quantity(quantity)
                 .amount(amount)
                 .serviceDate(reservation.getCheckIn().toLocalDate())
-                .accruedAt(now)
+                .accruedAt(LocalDateTime.now(clock))
                 .build();
 
         FolioEntity folio = FolioEntity.builder()
@@ -81,6 +78,9 @@ public class ReservationFolioService {
 
     public void recalculate(ReservationEntity reservation) {
         validateReservation(reservation);
+
+        FacilityEntity accommodationFacility =
+                getAccommodationFacility(reservation);
 
         if (reservation.getFolios() == null
                 || reservation.getFolios().isEmpty()) {
@@ -115,6 +115,7 @@ public class ReservationFolioService {
 
         roomAccrual.setHotel(reservation.getRoom().getHotel());
         roomAccrual.setReservation(reservation);
+        roomAccrual.setFacility(accommodationFacility);
         roomAccrual.setName(ROOM_FACILITY_NAME);
         roomAccrual.setUnitPrice(unitPrice);
         roomAccrual.setQuantity(quantity);

@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.FacilityRequest;
@@ -5,6 +6,7 @@ import com.sirius.sirius.dto.FacilityResponse;
 import com.sirius.sirius.mappers.FacilityMapper;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
+import com.sirius.sirius.store.enums.FacilitySystemCode;
 import com.sirius.sirius.store.repository.FacilityRepository;
 import com.sirius.sirius.store.repository.HotelRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -77,6 +79,12 @@ public class FacilityService {
     @Transactional
     public FacilityResponse deactivate(Long id) {
         FacilityEntity facility = getFacility(id);
+
+        if (facility.getSystemCode() == FacilitySystemCode.ACCOMMODATION) {
+            throw new IllegalArgumentException(
+                    "Системну послугу проживання не можна деактивувати"
+            );
+        }
 
         facility.setActive(false);
 
