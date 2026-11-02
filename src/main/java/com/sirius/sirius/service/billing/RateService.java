@@ -22,7 +22,7 @@ public class RateService {
     private final RateRepository rateRepository;
     private final RoomCategoryRepository roomCategoryRepository;
     private final RateMapper rateMapper;
-    private final PriceService ratePriceService;
+    private final PriceService priceService;
 
     public RateResponse create(RateRequest request) {
         RoomCategoryEntity category =
@@ -73,7 +73,7 @@ public class RateService {
                 response.description(),
                 response.currency(),
                 response.categoryId(),
-                ratePriceService.getCurrentPrice(entity.getId())
+                priceService.getCurrentPrice(entity.getId())
                         .orElse(null),
                 response.active()
         );

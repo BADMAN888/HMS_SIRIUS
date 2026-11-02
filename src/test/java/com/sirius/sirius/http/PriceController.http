@@ -1,6 +1,8 @@
+
 @baseUrl = http://localhost:8080
 @priceUrl = {{baseUrl}}/api/prices
-
+@rateId = 1
+@priceDate = 2099-01-15
 
 ### ========================================
 ### LOGIN
@@ -24,56 +26,6 @@ Content-Type: application/json
 
 
 ### ========================================
-### GET ALL PRICES
-### ========================================
-
-GET {{priceUrl}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get all prices - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-
-    client.test("Get all prices - response is array", function() {
-        client.assert(Array.isArray(response.body), "Response is not an array");
-    });
-%}
-
-
-### ========================================
-### GET PRICE BY ID
-### ========================================
-
-GET {{priceUrl}}/1
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get price - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-
-    client.test("Get price - ID exists", function() {
-        client.assert(response.body.id !== undefined, "ID is missing");
-    });
-%}
-
-
-### ========================================
-### GET PRICE BY ID - NOT FOUND
-### ========================================
-
-GET {{priceUrl}}/999999
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get price - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
-    });
-%}
-
-
-### ========================================
 ### CREATE PRICE
 ### ========================================
 
@@ -82,12 +34,10 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "rateId": 1,
-  "roomCategoryId": 1,
-  "amount": 2500.00,
-  "validFrom": "2026-10-01",
-  "validTo": "2026-12-31",
-  "status": "ACTIVE"
+  "rateId": {{rateId}},
+  "price": 5000.00,
+  "validFrom": "{{priceDate}}",
+  "validTo": "2099-12-31"
 }
 
 > {%
@@ -99,15 +49,55 @@ Content-Type: application/json
         client.assert(response.body.id !== undefined, "ID is missing");
     });
 
-    client.test("Create price - rate ID exists", function() {
+    client.test("Create price - rate ID is correct", function() {
         client.assert(response.body.rateId === 1, "Rate ID is incorrect");
     });
 
-    client.test("Create price - room category ID exists", function() {
-        client.assert(response.body.roomCategoryId === 1, "Room category ID is incorrect");
+    client.test("Create price - price is correct", function() {
+        client.assert(Number(response.body.price) === 5000, "Price is incorrect");
     });
 
     client.global.set("priceId", response.body.id);
+%}
+
+
+### ========================================
+### GET PRICE HISTORY BY RATE
+### ========================================
+
+GET {{priceUrl}}/rate/{{rateId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get price history - status 200", function() {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+
+    client.test("Get price history - response is array", function() {
+        client.assert(Array.isArray(response.body), "Response is not an array");
+    });
+%}
+
+
+### ========================================
+### GET PRICE FOR DATE
+### ========================================
+
+GET {{priceUrl}}/rate/{{rateId}}/date/{{priceDate}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Get price for date - status 200", function() {
+        client.assert(response.status === 200, "Expected status 200");
+    });
+
+    client.test("Get price for date - correct rate", function() {
+        client.assert(response.body.rateId === 1, "Rate ID is incorrect");
+    });
+
+    client.test("Get price for date - correct amount", function() {
+        client.assert(Number(response.body.price) === 5000, "Price is incorrect");
+    });
 %}
 
 
@@ -121,22 +111,20 @@ Content-Type: application/json
 
 {
   "rateId": 999999,
-  "roomCategoryId": 1,
-  "amount": 2500.00,
-  "validFrom": "2026-10-01",
-  "validTo": "2026-12-31",
-  "status": "ACTIVE"
+  "price": 5000.00,
+  "validFrom": "2099-01-15",
+  "validTo": "2099-12-31"
 }
 
 > {%
-    client.test("Create price - rate not found - status 404", function() {
+    client.test("Create price with missing rate - status 404", function() {
         client.assert(response.status === 404, "Expected status 404");
     });
 %}
 
 
 ### ========================================
-### CREATE PRICE - ROOM CATEGORY NOT FOUND
+### CREATE PRICE - INACTIVE RATE
 ### ========================================
 
 POST {{priceUrl}}
@@ -145,22 +133,20 @@ Content-Type: application/json
 
 {
   "rateId": 1,
-  "roomCategoryId": 999999,
-  "amount": 2500.00,
-  "validFrom": "2026-10-01",
-  "validTo": "2026-12-31",
-  "status": "ACTIVE"
+  "price": 5000.00,
+  "validFrom": "2099-01-15",
+  "validTo": "2099-12-31"
 }
 
 > {%
-    client.test("Create price - room category not found - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
+    client.test("Create price for inactive rate - status 400", function() {
+        client.assert(response.status === 400, "Expected status 400");
     });
 %}
 
 
 ### ========================================
-### CREATE PRICE - VALIDATION ERROR
+### CREATE PRICE - INVALID PRICE
 ### ========================================
 
 POST {{priceUrl}}
@@ -168,12 +154,10 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "rateId": null,
-  "roomCategoryId": null,
-  "amount": 0,
-  "validFrom": null,
-  "validTo": null,
-  "status": null
+  "rateId": 1,
+  "price": 0,
+  "validFrom": "2099-01-15",
+  "validTo": "2099-12-31"
 }
 
 > {%
@@ -184,112 +168,44 @@ Content-Type: application/json
 
 
 ### ========================================
-### UPDATE PRICE
+### CREATE PRICE - INVALID PERIOD
 ### ========================================
 
-PUT {{priceUrl}}/{{priceId}}
+POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "rateId": 1,
-  "roomCategoryId": 1,
-  "amount": 3000.00,
-  "validFrom": "2026-10-01",
-  "validTo": "2026-12-31",
-  "status": "ACTIVE"
+  "price": 5000.00,
+  "validFrom": "2099-12-31",
+  "validTo": "2099-01-15"
 }
 
 > {%
-    client.test("Update price - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-
-    client.test("Update price - ID unchanged", function() {
-        client.assert(response.body.id === client.global.get("priceId"), "ID changed");
-    });
-
-    client.test("Update price - amount updated", function() {
-        client.assert(
-            Number(response.body.amount) === 3000,
-            "Amount was not updated"
-        );
-    });
-
-    client.test("Update price - rate ID unchanged", function() {
-        client.assert(response.body.rateId === 1, "Rate ID is incorrect");
-    });
-
-    client.test("Update price - room category ID unchanged", function() {
-        client.assert(
-            response.body.roomCategoryId === 1,
-            "Room category ID is incorrect"
-        );
+    client.test("Create invalid period - status 400", function() {
+        client.assert(response.status === 400, "Expected status 400");
     });
 %}
 
 
 ### ========================================
-### UPDATE PRICE - NOT FOUND
+### CREATE PRICE - OVERLAPPING PERIOD
 ### ========================================
 
-PUT {{priceUrl}}/999999
+POST {{priceUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "rateId": 1,
-  "roomCategoryId": 1,
-  "amount": 3000.00,
-  "validFrom": "2026-10-01",
-  "validTo": "2026-12-31",
-  "status": "ACTIVE"
+  "price": 6000.00,
+  "validFrom": "2099-01-15",
+  "validTo": "2099-12-31"
 }
 
 > {%
-    client.test("Update price - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
-    });
-%}
-
-
-### ========================================
-### DELETE PRICE
-### ========================================
-
-DELETE {{priceUrl}}/{{priceId}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Delete price - status 204", function() {
-        client.assert(response.status === 204, "Expected status 204");
-    });
-%}
-
-
-### ========================================
-### DELETE PRICE - NOT FOUND
-### ========================================
-
-DELETE {{priceUrl}}/999999
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Delete price - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
-    });
-%}
-
-
-### ========================================
-### GET DELETED PRICE
-### ========================================
-
-GET {{priceUrl}}/{{priceId}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get deleted price - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
+    client.test("Create overlapping price - status 400", function() {
+        client.assert(response.status === 400, "Expected status 400");
     });
 %}
