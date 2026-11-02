@@ -15,9 +15,13 @@ public interface RateMapper {
     RateEntity toEntity(RateRequest request);
 
     @Mapping(target = "categoryId", source = "category.id")
+    @Mapping(target = "currentPrice", ignore = true)
     RateResponse toResponse(RateEntity entity);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "category", ignore = true)
-    void updateEntity(RateRequest request, @MappingTarget RateEntity entity);
+    void updateEntity(
+            RateRequest request,
+            @MappingTarget RateEntity entity
+    );
 }

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -22,53 +23,78 @@ public class RateService {
     private final RateRepository rateRepository;
     private final RoomCategoryRepository roomCategoryRepository;
     private final RateMapper rateMapper;
+    private final RatePriceService ratePriceService;
 
     public RateResponse create(RateRequest request) {
-        RoomCategoryEntity category = findCategoryById(request.categoryId());
+        RoomCategoryEntity category =
+                findCategoryById(request.categoryId());
 
         RateEntity entity = rateMapper.toEntity(request);
         entity.setCategory(category);
 
-        return rateMapper.toResponse(rateRepository.save(entity));
+        return toResponse(rateRepository.save(entity));
     }
 
     @Transactional(readOnly = true)
     public RateResponse getById(Long id) {
-        return rateMapper.toResponse(findById(id));
+        return toResponse(findById(id));
     }
 
     @Transactional(readOnly = true)
     public List<RateResponse> getAll() {
         return rateRepository.findAll()
                 .stream()
-                .map(rateMapper::toResponse)
+                .map(this::toResponse)
                 .toList();
     }
 
     public RateResponse update(Long id, RateRequest request) {
         RateEntity entity = findById(id);
 
-        RoomCategoryEntity category = findCategoryById(request.categoryId());
+        RoomCategoryEntity category =
+                findCategoryById(request.categoryId());
 
         rateMapper.updateEntity(request, entity);
         entity.setCategory(category);
 
-        return rateMapper.toResponse(entity);
+        return toResponse(entity);
     }
 
     public void delete(Long id) {
-        rateRepository.delete(findById(id));
+        RateEntity entity = findById(id);
+        entity.setActive(false);
+    }
+
+    private RateResponse toResponse(RateEntity entity) {
+        RateResponse response = rateMapper.toResponse(entity);
+
+        return new RateResponse(
+                response.id(),
+                response.name(),
+                response.description(),
+                response.currency(),
+                response.categoryId(),
+                ratePriceService.getCurrentPrice(entity.getId())
+                        .orElse(null),
+                response.active()
+        );
     }
 
     private RateEntity findById(Long id) {
         return rateRepository.findById(id)
                 .orElseThrow(() ->
-                        new NotFoundException("Rate with id: " + id + " not found"));
+                        new NotFoundException(
+                                "Rate with id: " + id + " not found"
+                        )
+                );
     }
 
     private RoomCategoryEntity findCategoryById(Long id) {
         return roomCategoryRepository.findById(id)
                 .orElseThrow(() ->
-                        new NotFoundException("Room category with id: " + id + " not found"));
+                        new NotFoundException(
+                                "Room category with id: " + id + " not found"
+                        )
+                );
     }
 }

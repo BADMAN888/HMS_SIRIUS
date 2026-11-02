@@ -8,7 +8,7 @@ public record RateResponse(
         String description,
         String currency,
         Long categoryId,
-        BigDecimal price,
+        BigDecimal currentPrice,
         boolean active
 ) {
 }

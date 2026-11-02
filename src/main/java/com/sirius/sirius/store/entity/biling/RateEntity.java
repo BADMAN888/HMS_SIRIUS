@@ -5,8 +5,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 
-import java.math.BigDecimal;
-
 @Entity
 @Table(
         name = "rates",
@@ -37,9 +35,6 @@ public class RateEntity {
 
     @Column(nullable = false, length = 3)
     String currency;
-
-    @Column(nullable = false, precision = 12, scale = 2)
-    BigDecimal price;
 
     @Column(nullable = false)
     boolean active;

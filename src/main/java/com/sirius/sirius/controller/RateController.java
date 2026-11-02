@@ -19,14 +19,18 @@ public class RateController {
     private final RateService rateService;
 
     @PostMapping
-    public ResponseEntity<RateResponse> create(@Valid @RequestBody RateRequest request) {
+    public ResponseEntity<RateResponse> create(
+            @Valid @RequestBody RateRequest request
+    ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(rateService.create(request));
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RateResponse> getById(@PathVariable Long id) {
+    public ResponseEntity<RateResponse> getById(
+            @PathVariable Long id
+    ) {
         return ResponseEntity.ok(rateService.getById(id));
     }
 
@@ -40,11 +44,15 @@ public class RateController {
             @PathVariable Long id,
             @Valid @RequestBody RateRequest request
     ) {
-        return ResponseEntity.ok(rateService.update(id, request));
+        return ResponseEntity.ok(
+                rateService.update(id, request)
+        );
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(
+            @PathVariable Long id
+    ) {
         rateService.delete(id);
         return ResponseEntity.noContent().build();
     }
