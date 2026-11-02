@@ -12,7 +12,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -23,7 +22,7 @@ public class RateService {
     private final RateRepository rateRepository;
     private final RoomCategoryRepository roomCategoryRepository;
     private final RateMapper rateMapper;
-    private final RatePriceService ratePriceService;
+    private final PriceService ratePriceService;
 
     public RateResponse create(RateRequest request) {
         RoomCategoryEntity category =

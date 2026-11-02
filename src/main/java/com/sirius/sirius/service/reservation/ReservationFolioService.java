@@ -2,7 +2,7 @@
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
-import com.sirius.sirius.service.billing.RatePriceService;
+import com.sirius.sirius.service.billing.PriceService;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
@@ -38,7 +38,7 @@ public class ReservationFolioService {
     private final FolioRepository folioRepository;
     private final AccrualRepository accrualRepository;
     private final FacilityRepository facilityRepository;
-    private final RatePriceService ratePriceService;
+    private final PriceService ratePriceService;
     private final Clock clock;
 
     public void create(ReservationEntity reservation) {

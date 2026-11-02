@@ -1,8 +1,8 @@
 package com.sirius.sirius.controller;
 
-import com.sirius.sirius.dto.RatePriceRequest;
-import com.sirius.sirius.dto.RatePriceResponse;
-import com.sirius.sirius.service.billing.RatePriceService;
+import com.sirius.sirius.dto.PriceRequest;
+import com.sirius.sirius.dto.PriceResponse;
+import com.sirius.sirius.service.billing.PriceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,11 +17,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RatePriceController {
 
-    private final RatePriceService ratePriceService;
+    private final PriceService ratePriceService;
 
     @PostMapping
-    public ResponseEntity<RatePriceResponse> create(
-            @Valid @RequestBody RatePriceRequest request
+    public ResponseEntity<PriceResponse> create(
+            @Valid @RequestBody PriceRequest request
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -29,7 +29,7 @@ public class RatePriceController {
     }
 
     @GetMapping("/rate/{rateId}")
-    public ResponseEntity<List<RatePriceResponse>> getHistory(
+    public ResponseEntity<List<PriceResponse>> getHistory(
             @PathVariable Long rateId
     ) {
         return ResponseEntity.ok(
@@ -38,7 +38,7 @@ public class RatePriceController {
     }
 
     @GetMapping("/rate/{rateId}/date/{date}")
-    public ResponseEntity<RatePriceResponse> getPriceForDate(
+    public ResponseEntity<PriceResponse> getPriceForDate(
             @PathVariable Long rateId,
             @PathVariable LocalDate date
     ) {

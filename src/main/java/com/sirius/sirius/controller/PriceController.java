@@ -5,10 +5,11 @@ import com.sirius.sirius.dto.PriceResponse;
 import com.sirius.sirius.service.billing.PriceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -19,33 +20,27 @@ public class PriceController {
     private final PriceService priceService;
 
     @PostMapping
-    public ResponseEntity<PriceResponse> create(@Valid @RequestBody PriceRequest request) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(priceService.create(request));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<PriceResponse> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(priceService.getById(id));
-    }
-
-    @GetMapping
-    public ResponseEntity<List<PriceResponse>> getAll() {
-        return ResponseEntity.ok(priceService.getAll());
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<PriceResponse> update(
-            @PathVariable Long id,
+    @ResponseStatus(HttpStatus.CREATED)
+    public PriceResponse create(
             @Valid @RequestBody PriceRequest request
     ) {
-        return ResponseEntity.ok(priceService.update(id, request));
+        return priceService.create(request);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
-        priceService.delete(id);
-        return ResponseEntity.noContent().build();
+    @GetMapping("/rate/{rateId}")
+    public List<PriceResponse> getHistory(
+            @PathVariable Long rateId
+    ) {
+        return priceService.getHistory(rateId);
+    }
+
+    @GetMapping("/rate/{rateId}/date/{date}")
+    public PriceResponse getPriceForDate(
+            @PathVariable Long rateId,
+            @PathVariable
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate date
+    ) {
+        return priceService.getPriceForDate(rateId, date);
     }
 }

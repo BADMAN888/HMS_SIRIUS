@@ -1,8 +1,8 @@
 package com.sirius.sirius.dto;
 
-import com.sirius.sirius.store.enums.PriceStatus;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -13,18 +13,13 @@ public record PriceRequest(
         Long rateId,
 
         @NotNull
-        Long roomCategoryId,
-
-        @NotNull
-        @DecimalMin(value = "0.0", inclusive = false)
-        BigDecimal amount,
+        @Positive
+        @DecimalMin("0.01")
+        BigDecimal price,
 
         @NotNull
         LocalDate validFrom,
 
-        LocalDate validTo,
-
-        @NotNull
-        PriceStatus status
+        LocalDate validTo
 ) {
 }
