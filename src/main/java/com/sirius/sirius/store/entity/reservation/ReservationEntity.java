@@ -92,7 +92,8 @@ public class ReservationEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tax_status", nullable = false, length = 20)
-    private TaxStatus taxStatus;
+    @Builder.Default
+    private TaxStatus taxStatus = TaxStatus.RESIDENT;
 
     @OneToMany(
             mappedBy = "reservation",

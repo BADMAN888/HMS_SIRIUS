@@ -1,7 +1,7 @@
-
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.ReservationStatus;
+import com.sirius.sirius.store.enums.TaxStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,6 +20,7 @@ public record ReservationResponse(
         LocalDateTime checkOut,
         Integer adults,
         Integer children,
+        TaxStatus taxStatus,
         ReservationStatus status,
         List<ReservationCommentResponse> comments,
         LocalDateTime createdAt,

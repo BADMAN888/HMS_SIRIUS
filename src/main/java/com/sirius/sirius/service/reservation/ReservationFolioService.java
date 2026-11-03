@@ -1,7 +1,7 @@
-
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.service.billing.FacilityPriceService;
 import com.sirius.sirius.service.billing.PriceService;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
@@ -9,6 +9,7 @@ import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.FacilitySystemCode;
 import com.sirius.sirius.store.enums.FolioStatus;
+import com.sirius.sirius.store.enums.TaxStatus;
 import com.sirius.sirius.store.repository.AccrualRepository;
 import com.sirius.sirius.store.repository.FacilityRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
@@ -32,6 +33,13 @@ import java.util.Objects;
 public class ReservationFolioService {
 
     private static final String ACCOMMODATION_NAME = "Проживання";
+
+    private static final String RESIDENT_TAX_NAME =
+            "Туристичний збір — резидент";
+
+    private static final String NON_RESIDENT_TAX_NAME =
+            "Туристичний збір — нерезидент";
+
     private static final String REVERSAL_PREFIX = "Сторно: ";
 
     private static final BigDecimal ONE_NIGHT =
@@ -41,6 +49,7 @@ public class ReservationFolioService {
     private final AccrualRepository accrualRepository;
     private final FacilityRepository facilityRepository;
     private final PriceService priceService;
+    private final FacilityPriceService facilityPriceService;
     private final Clock clock;
 
     public void create(ReservationEntity reservation) {
@@ -48,9 +57,9 @@ public class ReservationFolioService {
 
         if (reservation.getFolios() != null
                 && reservation.getFolios().stream()
-                .anyMatch(this::containsAccommodationAccrual)) {
+                .anyMatch(this::containsReservationBillingAccrual)) {
             throw new BadRequestException(
-                    "Accommodation folio already exists for reservation"
+                    "Reservation billing folio already exists"
             );
         }
 
@@ -66,12 +75,22 @@ public class ReservationFolioService {
                 .accruals(new ArrayList<>())
                 .build();
 
-        List<AccrualEntity> accruals =
+        List<AccrualEntity> accruals = new ArrayList<>();
+
+        accruals.addAll(
                 createAccommodationAccruals(
                         reservation,
                         folio,
                         accommodationFacility
-                );
+                )
+        );
+
+        accruals.addAll(
+                createTouristTaxAccruals(
+                        reservation,
+                        folio
+                )
+        );
 
         folio.getAccruals().addAll(accruals);
         folio.recalculateTotalAmount();
@@ -88,31 +107,31 @@ public class ReservationFolioService {
     public void recalculate(ReservationEntity reservation) {
         validateReservation(reservation);
 
-        List<FolioEntity> accommodationFolios =
+        List<FolioEntity> reservationFolios =
                 reservation.getFolios() == null
                         ? List.of()
                         : reservation.getFolios().stream()
-                        .filter(this::containsAccommodationAccrual)
+                        .filter(this::containsReservationBillingAccrual)
                         .toList();
 
-        if (accommodationFolios.isEmpty()) {
+        if (reservationFolios.isEmpty()) {
             create(reservation);
             return;
         }
 
-        if (accommodationFolios.size() > 1) {
+        if (reservationFolios.size() > 1) {
             throw new BadRequestException(
-                    "Reservation has multiple accommodation folios"
+                    "Reservation has multiple billing folios"
             );
         }
 
-        FolioEntity existingFolio = accommodationFolios.getFirst();
+        FolioEntity existingFolio = reservationFolios.getFirst();
 
         FolioEntity folio = folioRepository
                 .findByIdForUpdate(existingFolio.getId())
                 .orElseThrow(() ->
                         new EntityNotFoundException(
-                                "Accommodation folio not found"
+                                "Reservation folio not found"
                         )
                 );
 
@@ -142,7 +161,7 @@ public class ReservationFolioService {
         );
 
         List<AccrualEntity> currentAccruals = allAccruals.stream()
-                .filter(this::isAccommodationAccrual)
+                .filter(this::isReservationBillingAccrual)
                 .filter(accrual -> !accrual.isReversed())
                 .filter(accrual -> accrual.getReversalOf() == null)
                 .toList();
@@ -166,12 +185,22 @@ public class ReservationFolioService {
         List<AccrualEntity> savedReversals =
                 accrualRepository.saveAll(reversals);
 
-        List<AccrualEntity> newAccruals =
+        List<AccrualEntity> newAccruals = new ArrayList<>();
+
+        newAccruals.addAll(
                 createAccommodationAccruals(
                         reservation,
                         folio,
                         accommodationFacility
-                );
+                )
+        );
+
+        newAccruals.addAll(
+                createTouristTaxAccruals(
+                        reservation,
+                        folio
+                )
+        );
 
         List<AccrualEntity> savedNewAccruals =
                 accrualRepository.saveAll(newAccruals);
@@ -235,6 +264,113 @@ public class ReservationFolioService {
         return accruals;
     }
 
+    private List<AccrualEntity> createTouristTaxAccruals(
+            ReservationEntity reservation,
+            FolioEntity folio
+    ) {
+        TaxStatus taxStatus = reservation.getTaxStatus() == null
+                ? TaxStatus.RESIDENT
+                : reservation.getTaxStatus();
+
+        if (taxStatus == TaxStatus.EXEMPT) {
+            return List.of();
+        }
+
+        FacilityEntity facility = getTouristTaxFacility(
+                reservation,
+                taxStatus
+        );
+
+        int guestCount = reservation.getAdults()
+                + reservation.getChildren();
+
+        if (guestCount <= 0) {
+            throw new BadRequestException(
+                    "Tourist tax requires at least one guest"
+            );
+        }
+
+        BigDecimal quantity = BigDecimal.valueOf(guestCount)
+                .setScale(3, RoundingMode.UNNECESSARY);
+
+        LocalDate checkIn = reservation.getCheckIn().toLocalDate();
+        LocalDate checkOut = reservation.getCheckOut().toLocalDate();
+
+        List<AccrualEntity> accruals = new ArrayList<>();
+        LocalDateTime accruedAt = LocalDateTime.now(clock);
+
+        for (LocalDate serviceDate = checkIn;
+             serviceDate.isBefore(checkOut);
+             serviceDate = serviceDate.plusDays(1)) {
+
+            BigDecimal unitPrice = facilityPriceService
+                    .getPriceForDate(facility.getId(), serviceDate)
+                    .price();
+
+            if (unitPrice == null || unitPrice.signum() <= 0) {
+                throw new BadRequestException(
+                        "Tourist tax price must be greater than zero"
+                );
+            }
+
+            unitPrice = unitPrice.setScale(
+                    2,
+                    RoundingMode.HALF_UP
+            );
+
+            BigDecimal amount = unitPrice
+                    .multiply(quantity)
+                    .setScale(2, RoundingMode.HALF_UP);
+
+            AccrualEntity accrual = AccrualEntity.builder()
+                    .hotel(reservation.getRoom().getHotel())
+                    .reservation(reservation)
+                    .folio(folio)
+                    .facility(facility)
+                    .name(facility.getName())
+                    .unitPrice(unitPrice)
+                    .quantity(quantity)
+                    .amount(amount)
+                    .serviceDate(serviceDate)
+                    .accruedAt(accruedAt)
+                    .build();
+
+            accruals.add(accrual);
+        }
+
+        return accruals;
+    }
+
+    private FacilityEntity getTouristTaxFacility(
+            ReservationEntity reservation,
+            TaxStatus taxStatus
+    ) {
+        Long hotelId = reservation.getRoom()
+                .getHotel()
+                .getId();
+
+        String facilityName = switch (taxStatus) {
+            case RESIDENT -> RESIDENT_TAX_NAME;
+            case NON_RESIDENT -> NON_RESIDENT_TAX_NAME;
+            case EXEMPT -> throw new IllegalArgumentException(
+                    "Exempt reservation does not require tourist tax facility"
+            );
+        };
+
+        return facilityRepository
+                .findByHotelIdAndSystemCodeAndNameAndActiveTrue(
+                        hotelId,
+                        FacilitySystemCode.TOURIST_TAX,
+                        facilityName
+                )
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Для готелю не налаштована активна послуга: "
+                                        + facilityName
+                        )
+                );
+    }
+
     private List<AccrualEntity> createReversalAccruals(
             List<AccrualEntity> accruals,
             LocalDateTime accruedAt
@@ -276,16 +412,23 @@ public class ReservationFolioService {
                 );
     }
 
-    private boolean containsAccommodationAccrual(FolioEntity folio) {
+    private boolean containsReservationBillingAccrual(FolioEntity folio) {
         return folio.getAccruals() != null
                 && folio.getAccruals().stream()
-                .anyMatch(this::isAccommodationAccrual);
+                .anyMatch(this::isReservationBillingAccrual);
     }
 
-    private boolean isAccommodationAccrual(AccrualEntity accrual) {
-        return accrual.getFacility() != null
-                && accrual.getFacility().getSystemCode()
-                == FacilitySystemCode.ACCOMMODATION;
+    private boolean isReservationBillingAccrual(AccrualEntity accrual) {
+        if (accrual.getFacility() == null
+                || accrual.getFacility().getSystemCode() == null) {
+            return false;
+        }
+
+        FacilitySystemCode systemCode =
+                accrual.getFacility().getSystemCode();
+
+        return systemCode == FacilitySystemCode.ACCOMMODATION
+                || systemCode == FacilitySystemCode.TOURIST_TAX;
     }
 
     private void validateReservation(ReservationEntity reservation) {
@@ -314,6 +457,19 @@ public class ReservationFolioService {
                 || reservation.getCheckOut() == null) {
             throw new BadRequestException(
                     "Reservation check-in and check-out must be specified"
+            );
+        }
+
+        if (reservation.getAdults() == null
+                || reservation.getChildren() == null) {
+            throw new BadRequestException(
+                    "Reservation guest count must be specified"
+            );
+        }
+
+        if (reservation.getAdults() + reservation.getChildren() <= 0) {
+            throw new BadRequestException(
+                    "Reservation must have at least one guest"
             );
         }
 

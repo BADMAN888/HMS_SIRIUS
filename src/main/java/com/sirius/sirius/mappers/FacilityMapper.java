@@ -19,6 +19,7 @@ public interface FacilityMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "hotel", ignore = true)
+    @Mapping(target = "systemCode", ignore = true)
     void updateEntity(
             FacilityRequest request,
             @MappingTarget FacilityEntity entity

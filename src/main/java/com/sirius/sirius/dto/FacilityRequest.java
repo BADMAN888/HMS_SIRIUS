@@ -1,5 +1,6 @@
 package com.sirius.sirius.dto;
 
+import com.sirius.sirius.store.enums.FacilitySystemCode;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -20,6 +21,8 @@ public record FacilityRequest(
         @Size(max = 30)
         String unit,
 
-        boolean active
+        boolean active,
+
+        FacilitySystemCode systemCode
 ) {
 }

@@ -1,6 +1,6 @@
-
 package com.sirius.sirius.dto;
 
+import com.sirius.sirius.store.enums.TaxStatus;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotEmpty;
@@ -46,6 +46,8 @@ public record ReservationRequest(
         @PositiveOrZero
         Integer children,
 
+        TaxStatus taxStatus,
+
         @Size(max = 100)
         String externalBookingNumber,
 
@@ -56,4 +58,9 @@ public record ReservationRequest(
 
         Long operatorCompanyId
 ) {
+        public ReservationRequest {
+                if (taxStatus == null) {
+                        taxStatus = TaxStatus.RESIDENT;
+                }
+        }
 }

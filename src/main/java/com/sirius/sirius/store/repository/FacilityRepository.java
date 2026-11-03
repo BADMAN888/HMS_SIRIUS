@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.store.repository;
 
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
@@ -19,5 +18,11 @@ public interface FacilityRepository extends JpaRepository<FacilityEntity, Long> 
     Optional<FacilityEntity> findByHotelIdAndSystemCodeAndActiveTrue(
             Long hotelId,
             FacilitySystemCode systemCode
+    );
+
+    Optional<FacilityEntity> findByHotelIdAndSystemCodeAndNameAndActiveTrue(
+            Long hotelId,
+            FacilitySystemCode systemCode,
+            String name
     );
 }

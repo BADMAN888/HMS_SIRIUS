@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.FacilityRequest;
@@ -80,9 +79,10 @@ public class FacilityService {
     public FacilityResponse deactivate(Long id) {
         FacilityEntity facility = getFacility(id);
 
-        if (facility.getSystemCode() == FacilitySystemCode.ACCOMMODATION) {
+        if (facility.getSystemCode() == FacilitySystemCode.ACCOMMODATION
+                || facility.getSystemCode() == FacilitySystemCode.TOURIST_TAX) {
             throw new IllegalArgumentException(
-                    "Системну послугу проживання не можна деактивувати"
+                    "Системну послугу не можна деактивувати"
             );
         }
 
