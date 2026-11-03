@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
@@ -30,6 +29,8 @@ public class ReservationAvailabilityService {
         validateRate(rate);
         validateRateForRoom(rate, room);
         validateOccupancy(room, adults, children);
+        validateRoomUnavailability(room);
+
         validateRoomAvailability(
                 room.getId(),
                 checkIn,
@@ -76,6 +77,7 @@ public class ReservationAvailabilityService {
 
         validateRateForRoom(rate, room);
         validateOccupancy(room, adults, children);
+        validateRoomUnavailability(room);
 
         validateRoomAvailabilityExceptCurrent(
                 reservationId,
@@ -162,6 +164,22 @@ public class ReservationAvailabilityService {
         if (guests > capacity) {
             throw new BadRequestException(
                     "Number of guests exceeds room capacity of " + capacity
+            );
+        }
+    }
+
+    private void validateRoomUnavailability(RoomEntity room) {
+        if (room == null) {
+            throw new BadRequestException(
+                    "Room must be specified"
+            );
+        }
+
+        if (room.getUnavailabilityStatus() != null) {
+            throw new BadRequestException(
+                    "Room with id: " + room.getId()
+                            + " is unavailable for reservations. Reason: "
+                            + room.getUnavailabilityStatus()
             );
         }
     }

@@ -40,4 +40,6 @@ public class RoomEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
     RoomCategoryEntity category;
+
+
 }
