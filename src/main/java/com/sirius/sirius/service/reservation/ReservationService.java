@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.dto.ReservationCheckInResponse;
@@ -55,6 +56,8 @@ public class ReservationService {
         RoomCategoryEntity paymentCategory =
                 findPaymentCategory(request.paymentCategoryId());
 
+        validatePaymentCategory(room, paymentCategory);
+
         CompanyEntity sourceCompany = findCompany(request.sourceCompanyId());
         CompanyEntity operatorCompany = findCompany(request.operatorCompanyId());
 
@@ -106,7 +109,6 @@ public class ReservationService {
                 .toList();
     }
 
-
     public ReservationResponse update(
             Long id,
             ReservationRequest request
@@ -120,6 +122,8 @@ public class ReservationService {
 
         RoomCategoryEntity paymentCategory =
                 findPaymentCategory(request.paymentCategoryId());
+
+        validatePaymentCategory(room, paymentCategory);
 
         CompanyEntity sourceCompany = findCompany(request.sourceCompanyId());
         CompanyEntity operatorCompany = findCompany(request.operatorCompanyId());
@@ -164,7 +168,6 @@ public class ReservationService {
 
         return reservationMapper.toResponse(reservation);
     }
-
 
     public List<ReservationCheckInResponse> getByCheckInDate(LocalDate date) {
         LocalDateTime start = date.atStartOfDay();
@@ -232,6 +235,26 @@ public class ReservationService {
                 .stream()
                 .map(reservationMapper::toResponse)
                 .toList();
+    }
+
+    private void validatePaymentCategory(
+            RoomEntity room,
+            RoomCategoryEntity paymentCategory
+    ) {
+        if (room == null || room.getHotel() == null
+                || paymentCategory == null
+                || paymentCategory.getHotel() == null) {
+            throw new BadRequestException(
+                    "Room and payment category must belong to a hotel"
+            );
+        }
+
+        if (!room.getHotel().getId()
+                .equals(paymentCategory.getHotel().getId())) {
+            throw new BadRequestException(
+                    "Payment category must belong to the same hotel as the selected room"
+            );
+        }
     }
 
     private Set<ProfileEntity> findGuests(Set<Long> guestIds) {

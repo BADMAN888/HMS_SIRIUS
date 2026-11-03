@@ -30,6 +30,7 @@ public class ReservationAvailabilityService {
             LocalDateTime checkOut
     ) {
         validateDates(checkIn, checkOut);
+        validateRoomCategoryHotel(room);
         validateRate(rate);
         validateRateForRoom(rate, room);
         validateOccupancy(room, adults, children);
@@ -78,6 +79,7 @@ public class ReservationAvailabilityService {
             boolean allowInactiveRate
     ) {
         validateDates(checkIn, checkOut);
+        validateRoomCategoryHotel(room);
 
         if (!allowInactiveRate) {
             validateRate(rate);
@@ -118,6 +120,26 @@ public class ReservationAvailabilityService {
         if (!checkOut.toLocalDate().isAfter(checkIn.toLocalDate())) {
             throw new BadRequestException(
                     "Reservation must contain at least one night"
+            );
+        }
+    }
+
+    private void validateRoomCategoryHotel(RoomEntity room) {
+        if (room == null
+                || room.getHotel() == null
+                || room.getHotel().getId() == null
+                || room.getCategory() == null
+                || room.getCategory().getHotel() == null
+                || room.getCategory().getHotel().getId() == null) {
+            throw new BadRequestException(
+                    "Room and its category must belong to a hotel"
+            );
+        }
+
+        if (!room.getHotel().getId()
+                .equals(room.getCategory().getHotel().getId())) {
+            throw new BadRequestException(
+                    "Room category must belong to the same hotel as the room"
             );
         }
     }
