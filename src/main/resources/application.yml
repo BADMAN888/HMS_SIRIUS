@@ -8,5 +8,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-#      ddl-auto: create-drop
     show-sql: true
+
+security:
+  jwt:
+    secret: ${JWT_SECRET_BASE64}
+    access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
