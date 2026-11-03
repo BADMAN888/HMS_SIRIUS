@@ -40,8 +40,8 @@ public class AccrualEntity {
     @JoinColumn(name = "folio_id")
     FolioEntity folio;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "facility_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "facility_id")
     FacilityEntity facility;
 
     @ManyToOne(fetch = FetchType.LAZY)

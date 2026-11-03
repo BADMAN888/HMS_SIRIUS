@@ -5,6 +5,7 @@ import com.sirius.sirius.dto.FacilityResponse;
 import com.sirius.sirius.mappers.FacilityMapper;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
+import com.sirius.sirius.store.enums.TaxStatus;
 import com.sirius.sirius.store.repository.FacilityRepository;
 import com.sirius.sirius.store.repository.HotelRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -25,6 +26,8 @@ public class FacilityService {
 
     @Transactional
     public FacilityResponse create(FacilityRequest request) {
+        validateTaxStatus(request.taxStatus());
+
         HotelEntity hotel = getHotel(request.hotelId());
 
         FacilityEntity facility = facilityMapper.toEntity(request);
@@ -67,6 +70,8 @@ public class FacilityService {
             );
         }
 
+        validateTaxStatus(request.taxStatus());
+
         facilityMapper.updateEntity(request, facility);
 
         return facilityMapper.toResponse(
@@ -77,13 +82,6 @@ public class FacilityService {
     @Transactional
     public FacilityResponse deactivate(Long id) {
         FacilityEntity facility = getFacility(id);
-
-        if (facility.getSystemCode() == FacilitySystemCode.ACCOMMODATION
-                || facility.getSystemCode() == FacilitySystemCode.TOURIST_TAX) {
-            throw new IllegalArgumentException(
-                    "Системну послугу не можна деактивувати"
-            );
-        }
 
         facility.setActive(false);
 
@@ -101,6 +99,14 @@ public class FacilityService {
         return facilityMapper.toResponse(
                 facilityRepository.save(facility)
         );
+    }
+
+    private void validateTaxStatus(TaxStatus taxStatus) {
+        if (taxStatus == TaxStatus.EXEMPT) {
+            throw new IllegalArgumentException(
+                    "EXEMPT не може бути статусом послуги"
+            );
+        }
     }
 
     private FacilityEntity getFacility(Long id) {

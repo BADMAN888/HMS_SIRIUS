@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
@@ -33,12 +34,6 @@ public class ReservationFolioService {
 
     private static final String ACCOMMODATION_NAME = "Проживання";
 
-    private static final String RESIDENT_TAX_NAME =
-            "Туристичний збір — резидент";
-
-    private static final String NON_RESIDENT_TAX_NAME =
-            "Туристичний збір — нерезидент";
-
     private static final String REVERSAL_PREFIX = "Сторно: ";
 
     private static final BigDecimal ONE_NIGHT =
@@ -62,9 +57,6 @@ public class ReservationFolioService {
             );
         }
 
-        FacilityEntity accommodationFacility =
-                getAccommodationFacility(reservation);
-
         FolioEntity folio = FolioEntity.builder()
                 .hotel(reservation.getRoom().getHotel())
                 .reservation(reservation)
@@ -77,18 +69,11 @@ public class ReservationFolioService {
         List<AccrualEntity> accruals = new ArrayList<>();
 
         accruals.addAll(
-                createAccommodationAccruals(
-                        reservation,
-                        folio,
-                        accommodationFacility
-                )
+                createAccommodationAccruals(reservation, folio)
         );
 
         accruals.addAll(
-                createTouristTaxAccruals(
-                        reservation,
-                        folio
-                )
+                createTouristTaxAccruals(reservation, folio)
         );
 
         folio.getAccruals().addAll(accruals);
@@ -152,9 +137,6 @@ public class ReservationFolioService {
             );
         }
 
-        FacilityEntity accommodationFacility =
-                getAccommodationFacility(reservation);
-
         List<AccrualEntity> allAccruals = new ArrayList<>(
                 accrualRepository.findAllByFolioId(folio.getId())
         );
@@ -168,10 +150,7 @@ public class ReservationFolioService {
         LocalDateTime accruedAt = LocalDateTime.now(clock);
 
         List<AccrualEntity> reversals =
-                createReversalAccruals(
-                        currentAccruals,
-                        accruedAt
-                );
+                createReversalAccruals(currentAccruals, accruedAt);
 
         currentAccruals.forEach(
                 accrual -> accrual.setReversed(true)
@@ -187,18 +166,11 @@ public class ReservationFolioService {
         List<AccrualEntity> newAccruals = new ArrayList<>();
 
         newAccruals.addAll(
-                createAccommodationAccruals(
-                        reservation,
-                        folio,
-                        accommodationFacility
-                )
+                createAccommodationAccruals(reservation, folio)
         );
 
         newAccruals.addAll(
-                createTouristTaxAccruals(
-                        reservation,
-                        folio
-                )
+                createTouristTaxAccruals(reservation, folio)
         );
 
         List<AccrualEntity> savedNewAccruals =
@@ -215,8 +187,7 @@ public class ReservationFolioService {
 
     private List<AccrualEntity> createAccommodationAccruals(
             ReservationEntity reservation,
-            FolioEntity folio,
-            FacilityEntity facility
+            FolioEntity folio
     ) {
         LocalDate checkIn = reservation.getCheckIn().toLocalDate();
         LocalDate checkOut = reservation.getCheckOut().toLocalDate();
@@ -248,7 +219,7 @@ public class ReservationFolioService {
                     .hotel(reservation.getRoom().getHotel())
                     .reservation(reservation)
                     .folio(folio)
-                    .facility(facility)
+                    .facility(null)
                     .name(ACCOMMODATION_NAME)
                     .unitPrice(unitPrice)
                     .quantity(ONE_NIGHT)
@@ -275,7 +246,6 @@ public class ReservationFolioService {
             return List.of();
         }
 
-        // Туристичний збір нараховується тільки за дорослих.
         int adults = reservation.getAdults();
 
         if (adults <= 0) {
@@ -346,24 +316,15 @@ public class ReservationFolioService {
                 .getHotel()
                 .getId();
 
-        String facilityName = switch (taxStatus) {
-            case RESIDENT -> RESIDENT_TAX_NAME;
-            case NON_RESIDENT -> NON_RESIDENT_TAX_NAME;
-            case EXEMPT -> throw new IllegalArgumentException(
-                    "Exempt reservation does not require tourist tax facility"
-            );
-        };
-
         return facilityRepository
-                .findByHotelIdAndSystemCodeAndNameAndActiveTrue(
+                .findByHotelIdAndTaxStatusAndActiveTrue(
                         hotelId,
-                        FacilitySystemCode.TOURIST_TAX,
-                        facilityName
+                        taxStatus
                 )
                 .orElseThrow(() ->
                         new EntityNotFoundException(
-                                "Для готелю не налаштована активна послуга: "
-                                        + facilityName
+                                "Для готелю не налаштована активна послуга туристичного збору: "
+                                        + taxStatus
                         )
                 );
     }
@@ -390,25 +351,6 @@ public class ReservationFolioService {
                 .toList();
     }
 
-    private FacilityEntity getAccommodationFacility(
-            ReservationEntity reservation
-    ) {
-        Long hotelId = reservation.getRoom()
-                .getHotel()
-                .getId();
-
-        return facilityRepository
-                .findByHotelIdAndSystemCodeAndActiveTrue(
-                        hotelId,
-                        FacilitySystemCode.ACCOMMODATION
-                )
-                .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Для готелю не налаштована активна системна послуга проживання"
-                        )
-                );
-    }
-
     private boolean containsReservationBillingAccrual(FolioEntity folio) {
         return folio.getAccruals() != null
                 && folio.getAccruals().stream()
@@ -416,16 +358,16 @@ public class ReservationFolioService {
     }
 
     private boolean isReservationBillingAccrual(AccrualEntity accrual) {
-        if (accrual.getFacility() == null
-                || accrual.getFacility().getSystemCode() == null) {
-            return false;
+        FacilityEntity facility = accrual.getFacility();
+
+        // Проживання.
+        if (facility == null) {
+            return true;
         }
 
-        FacilitySystemCode systemCode =
-                accrual.getFacility().getSystemCode();
-
-        return systemCode == FacilitySystemCode.ACCOMMODATION
-                || systemCode == FacilitySystemCode.TOURIST_TAX;
+        // Туристичний збір.
+        return facility.getTaxStatus() == TaxStatus.RESIDENT
+                || facility.getTaxStatus() == TaxStatus.NON_RESIDENT;
     }
 
     private void validateReservation(ReservationEntity reservation) {

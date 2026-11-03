@@ -1,6 +1,7 @@
 package com.sirius.sirius.store.repository;
 
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
+import com.sirius.sirius.store.enums.TaxStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -14,14 +15,9 @@ public interface FacilityRepository extends JpaRepository<FacilityEntity, Long> 
 
     boolean existsByIdAndHotelId(Long id, Long hotelId);
 
-    Optional<FacilityEntity> findByHotelIdAndSystemCodeAndActiveTrue(
+    Optional<FacilityEntity> findByHotelIdAndTaxStatusAndActiveTrue(
             Long hotelId,
-            FacilitySystemCode systemCode
+            TaxStatus taxStatus
     );
 
-    Optional<FacilityEntity> findByHotelIdAndSystemCodeAndNameAndActiveTrue(
-            Long hotelId,
-            FacilitySystemCode systemCode,
-            String name
-    );
 }
