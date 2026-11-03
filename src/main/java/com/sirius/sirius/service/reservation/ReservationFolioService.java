@@ -8,6 +8,7 @@ import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
+import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.enums.TaxStatus;
 import com.sirius.sirius.store.repository.AccrualRepository;
@@ -317,8 +318,9 @@ public class ReservationFolioService {
                 .getId();
 
         return facilityRepository
-                .findByHotelIdAndTaxStatusAndActiveTrue(
+                .findByHotelIdAndTypeAndTaxStatusAndActiveTrue(
                         hotelId,
+                        FacilityType.TOURIST_TAX,
                         taxStatus
                 )
                 .orElseThrow(() ->
@@ -360,14 +362,11 @@ public class ReservationFolioService {
     private boolean isReservationBillingAccrual(AccrualEntity accrual) {
         FacilityEntity facility = accrual.getFacility();
 
-        // Проживання.
         if (facility == null) {
             return true;
         }
 
-        // Туристичний збір.
-        return facility.getTaxStatus() == TaxStatus.RESIDENT
-                || facility.getTaxStatus() == TaxStatus.NON_RESIDENT;
+        return facility.getType() == FacilityType.TOURIST_TAX;
     }
 
     private void validateReservation(ReservationEntity reservation) {

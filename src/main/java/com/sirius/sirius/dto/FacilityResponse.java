@@ -1,5 +1,6 @@
 package com.sirius.sirius.dto;
 
+import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.TaxStatus;
 
 public record FacilityResponse(
@@ -9,6 +10,7 @@ public record FacilityResponse(
         String description,
         String unit,
         boolean active,
+        FacilityType type,
         TaxStatus taxStatus
 ) {
 }

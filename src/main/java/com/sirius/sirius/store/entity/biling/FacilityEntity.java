@@ -1,6 +1,7 @@
 package com.sirius.sirius.store.entity.biling;
 
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
+import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.TaxStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -47,6 +48,10 @@ public class FacilityEntity {
 
     @Column(nullable = false, length = 30)
     String unit;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    FacilityType type;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tax_status", length = 30)

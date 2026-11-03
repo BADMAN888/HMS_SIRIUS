@@ -5,6 +5,7 @@ import com.sirius.sirius.dto.FacilityResponse;
 import com.sirius.sirius.mappers.FacilityMapper;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
+import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.TaxStatus;
 import com.sirius.sirius.store.repository.FacilityRepository;
 import com.sirius.sirius.store.repository.HotelRepository;
@@ -26,7 +27,7 @@ public class FacilityService {
 
     @Transactional
     public FacilityResponse create(FacilityRequest request) {
-        validateTaxStatus(request.taxStatus());
+        validateFacility(request);
 
         HotelEntity hotel = getHotel(request.hotelId());
 
@@ -70,7 +71,7 @@ public class FacilityService {
             );
         }
 
-        validateTaxStatus(request.taxStatus());
+        validateFacility(request);
 
         facilityMapper.updateEntity(request, facility);
 
@@ -101,10 +102,25 @@ public class FacilityService {
         );
     }
 
-    private void validateTaxStatus(TaxStatus taxStatus) {
-        if (taxStatus == TaxStatus.EXEMPT) {
+    private void validateFacility(FacilityRequest request) {
+        if (request.type() == null) {
             throw new IllegalArgumentException(
-                    "EXEMPT не може бути статусом послуги"
+                    "Тип послуги повинен бути вказаний"
+            );
+        }
+
+        if (request.type() == FacilityType.STANDARD
+                && request.taxStatus() != null) {
+            throw new IllegalArgumentException(
+                    "Звичайна послуга не повинна мати податковий статус"
+            );
+        }
+
+        if (request.type() == FacilityType.TOURIST_TAX
+                && request.taxStatus() != TaxStatus.RESIDENT
+                && request.taxStatus() != TaxStatus.NON_RESIDENT) {
+            throw new IllegalArgumentException(
+                    "Для туристичного збору необхідно вказати RESIDENT або NON_RESIDENT"
             );
         }
     }

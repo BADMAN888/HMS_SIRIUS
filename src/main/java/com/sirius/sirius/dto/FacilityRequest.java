@@ -1,5 +1,6 @@
 package com.sirius.sirius.dto;
 
+import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.TaxStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,6 +23,9 @@ public record FacilityRequest(
         String unit,
 
         boolean active,
+
+        @NotNull
+        FacilityType type,
 
         TaxStatus taxStatus
 ) {
