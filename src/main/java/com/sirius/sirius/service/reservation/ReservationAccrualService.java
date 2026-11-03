@@ -8,6 +8,7 @@ import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
+import com.sirius.sirius.store.enums.AccrualSource;
 import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.enums.TaxStatus;
@@ -25,24 +26,25 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class ReservationFolioService {
+public class ReservationAccrualService {
 
     private static final String ACCOMMODATION_NAME = "Проживання";
-
     private static final String REVERSAL_PREFIX = "Сторно: ";
 
     private static final BigDecimal ONE_NIGHT =
             BigDecimal.ONE.setScale(3, RoundingMode.UNNECESSARY);
 
-    private final FolioRepository folioRepository;
     private final AccrualRepository accrualRepository;
     private final FacilityRepository facilityRepository;
+    private final FolioRepository folioRepository;
     private final PriceService priceService;
     private final FacilityPriceService facilityPriceService;
     private final Clock clock;
@@ -50,145 +52,80 @@ public class ReservationFolioService {
     public void create(ReservationEntity reservation) {
         validateReservation(reservation);
 
-        if (reservation.getFolios() != null
-                && reservation.getFolios().stream()
-                .anyMatch(this::containsReservationBillingAccrual)) {
+        boolean alreadyCreated = accrualRepository
+                .findAllByReservationId(reservation.getId())
+                .stream()
+                .anyMatch(this::isCurrentAutomaticAccrual);
+
+        if (alreadyCreated) {
             throw new BadRequestException(
-                    "Reservation billing folio already exists"
+                    "Automatic reservation accruals already exist"
             );
         }
 
-        FolioEntity folio = FolioEntity.builder()
-                .hotel(reservation.getRoom().getHotel())
-                .reservation(reservation)
-                .status(FolioStatus.OPEN)
-                .totalAmount(BigDecimal.ZERO)
-                .paidAmount(BigDecimal.ZERO)
-                .accruals(new ArrayList<>())
-                .build();
-
         List<AccrualEntity> accruals = new ArrayList<>();
 
-        accruals.addAll(
-                createAccommodationAccruals(reservation, folio)
-        );
+        accruals.addAll(createAccommodationAccruals(reservation));
+        accruals.addAll(createTouristTaxAccruals(reservation));
 
-        accruals.addAll(
-                createTouristTaxAccruals(reservation, folio)
-        );
-
-        folio.getAccruals().addAll(accruals);
-        folio.recalculateTotalAmount();
-
-        if (reservation.getFolios() == null) {
-            reservation.setFolios(new ArrayList<>());
-        }
-
-        reservation.getFolios().add(folio);
-
-        folioRepository.save(folio);
+        accrualRepository.saveAll(accruals);
     }
 
     public void recalculate(ReservationEntity reservation) {
         validateReservation(reservation);
 
-        List<FolioEntity> reservationFolios =
-                reservation.getFolios() == null
-                        ? List.of()
-                        : reservation.getFolios().stream()
-                        .filter(this::containsReservationBillingAccrual)
-                        .toList();
+        List<AccrualEntity> currentAccruals = accrualRepository
+                .findAllByReservationId(reservation.getId())
+                .stream()
+                .filter(this::isCurrentAutomaticAccrual)
+                .toList();
 
-        if (reservationFolios.isEmpty()) {
+        if (currentAccruals.isEmpty()) {
             create(reservation);
             return;
         }
 
-        if (reservationFolios.size() > 1) {
-            throw new BadRequestException(
-                    "Reservation has multiple billing folios"
-            );
-        }
-
-        FolioEntity existingFolio = reservationFolios.getFirst();
-
-        FolioEntity folio = folioRepository
-                .findByIdForUpdate(existingFolio.getId())
-                .orElseThrow(() ->
-                        new EntityNotFoundException(
-                                "Reservation folio not found"
-                        )
-                );
-
-        if (folio.getStatus() == FolioStatus.CLOSED) {
-            throw new BadRequestException(
-                    "Closed folio cannot be recalculated"
-            );
-        }
-
-        Long reservationHotelId =
-                reservation.getRoom().getHotel().getId();
-
-        if (!Objects.equals(
-                folio.getHotel().getId(),
-                reservationHotelId
-        )) {
-            throw new BadRequestException(
-                    "Cannot move reservation folio to another hotel"
-            );
-        }
-
-        List<AccrualEntity> allAccruals = new ArrayList<>(
-                accrualRepository.findAllByFolioId(folio.getId())
-        );
-
-        List<AccrualEntity> currentAccruals = allAccruals.stream()
-                .filter(this::isReservationBillingAccrual)
-                .filter(accrual -> !accrual.isReversed())
-                .filter(accrual -> accrual.getReversalOf() == null)
-                .toList();
-
         LocalDateTime accruedAt = LocalDateTime.now(clock);
 
-        List<AccrualEntity> reversals =
-                createReversalAccruals(currentAccruals, accruedAt);
+        Set<Long> affectedOpenFolioIds = new LinkedHashSet<>();
 
-        currentAccruals.forEach(
-                accrual -> accrual.setReversed(true)
-        );
+        List<AccrualEntity> reversals = new ArrayList<>();
 
-        if (!currentAccruals.isEmpty()) {
-            accrualRepository.saveAll(currentAccruals);
+        for (AccrualEntity original : currentAccruals) {
+            FolioEntity originalFolio = original.getFolio();
+
+            FolioEntity reversalFolio = null;
+
+            if (originalFolio != null
+                    && originalFolio.getStatus() == FolioStatus.OPEN) {
+                reversalFolio = originalFolio;
+                affectedOpenFolioIds.add(originalFolio.getId());
+            }
+
+            original.setReversed(true);
+
+            reversals.add(createReversal(
+                    original,
+                    reversalFolio,
+                    accruedAt
+            ));
         }
 
-        List<AccrualEntity> savedReversals =
-                accrualRepository.saveAll(reversals);
+        accrualRepository.saveAll(currentAccruals);
+        accrualRepository.saveAll(reversals);
+
+        recalculateAffectedFolios(affectedOpenFolioIds);
 
         List<AccrualEntity> newAccruals = new ArrayList<>();
 
-        newAccruals.addAll(
-                createAccommodationAccruals(reservation, folio)
-        );
+        newAccruals.addAll(createAccommodationAccruals(reservation));
+        newAccruals.addAll(createTouristTaxAccruals(reservation));
 
-        newAccruals.addAll(
-                createTouristTaxAccruals(reservation, folio)
-        );
-
-        List<AccrualEntity> savedNewAccruals =
-                accrualRepository.saveAll(newAccruals);
-
-        allAccruals.addAll(savedReversals);
-        allAccruals.addAll(savedNewAccruals);
-
-        folio.setAccruals(allAccruals);
-        folio.recalculateTotalAmount();
-
-        folioRepository.save(folio);
+        accrualRepository.saveAll(newAccruals);
     }
 
     private List<AccrualEntity> createAccommodationAccruals(
-            ReservationEntity reservation,
-            FolioEntity folio
+            ReservationEntity reservation
     ) {
         LocalDate checkIn = reservation.getCheckIn().toLocalDate();
         LocalDate checkOut = reservation.getCheckOut().toLocalDate();
@@ -219,8 +156,9 @@ public class ReservationFolioService {
             AccrualEntity accrual = AccrualEntity.builder()
                     .hotel(reservation.getRoom().getHotel())
                     .reservation(reservation)
-                    .folio(folio)
+                    .folio(null)
                     .facility(null)
+                    .source(AccrualSource.AUTOMATIC)
                     .name(ACCOMMODATION_NAME)
                     .unitPrice(unitPrice)
                     .quantity(ONE_NIGHT)
@@ -236,8 +174,7 @@ public class ReservationFolioService {
     }
 
     private List<AccrualEntity> createTouristTaxAccruals(
-            ReservationEntity reservation,
-            FolioEntity folio
+            ReservationEntity reservation
     ) {
         TaxStatus taxStatus = reservation.getTaxStatus() == null
                 ? TaxStatus.RESIDENT
@@ -293,8 +230,9 @@ public class ReservationFolioService {
             AccrualEntity accrual = AccrualEntity.builder()
                     .hotel(reservation.getRoom().getHotel())
                     .reservation(reservation)
-                    .folio(folio)
+                    .folio(null)
                     .facility(facility)
+                    .source(AccrualSource.AUTOMATIC)
                     .name(facility.getName())
                     .unitPrice(unitPrice)
                     .quantity(quantity)
@@ -331,48 +269,81 @@ public class ReservationFolioService {
                 );
     }
 
-    private List<AccrualEntity> createReversalAccruals(
-            List<AccrualEntity> accruals,
+    private AccrualEntity createReversal(
+            AccrualEntity original,
+            FolioEntity reversalFolio,
             LocalDateTime accruedAt
     ) {
-        return accruals.stream()
-                .map(original -> AccrualEntity.builder()
-                        .hotel(original.getHotel())
-                        .reservation(original.getReservation())
-                        .recipient(original.getRecipient())
-                        .folio(original.getFolio())
-                        .facility(original.getFacility())
-                        .reversalOf(original)
-                        .name(REVERSAL_PREFIX + original.getName())
-                        .unitPrice(original.getUnitPrice())
-                        .quantity(original.getQuantity().negate())
-                        .amount(original.getAmount().negate())
-                        .serviceDate(original.getServiceDate())
-                        .accruedAt(accruedAt)
-                        .build())
-                .toList();
+        return AccrualEntity.builder()
+                .hotel(original.getHotel())
+                .reservation(original.getReservation())
+                .recipient(original.getRecipient())
+                .folio(reversalFolio)
+                .facility(original.getFacility())
+                .source(AccrualSource.AUTOMATIC)
+                .reversalOf(original)
+                .name(REVERSAL_PREFIX + original.getName())
+                .unitPrice(original.getUnitPrice())
+                .quantity(original.getQuantity().negate())
+                .amount(original.getAmount().negate())
+                .serviceDate(original.getServiceDate())
+                .accruedAt(accruedAt)
+                .build();
     }
 
-    private boolean containsReservationBillingAccrual(FolioEntity folio) {
-        return folio.getAccruals() != null
-                && folio.getAccruals().stream()
-                .anyMatch(this::isReservationBillingAccrual);
+    private void recalculateAffectedFolios(Set<Long> folioIds) {
+        for (Long folioId : folioIds) {
+            FolioEntity folio = folioRepository
+                    .findByIdForUpdate(folioId)
+                    .orElseThrow(() ->
+                            new EntityNotFoundException(
+                                    "Folio not found: " + folioId
+                            )
+                    );
+
+            if (folio.getStatus() != FolioStatus.OPEN) {
+                continue;
+            }
+
+            List<AccrualEntity> folioAccruals =
+                    accrualRepository.findAllByFolioId(folioId);
+
+            folio.setAccruals(new ArrayList<>(folioAccruals));
+            folio.recalculateTotalAmount();
+
+            folioRepository.save(folio);
+        }
     }
 
-    private boolean isReservationBillingAccrual(AccrualEntity accrual) {
-        FacilityEntity facility = accrual.getFacility();
+    private boolean isCurrentAutomaticAccrual(AccrualEntity accrual) {
+        if (accrual.isReversed() || accrual.getReversalOf() != null) {
+            return false;
+        }
 
-        if (facility == null) {
+        if (accrual.getSource() == AccrualSource.AUTOMATIC) {
             return true;
         }
 
-        return facility.getType() == FacilityType.TOURIST_TAX;
+        if (accrual.getSource() == AccrualSource.MANUAL) {
+            return false;
+        }
+
+        FacilityEntity facility = accrual.getFacility();
+
+        return facility == null
+                || facility.getType() == FacilityType.TOURIST_TAX;
     }
 
     private void validateReservation(ReservationEntity reservation) {
         if (reservation == null) {
             throw new BadRequestException(
                     "Reservation must be specified"
+            );
+        }
+
+        if (reservation.getId() == null) {
+            throw new BadRequestException(
+                    "Reservation must be saved before accrual creation"
             );
         }
 

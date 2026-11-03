@@ -10,6 +10,7 @@ import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
+import com.sirius.sirius.store.enums.AccrualSource;
 import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.repository.AccrualRepository;
 import com.sirius.sirius.store.repository.CustomerRepository;
@@ -111,6 +112,7 @@ public class AccrualService {
                 .recipient(recipient)
                 .folio(folio)
                 .facility(facility)
+                .source(AccrualSource.MANUAL)
                 .name(facility.getName())
                 .unitPrice(unitPrice)
                 .quantity(quantity)

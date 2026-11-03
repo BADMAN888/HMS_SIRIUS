@@ -2,6 +2,7 @@ package com.sirius.sirius.store.entity.biling;
 
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
+import com.sirius.sirius.store.enums.AccrualSource;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -69,6 +70,11 @@ public class AccrualEntity {
 
     @Column(nullable = false, name = "accrued_at")
     LocalDateTime accruedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source", length = 20)
+    @Builder.Default
+    AccrualSource source = AccrualSource.MANUAL;
 
     @PrePersist
     void prePersist() {

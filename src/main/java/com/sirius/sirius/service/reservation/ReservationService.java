@@ -45,7 +45,7 @@ public class ReservationService {
     private final CompanyRepository companyRepository;
     private final ReservationMapper reservationMapper;
     private final ReservationAvailabilityService availabilityService;
-    private final ReservationFolioService folioService;
+    private final ReservationAccrualService accrualService;
     private final ReservationConflictService conflictService;
     private final Clock clock;
 
@@ -90,7 +90,7 @@ public class ReservationService {
                 () -> reservationRepository.saveAndFlush(reservation)
         );
 
-        folioService.create(saved);
+        accrualService.create(saved);
 
         return reservationMapper.toResponse(saved);
     }
@@ -156,7 +156,7 @@ public class ReservationService {
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
 
-        folioService.recalculate(reservation);
+        accrualService.recalculate(reservation);
 
         conflictService.saveAndFlush(
                 () -> reservationRepository.saveAndFlush(reservation)
