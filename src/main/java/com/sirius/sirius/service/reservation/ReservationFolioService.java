@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
@@ -23,6 +24,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -86,22 +88,25 @@ public class ReservationFolioService {
     public void recalculate(ReservationEntity reservation) {
         validateReservation(reservation);
 
-        if (reservation.getFolios() == null
-                || reservation.getFolios().isEmpty()) {
+        List<FolioEntity> accommodationFolios =
+                reservation.getFolios() == null
+                        ? List.of()
+                        : reservation.getFolios().stream()
+                        .filter(this::containsAccommodationAccrual)
+                        .toList();
+
+        if (accommodationFolios.isEmpty()) {
             create(reservation);
             return;
         }
 
-        FolioEntity existingFolio = reservation.getFolios()
-                .stream()
-                .filter(this::containsAccommodationAccrual)
-                .findFirst()
-                .orElse(null);
-
-        if (existingFolio == null) {
-            create(reservation);
-            return;
+        if (accommodationFolios.size() > 1) {
+            throw new BadRequestException(
+                    "Reservation has multiple accommodation folios"
+            );
         }
+
+        FolioEntity existingFolio = accommodationFolios.getFirst();
 
         FolioEntity folio = folioRepository
                 .findByIdForUpdate(existingFolio.getId())
@@ -117,8 +122,13 @@ public class ReservationFolioService {
             );
         }
 
-        if (!folio.getHotel().getId()
-                .equals(reservation.getRoom().getHotel().getId())) {
+        Long reservationHotelId =
+                reservation.getRoom().getHotel().getId();
+
+        if (!Objects.equals(
+                folio.getHotel().getId(),
+                reservationHotelId
+        )) {
             throw new BadRequestException(
                     "Cannot move reservation folio to another hotel"
             );
@@ -127,8 +137,9 @@ public class ReservationFolioService {
         FacilityEntity accommodationFacility =
                 getAccommodationFacility(reservation);
 
-        List<AccrualEntity> allAccruals =
-                accrualRepository.findAllByFolioId(folio.getId());
+        List<AccrualEntity> allAccruals = new ArrayList<>(
+                accrualRepository.findAllByFolioId(folio.getId())
+        );
 
         List<AccrualEntity> currentAccruals = allAccruals.stream()
                 .filter(this::isAccommodationAccrual)
@@ -139,9 +150,14 @@ public class ReservationFolioService {
         LocalDateTime accruedAt = LocalDateTime.now(clock);
 
         List<AccrualEntity> reversals =
-                createReversalAccruals(currentAccruals, accruedAt);
+                createReversalAccruals(
+                        currentAccruals,
+                        accruedAt
+                );
 
-        currentAccruals.forEach(accrual -> accrual.setReversed(true));
+        currentAccruals.forEach(
+                accrual -> accrual.setReversed(true)
+        );
 
         if (!currentAccruals.isEmpty()) {
             accrualRepository.saveAll(currentAccruals);
@@ -169,6 +185,56 @@ public class ReservationFolioService {
         folioRepository.save(folio);
     }
 
+    private List<AccrualEntity> createAccommodationAccruals(
+            ReservationEntity reservation,
+            FolioEntity folio,
+            FacilityEntity facility
+    ) {
+        LocalDate checkIn = reservation.getCheckIn().toLocalDate();
+        LocalDate checkOut = reservation.getCheckOut().toLocalDate();
+
+        List<AccrualEntity> accruals = new ArrayList<>();
+        LocalDateTime accruedAt = LocalDateTime.now(clock);
+
+        for (LocalDate serviceDate = checkIn;
+             serviceDate.isBefore(checkOut);
+             serviceDate = serviceDate.plusDays(1)) {
+
+            BigDecimal unitPrice = priceService.getPriceAmountForDate(
+                    reservation.getRate().getId(),
+                    serviceDate
+            );
+
+            if (unitPrice == null || unitPrice.signum() < 0) {
+                throw new BadRequestException(
+                        "Accommodation price cannot be negative or null"
+                );
+            }
+
+            unitPrice = unitPrice.setScale(
+                    2,
+                    RoundingMode.HALF_UP
+            );
+
+            AccrualEntity accrual = AccrualEntity.builder()
+                    .hotel(reservation.getRoom().getHotel())
+                    .reservation(reservation)
+                    .folio(folio)
+                    .facility(facility)
+                    .name(ACCOMMODATION_NAME)
+                    .unitPrice(unitPrice)
+                    .quantity(ONE_NIGHT)
+                    .amount(unitPrice)
+                    .serviceDate(serviceDate)
+                    .accruedAt(accruedAt)
+                    .build();
+
+            accruals.add(accrual);
+        }
+
+        return accruals;
+    }
+
     private List<AccrualEntity> createReversalAccruals(
             List<AccrualEntity> accruals,
             LocalDateTime accruedAt
@@ -191,57 +257,16 @@ public class ReservationFolioService {
                 .toList();
     }
 
-    private List<AccrualEntity> createAccommodationAccruals(
-            ReservationEntity reservation,
-            FolioEntity folio,
-            FacilityEntity facility
-    ) {
-        LocalDate checkIn = reservation.getCheckIn().toLocalDate();
-        LocalDate checkOut = reservation.getCheckOut().toLocalDate();
-
-        List<AccrualEntity> accruals = new ArrayList<>();
-        LocalDateTime accruedAt = LocalDateTime.now(clock);
-
-        for (LocalDate serviceDate = checkIn;
-             serviceDate.isBefore(checkOut);
-             serviceDate = serviceDate.plusDays(1)) {
-
-            BigDecimal unitPrice = priceService.getPriceAmountForDate(
-                    reservation.getRate().getId(),
-                    serviceDate
-            ).setScale(2, RoundingMode.HALF_UP);
-
-            if (unitPrice.signum() < 0) {
-                throw new BadRequestException(
-                        "Accommodation price cannot be negative"
-                );
-            }
-
-            AccrualEntity accrual = AccrualEntity.builder()
-                    .hotel(reservation.getRoom().getHotel())
-                    .reservation(reservation)
-                    .folio(folio)
-                    .facility(facility)
-                    .name(ACCOMMODATION_NAME)
-                    .unitPrice(unitPrice)
-                    .quantity(ONE_NIGHT)
-                    .amount(unitPrice)
-                    .serviceDate(serviceDate)
-                    .accruedAt(accruedAt)
-                    .build();
-
-            accruals.add(accrual);
-        }
-
-        return accruals;
-    }
-
     private FacilityEntity getAccommodationFacility(
             ReservationEntity reservation
     ) {
+        Long hotelId = reservation.getRoom()
+                .getHotel()
+                .getId();
+
         return facilityRepository
                 .findByHotelIdAndSystemCodeAndActiveTrue(
-                        reservation.getRoom().getHotel().getId(),
+                        hotelId,
                         FacilitySystemCode.ACCOMMODATION
                 )
                 .orElseThrow(() ->
@@ -271,7 +296,8 @@ public class ReservationFolioService {
         }
 
         if (reservation.getRoom() == null
-                || reservation.getRoom().getHotel() == null) {
+                || reservation.getRoom().getHotel() == null
+                || reservation.getRoom().getHotel().getId() == null) {
             throw new BadRequestException(
                     "Reservation room and hotel must be specified"
             );
@@ -291,7 +317,9 @@ public class ReservationFolioService {
             );
         }
 
-        if (!reservation.getCheckOut().isAfter(reservation.getCheckIn())) {
+        if (!reservation.getCheckOut().isAfter(
+                reservation.getCheckIn()
+        )) {
             throw new BadRequestException(
                     "Check-out must be after check-in"
             );
