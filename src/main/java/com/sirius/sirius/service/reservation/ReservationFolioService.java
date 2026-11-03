@@ -7,7 +7,6 @@ import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
-import com.sirius.sirius.store.enums.FacilitySystemCode;
 import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.enums.TaxStatus;
 import com.sirius.sirius.store.repository.AccrualRepository;
@@ -276,21 +275,19 @@ public class ReservationFolioService {
             return List.of();
         }
 
+        // Туристичний збір нараховується тільки за дорослих.
+        int adults = reservation.getAdults();
+
+        if (adults <= 0) {
+            return List.of();
+        }
+
         FacilityEntity facility = getTouristTaxFacility(
                 reservation,
                 taxStatus
         );
 
-        int guestCount = reservation.getAdults()
-                + reservation.getChildren();
-
-        if (guestCount <= 0) {
-            throw new BadRequestException(
-                    "Tourist tax requires at least one guest"
-            );
-        }
-
-        BigDecimal quantity = BigDecimal.valueOf(guestCount)
+        BigDecimal quantity = BigDecimal.valueOf(adults)
                 .setScale(3, RoundingMode.UNNECESSARY);
 
         LocalDate checkIn = reservation.getCheckIn().toLocalDate();

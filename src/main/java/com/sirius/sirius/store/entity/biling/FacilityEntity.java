@@ -1,7 +1,7 @@
 package com.sirius.sirius.store.entity.biling;
 
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
-import com.sirius.sirius.store.enums.FacilitySystemCode;
+import com.sirius.sirius.store.enums.TaxStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -35,10 +35,6 @@ public class FacilityEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "system_code", length = 50)
-    FacilitySystemCode systemCode;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "hotel_id", nullable = false)
     HotelEntity hotel;
@@ -51,6 +47,10 @@ public class FacilityEntity {
 
     @Column(nullable = false, length = 30)
     String unit;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tax_status", length = 30)
+    TaxStatus taxStatus;
 
     @Column(nullable = false)
     boolean active;

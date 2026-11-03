@@ -1,7 +1,6 @@
 package com.sirius.sirius.store.repository;
 
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
-import com.sirius.sirius.store.enums.FacilitySystemCode;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

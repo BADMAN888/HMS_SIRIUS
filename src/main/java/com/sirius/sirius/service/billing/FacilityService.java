@@ -5,7 +5,6 @@ import com.sirius.sirius.dto.FacilityResponse;
 import com.sirius.sirius.mappers.FacilityMapper;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
-import com.sirius.sirius.store.enums.FacilitySystemCode;
 import com.sirius.sirius.store.repository.FacilityRepository;
 import com.sirius.sirius.store.repository.HotelRepository;
 import jakarta.persistence.EntityNotFoundException;
