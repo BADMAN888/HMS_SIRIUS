@@ -7,6 +7,7 @@ import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.enums.ReservationStatus;
+import com.sirius.sirius.store.enums.TaxStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -88,6 +89,10 @@ public class ReservationEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     ReservationStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tax_status", nullable = false, length = 20)
+    private TaxStatus taxStatus;
 
     @OneToMany(
             mappedBy = "reservation",
