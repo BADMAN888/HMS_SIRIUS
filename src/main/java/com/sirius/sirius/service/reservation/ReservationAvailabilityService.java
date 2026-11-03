@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
@@ -5,9 +6,11 @@ import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.enums.ReservationStatus;
 import com.sirius.sirius.store.repository.ReservationRepository;
+import com.sirius.sirius.store.repository.RoomUnavailabilityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -16,6 +19,7 @@ import java.util.List;
 public class ReservationAvailabilityService {
 
     private final ReservationRepository reservationRepository;
+    private final RoomUnavailabilityRepository roomUnavailabilityRepository;
 
     public void validate(
             RoomEntity room,
@@ -29,7 +33,11 @@ public class ReservationAvailabilityService {
         validateRate(rate);
         validateRateForRoom(rate, room);
         validateOccupancy(room, adults, children);
-        validateRoomUnavailability(room);
+        validateRoomUnavailability(
+                room.getId(),
+                checkIn,
+                checkOut
+        );
 
         validateRoomAvailability(
                 room.getId(),
@@ -77,7 +85,11 @@ public class ReservationAvailabilityService {
 
         validateRateForRoom(rate, room);
         validateOccupancy(room, adults, children);
-        validateRoomUnavailability(room);
+        validateRoomUnavailability(
+                room.getId(),
+                checkIn,
+                checkOut
+        );
 
         validateRoomAvailabilityExceptCurrent(
                 reservationId,
@@ -168,18 +180,23 @@ public class ReservationAvailabilityService {
         }
     }
 
-    private void validateRoomUnavailability(RoomEntity room) {
-        if (room == null) {
-            throw new BadRequestException(
-                    "Room must be specified"
-            );
-        }
+    private void validateRoomUnavailability(
+            Long roomId,
+            LocalDateTime checkIn,
+            LocalDateTime checkOut
+    ) {
+        boolean unavailable =
+                roomUnavailabilityRepository
+                        .existsByRoom_IdAndStartAtLessThanAndEndAtGreaterThan(
+                                roomId,
+                                checkOut,
+                                checkIn
+                        );
 
-        if (room.getUnavailabilityStatus() != null) {
+        if (unavailable) {
             throw new BadRequestException(
-                    "Room with id: " + room.getId()
-                            + " is unavailable for reservations. Reason: "
-                            + room.getUnavailabilityStatus()
+                    "Room with id: " + roomId
+                            + " is unavailable during the selected period"
             );
         }
     }

@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -30,4 +31,10 @@ public interface RoomUnavailabilityRepository
     );
 
     List<RoomUnavailabilityEntity> findAllByCompletedAtIsNull();
+
+    boolean existsByRoom_IdAndStartAtLessThanAndEndAtGreaterThan(
+            Long roomId,
+            LocalDateTime checkOut,
+            LocalDateTime checkIn
+    );
 }
