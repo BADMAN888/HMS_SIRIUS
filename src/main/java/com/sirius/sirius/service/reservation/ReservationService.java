@@ -1,33 +1,27 @@
+
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.dto.ReservationCheckInResponse;
 import com.sirius.sirius.dto.ReservationCheckOutResponse;
 import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.dto.ReservationResponse;
-import com.sirius.sirius.exeption.BadRequestException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.ReservationMapper;
-import com.sirius.sirius.store.entity.biling.CompanyEntity;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.ReservationStatus;
-import com.sirius.sirius.store.repository.CompanyRepository;
-import com.sirius.sirius.store.repository.ProfileRepository;
-import com.sirius.sirius.store.repository.RateRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
-import com.sirius.sirius.store.repository.RoomCategoryRepository;
 import com.sirius.sirius.store.repository.RoomRepository;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -39,26 +33,36 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
     private final RoomRepository roomRepository;
-    private final RoomCategoryRepository roomCategoryRepository;
-    private final RateRepository rateRepository;
-    private final ProfileRepository profileRepository;
-    private final CompanyRepository companyRepository;
     private final ReservationMapper reservationMapper;
+
     private final ReservationAvailabilityService availabilityService;
     private final ReservationAccrualService accrualService;
+    private final ReservationChargeRecalculationService chargeRecalculationService;
+    private final ReservationGuestService guestService;
+    private final ReservationValidationService validationService;
+
     private final Clock clock;
 
     public ReservationResponse create(ReservationRequest request) {
         RoomEntity room = findRoomForUpdate(request.roomId());
-        RateEntity rate = findRate(request.rateId());
+
+        RateEntity rate = validationService.findRate(request.rateId());
 
         RoomCategoryEntity paymentCategory =
-                findPaymentCategory(request.paymentCategoryId());
+                validationService.findPaymentCategory(
+                        request.paymentCategoryId()
+                );
 
-        validatePaymentCategory(room, paymentCategory);
+        validationService.validatePaymentCategory(
+                room.getHotel().getId(),
+                paymentCategory
+        );
 
-        CompanyEntity sourceCompany = findCompany(request.sourceCompanyId());
-        CompanyEntity operatorCompany = findCompany(request.operatorCompanyId());
+        var sourceCompany =
+                validationService.findCompany(request.sourceCompanyId());
+
+        var operatorCompany =
+                validationService.findCompany(request.operatorCompanyId());
 
         availabilityService.validate(
                 room,
@@ -69,9 +73,10 @@ public class ReservationService {
                 request.checkOut()
         );
 
-        Set<ProfileEntity> guests = findGuests(request.guestIds());
+        Set<ProfileEntity> guests =
+                guestService.findGuests(request.guestIds());
 
-        ProfileEntity primaryGuest = findPrimaryGuest(
+        ProfileEntity primaryGuest = guestService.findPrimaryGuest(
                 request.primaryGuestId(),
                 guests
         );
@@ -97,10 +102,12 @@ public class ReservationService {
         return reservationMapper.toResponse(saved);
     }
 
+    @Transactional(readOnly = true)
     public ReservationResponse getById(Long id) {
         return reservationMapper.toResponse(findById(id));
     }
 
+    @Transactional(readOnly = true)
     public List<ReservationResponse> getAll() {
         return reservationRepository.findAll()
                 .stream()
@@ -114,22 +121,30 @@ public class ReservationService {
     ) {
         ReservationEntity reservation = findByIdForUpdate(id);
 
-        validateUpdateStatus(reservation);
+        validationService.validateUpdateStatus(reservation);
 
         RoomEntity room = lockRooms(
                 reservation.getRoom().getId(),
                 request.roomId()
         );
 
-        RateEntity rate = findRate(request.rateId());
+        RateEntity rate = validationService.findRate(request.rateId());
 
         RoomCategoryEntity paymentCategory =
-                findPaymentCategory(request.paymentCategoryId());
+                validationService.findPaymentCategory(
+                        request.paymentCategoryId()
+                );
 
-        validatePaymentCategory(room, paymentCategory);
+        validationService.validatePaymentCategory(
+                room.getHotel().getId(),
+                paymentCategory
+        );
 
-        CompanyEntity sourceCompany = findCompany(request.sourceCompanyId());
-        CompanyEntity operatorCompany = findCompany(request.operatorCompanyId());
+        var sourceCompany =
+                validationService.findCompany(request.sourceCompanyId());
+
+        var operatorCompany =
+                validationService.findCompany(request.operatorCompanyId());
 
         boolean keepCurrentRate = reservation.getRate()
                 .getId()
@@ -146,9 +161,10 @@ public class ReservationService {
                 keepCurrentRate
         );
 
-        Set<ProfileEntity> guests = findGuests(request.guestIds());
+        Set<ProfileEntity> guests =
+                guestService.findGuests(request.guestIds());
 
-        ProfileEntity primaryGuest = findPrimaryGuest(
+        ProfileEntity primaryGuest = guestService.findPrimaryGuest(
                 request.primaryGuestId(),
                 guests
         );
@@ -163,14 +179,17 @@ public class ReservationService {
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
 
-        accrualService.recalculate(reservation);
+        chargeRecalculationService.recalculate(reservation);
 
         reservationRepository.saveAndFlush(reservation);
 
         return reservationMapper.toResponse(reservation);
     }
 
-    public List<ReservationCheckInResponse> getByCheckInDate(LocalDate date) {
+    @Transactional(readOnly = true)
+    public List<ReservationCheckInResponse> getByCheckInDate(
+            LocalDate date
+    ) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.plusDays(1).atStartOfDay();
 
@@ -184,7 +203,10 @@ public class ReservationService {
                 .toList();
     }
 
-    public List<ReservationCheckOutResponse> getByCheckOutDate(LocalDate date) {
+    @Transactional(readOnly = true)
+    public List<ReservationCheckOutResponse> getByCheckOutDate(
+            LocalDate date
+    ) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.plusDays(1).atStartOfDay();
 
@@ -198,6 +220,7 @@ public class ReservationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ReservationResponse> getByDate(LocalDate date) {
         LocalDateTime start = date.atStartOfDay();
         LocalDateTime end = date.plusDays(1).atStartOfDay();
@@ -212,6 +235,7 @@ public class ReservationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ReservationResponse> getByDateRange(
             LocalDate startDate,
             LocalDate endDate
@@ -231,7 +255,10 @@ public class ReservationService {
                 .toList();
     }
 
-    public List<ReservationResponse> getByStatus(ReservationStatus status) {
+    @Transactional(readOnly = true)
+    public List<ReservationResponse> getByStatus(
+            ReservationStatus status
+    ) {
         return reservationRepository.findByStatus(status)
                 .stream()
                 .map(reservationMapper::toResponse)
@@ -279,91 +306,6 @@ public class ReservationService {
                 );
     }
 
-    private void validatePaymentCategory(
-            RoomEntity room,
-            RoomCategoryEntity paymentCategory
-    ) {
-        if (room == null || room.getHotel() == null
-                || paymentCategory == null
-                || paymentCategory.getHotel() == null) {
-            throw new BadRequestException(
-                    "Room and payment category must belong to a hotel"
-            );
-        }
-
-        if (!room.getHotel().getId()
-                .equals(paymentCategory.getHotel().getId())) {
-            throw new BadRequestException(
-                    "Payment category must belong to the same hotel as the selected room"
-            );
-        }
-    }
-
-    private Set<ProfileEntity> findGuests(Set<Long> guestIds) {
-        if (guestIds == null || guestIds.isEmpty()) {
-            throw new BadRequestException(
-                    "Reservation must have at least one guest"
-            );
-        }
-
-        List<ProfileEntity> guests = profileRepository.findAllById(guestIds);
-
-        if (guests.size() != guestIds.size()) {
-            throw new NotFoundException(
-                    "One or more guests not found"
-            );
-        }
-
-        return new HashSet<>(guests);
-    }
-
-    private ProfileEntity findPrimaryGuest(
-            Long primaryGuestId,
-            Set<ProfileEntity> guests
-    ) {
-        return guests.stream()
-                .filter(guest -> guest.getId().equals(primaryGuestId))
-                .findFirst()
-                .orElseThrow(() ->
-                        new BadRequestException(
-                                "Primary guest must belong to reservation guests"
-                        )
-                );
-    }
-
-    private RoomCategoryEntity findPaymentCategory(Long categoryId) {
-        return roomCategoryRepository.findById(categoryId)
-                .orElseThrow(() ->
-                        new NotFoundException(
-                                "Payment category with id: "
-                                        + categoryId
-                                        + " not found"
-                        )
-                );
-    }
-
-    private RateEntity findRate(Long rateId) {
-        return rateRepository.findById(rateId)
-                .orElseThrow(() ->
-                        new NotFoundException(
-                                "Rate with id: " + rateId + " not found"
-                        )
-                );
-    }
-
-    private CompanyEntity findCompany(Long companyId) {
-        if (companyId == null) {
-            return null;
-        }
-
-        return companyRepository.findById(companyId)
-                .orElseThrow(() ->
-                        new NotFoundException(
-                                "Company with id: " + companyId + " not found"
-                        )
-                );
-    }
-
     private ReservationEntity findById(Long id) {
         return reservationRepository.findById(id)
                 .orElseThrow(() ->
@@ -371,16 +313,6 @@ public class ReservationService {
                                 "Reservation with id: " + id + " not found"
                         )
                 );
-    }
-
-    private void validateUpdateStatus(ReservationEntity reservation) {
-        if (reservation.getStatus() != ReservationStatus.RESERVED
-                && reservation.getStatus() != ReservationStatus.CONFIRMED) {
-            throw new BadRequestException(
-                    "Reservation cannot be updated in status: "
-                            + reservation.getStatus()
-            );
-        }
     }
 
     private String generateConfirmationNumber() {
