@@ -1,7 +1,7 @@
-
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.exeption.ReservationConflictException;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.enums.ReservationStatus;
@@ -34,17 +34,9 @@ public class ReservationAvailabilityService {
         validateRate(rate);
         validateRateForRoom(rate, room);
         validateOccupancy(room, adults, children);
-        validateRoomUnavailability(
-                room.getId(),
-                checkIn,
-                checkOut
-        );
+        validateRoomUnavailability(room.getId(), checkIn, checkOut);
 
-        validateRoomAvailability(
-                room.getId(),
-                checkIn,
-                checkOut
-        );
+        validateRoomAvailability(room.getId(), checkIn, checkOut);
     }
 
     public void validateForUpdate(
@@ -87,11 +79,7 @@ public class ReservationAvailabilityService {
 
         validateRateForRoom(rate, room);
         validateOccupancy(room, adults, children);
-        validateRoomUnavailability(
-                room.getId(),
-                checkIn,
-                checkOut
-        );
+        validateRoomUnavailability(room.getId(), checkIn, checkOut);
 
         validateRoomAvailabilityExceptCurrent(
                 reservationId,
@@ -146,9 +134,7 @@ public class ReservationAvailabilityService {
 
     private void validateRate(RateEntity rate) {
         if (rate == null) {
-            throw new BadRequestException(
-                    "Rate must be specified"
-            );
+            throw new BadRequestException("Rate must be specified");
         }
 
         if (!rate.isActive()) {
@@ -187,9 +173,7 @@ public class ReservationAvailabilityService {
                 || adults == null || children == null
                 || adults < 0 || children < 0
                 || adults + children <= 0) {
-            throw new BadRequestException(
-                    "Invalid room occupancy"
-            );
+            throw new BadRequestException("Invalid room occupancy");
         }
 
         int guests = adults + children;
@@ -238,8 +222,8 @@ public class ReservationAvailabilityService {
                         ReservationStatus.NO_SHOW
                 )
         )) {
-            throw new BadRequestException(
-                    "Room is already reserved for the selected period"
+            throw new ReservationConflictException(
+                    "Room is already reserved for the selected dates"
             );
         }
     }
@@ -261,8 +245,8 @@ public class ReservationAvailabilityService {
                         ReservationStatus.NO_SHOW
                 )
         )) {
-            throw new BadRequestException(
-                    "Room is already reserved for the selected period"
+            throw new ReservationConflictException(
+                    "Room is already reserved for the selected dates"
             );
         }
     }

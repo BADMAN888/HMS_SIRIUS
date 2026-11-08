@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.dto.ReservationCheckInResponse;
@@ -47,12 +46,12 @@ public class ReservationService {
     private final ReservationMapper reservationMapper;
     private final ReservationAvailabilityService availabilityService;
     private final ReservationAccrualService accrualService;
-    private final ReservationConflictService conflictService;
     private final Clock clock;
 
     public ReservationResponse create(ReservationRequest request) {
-        RoomEntity room = findRoom(request.roomId());
+        RoomEntity room = findRoomForUpdate(request.roomId());
         RateEntity rate = findRate(request.rateId());
+
         RoomCategoryEntity paymentCategory =
                 findPaymentCategory(request.paymentCategoryId());
 
@@ -71,6 +70,7 @@ public class ReservationService {
         );
 
         Set<ProfileEntity> guests = findGuests(request.guestIds());
+
         ProfileEntity primaryGuest = findPrimaryGuest(
                 request.primaryGuestId(),
                 guests
@@ -89,9 +89,8 @@ public class ReservationService {
         reservation.setStatus(ReservationStatus.CONFIRMED);
         reservation.setCreatedAt(LocalDateTime.now(clock));
 
-        ReservationEntity saved = conflictService.saveAndFlush(
-                () -> reservationRepository.saveAndFlush(reservation)
-        );
+        ReservationEntity saved =
+                reservationRepository.saveAndFlush(reservation);
 
         accrualService.create(saved);
 
@@ -113,11 +112,15 @@ public class ReservationService {
             Long id,
             ReservationRequest request
     ) {
-        ReservationEntity reservation = findById(id);
+        ReservationEntity reservation = findByIdForUpdate(id);
 
         validateUpdateStatus(reservation);
 
-        RoomEntity room = findRoom(request.roomId());
+        RoomEntity room = lockRooms(
+                reservation.getRoom().getId(),
+                request.roomId()
+        );
+
         RateEntity rate = findRate(request.rateId());
 
         RoomCategoryEntity paymentCategory =
@@ -162,9 +165,7 @@ public class ReservationService {
 
         accrualService.recalculate(reservation);
 
-        conflictService.saveAndFlush(
-                () -> reservationRepository.saveAndFlush(reservation)
-        );
+        reservationRepository.saveAndFlush(reservation);
 
         return reservationMapper.toResponse(reservation);
     }
@@ -237,6 +238,47 @@ public class ReservationService {
                 .toList();
     }
 
+    private RoomEntity lockRooms(
+            Long currentRoomId,
+            Long requestedRoomId
+    ) {
+        RoomEntity requestedRoom = null;
+
+        List<Long> roomIds = List.of(currentRoomId, requestedRoomId)
+                .stream()
+                .distinct()
+                .sorted()
+                .toList();
+
+        for (Long roomId : roomIds) {
+            RoomEntity lockedRoom = findRoomForUpdate(roomId);
+
+            if (roomId.equals(requestedRoomId)) {
+                requestedRoom = lockedRoom;
+            }
+        }
+
+        return requestedRoom;
+    }
+
+    private RoomEntity findRoomForUpdate(Long roomId) {
+        return roomRepository.findByIdForUpdate(roomId)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Room with id: " + roomId + " not found"
+                        )
+                );
+    }
+
+    private ReservationEntity findByIdForUpdate(Long id) {
+        return reservationRepository.findByIdForUpdate(id)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Reservation with id: " + id + " not found"
+                        )
+                );
+    }
+
     private void validatePaymentCategory(
             RoomEntity room,
             RoomCategoryEntity paymentCategory
@@ -285,15 +327,6 @@ public class ReservationService {
                 .orElseThrow(() ->
                         new BadRequestException(
                                 "Primary guest must belong to reservation guests"
-                        )
-                );
-    }
-
-    private RoomEntity findRoom(Long roomId) {
-        return roomRepository.findById(roomId)
-                .orElseThrow(() ->
-                        new NotFoundException(
-                                "Room with id: " + roomId + " not found"
                         )
                 );
     }
