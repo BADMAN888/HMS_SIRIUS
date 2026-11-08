@@ -3,6 +3,7 @@ package com.sirius.sirius.service.billing;
 import com.sirius.sirius.dto.PriceRequest;
 import com.sirius.sirius.dto.PriceResponse;
 import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.PriceMapper;
 import com.sirius.sirius.store.entity.biling.PriceEntity;
@@ -37,7 +38,7 @@ public class PriceService {
         RateEntity rate = findRateForUpdate(request.rateId());
 
         if (!rate.isActive()) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Cannot create a price for an inactive rate"
             );
         }
@@ -98,7 +99,7 @@ public class PriceService {
                 priceRepository.findApplicablePrices(rateId, today);
 
         if (prices.size() > 1) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Multiple prices found for rate " + rateId
                             + " on date " + today
             );
@@ -132,7 +133,7 @@ public class PriceService {
         }
 
         if (prices.size() > 1) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Multiple prices found for rate " + rateId
                             + " on date " + date
             );
@@ -229,7 +230,7 @@ public class PriceService {
                 validFrom,
                 validTo
         )) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Price period overlaps an existing price period"
             );
         }

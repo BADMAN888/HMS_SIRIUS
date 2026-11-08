@@ -2,6 +2,8 @@ package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.FacilityRequest;
 import com.sirius.sirius.dto.FacilityResponse;
+import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.mappers.FacilityMapper;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
@@ -9,7 +11,6 @@ import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.TaxStatus;
 import com.sirius.sirius.store.repository.FacilityRepository;
 import com.sirius.sirius.store.repository.HotelRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,13 +66,13 @@ public class FacilityService {
     public FacilityResponse update(Long id, FacilityRequest request) {
         FacilityEntity facility = getFacility(id);
 
+        validateFacility(request);
+
         if (!facility.getHotel().getId().equals(request.hotelId())) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Не можна змінювати готель для вже створеної послуги"
             );
         }
-
-        validateFacility(request);
 
         facilityMapper.updateEntity(request, facility);
 
@@ -103,15 +104,27 @@ public class FacilityService {
     }
 
     private void validateFacility(FacilityRequest request) {
+        if (request == null) {
+            throw new ValidationException(
+                    "Дані послуги повинні бути вказані"
+            );
+        }
+
+        if (request.hotelId() == null) {
+            throw new ValidationException(
+                    "Необхідно вказати готель"
+            );
+        }
+
         if (request.type() == null) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Тип послуги повинен бути вказаний"
             );
         }
 
         if (request.type() == FacilityType.STANDARD
                 && request.taxStatus() != null) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Звичайна послуга не повинна мати податковий статус"
             );
         }
@@ -119,7 +132,7 @@ public class FacilityService {
         if (request.type() == FacilityType.TOURIST_TAX
                 && request.taxStatus() != TaxStatus.RESIDENT
                 && request.taxStatus() != TaxStatus.NON_RESIDENT) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Для туристичного збору необхідно вказати RESIDENT або NON_RESIDENT"
             );
         }
@@ -127,21 +140,21 @@ public class FacilityService {
 
     private FacilityEntity getFacility(Long id) {
         return facilityRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Послугу з ID " + id + " не знайдено"
                 ));
     }
 
     private HotelEntity getHotel(Long id) {
         return hotelRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Готель з ID " + id + " не знайдено"
                 ));
     }
 
     private void ensureHotelExists(Long hotelId) {
         if (!hotelRepository.existsById(hotelId)) {
-            throw new EntityNotFoundException(
+            throw new NotFoundException(
                     "Готель з ID " + hotelId + " не знайдено"
             );
         }

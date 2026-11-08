@@ -1,12 +1,12 @@
-
 package com.sirius.sirius.service;
 
 import com.sirius.sirius.dto.CompanyRequest;
 import com.sirius.sirius.dto.CompanyResponse;
+import com.sirius.sirius.exeption.ConflictException;
+import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.CompanyMapper;
 import com.sirius.sirius.store.entity.biling.CompanyEntity;
 import com.sirius.sirius.store.repository.CompanyRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +24,7 @@ public class CompanyService {
     @Transactional
     public CompanyResponse create(CompanyRequest request) {
         if (companyRepository.existsByEdrpou(request.edrpou())) {
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Компанія з кодом ЄДРПОУ " + request.edrpou()
                             + " вже існує"
             );
@@ -55,7 +55,7 @@ public class CompanyService {
                 request.edrpou(),
                 id
         )) {
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Інша компанія з кодом ЄДРПОУ "
                             + request.edrpou() + " вже існує"
             );
@@ -77,7 +77,7 @@ public class CompanyService {
 
     private CompanyEntity getCompany(Long id) {
         return companyRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Компанію з ID " + id + " не знайдено"
                 ));
     }

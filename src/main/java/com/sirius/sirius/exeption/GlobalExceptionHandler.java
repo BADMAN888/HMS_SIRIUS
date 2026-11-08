@@ -1,9 +1,13 @@
+
 package com.sirius.sirius.exeption;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -23,17 +27,21 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(BadRequestException.class)
-    public ResponseEntity<ErrorResponse> handleBadRequest(
-            BadRequestException ex,
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleEntityNotFound(
+            EntityNotFoundException ex,
             HttpServletRequest request
     ) {
-        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(ValidationException.class)
-    public ResponseEntity<ErrorResponse> handleValidation(
-            ValidationException ex,
+    @ExceptionHandler({
+            BadRequestException.class,
+            ValidationException.class,
+            IllegalArgumentException.class
+    })
+    public ResponseEntity<ErrorResponse> handleBadRequest(
+            RuntimeException ex,
             HttpServletRequest request
     ) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
@@ -45,6 +53,38 @@ public class GlobalExceptionHandler {
             HttpServletRequest request
     ) {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<ErrorResponse> handleUnauthorized(
+            UnauthorizedException ex,
+            HttpServletRequest request
+    ) {
+        return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ErrorResponse> handleAuthentication(
+            AuthenticationException ex,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.UNAUTHORIZED,
+                "Authentication required",
+                request
+        );
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(
+            AccessDeniedException ex,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.FORBIDDEN,
+                ex.getMessage(),
+                request
+        );
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -97,28 +137,4 @@ public class GlobalExceptionHandler {
                 .status(status)
                 .body(response);
     }
-    @ExceptionHandler(ReservationConflictException.class)
-    public ResponseEntity<ErrorResponse> handleReservationConflict(
-            ReservationConflictException ex,
-            HttpServletRequest request
-    ) {
-        return build(
-                HttpStatus.CONFLICT,
-                ex.getMessage(),
-                request
-        );
-    }
-
-    @ExceptionHandler(UnauthorizedException.class)
-    public ResponseEntity<ErrorResponse> handleUnauthorized(
-            UnauthorizedException ex,
-            HttpServletRequest request
-    ) {
-        return build(
-                HttpStatus.UNAUTHORIZED,
-                ex.getMessage(),
-                request
-        );
-    }
-
 }

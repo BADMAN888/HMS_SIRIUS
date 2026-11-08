@@ -3,6 +3,7 @@ package com.sirius.sirius.service.reservation;
 import com.sirius.sirius.dto.HotelGridReservationResponse;
 import com.sirius.sirius.dto.HotelGridResponse;
 import com.sirius.sirius.dto.HotelGridRoomResponse;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.repository.ReservationRepository;
@@ -30,13 +31,13 @@ public class HotelGridService {
             LocalDate endDate
     ) {
         if (startDate == null || endDate == null) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Start date and end date are required"
             );
         }
 
         if (!startDate.isBefore(endDate)) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Start date must be before end date"
             );
         }

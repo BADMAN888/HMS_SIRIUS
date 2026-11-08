@@ -1,16 +1,17 @@
-
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.PaymentRefundRequest;
 import com.sirius.sirius.dto.PaymentRequest;
 import com.sirius.sirius.dto.PaymentResponse;
+import com.sirius.sirius.exeption.ConflictException;
+import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.mappers.PaymentMapper;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.PaymentEntity;
 import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.repository.FolioRepository;
 import com.sirius.sirius.store.repository.PaymentRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,7 +37,7 @@ public class PaymentService {
 
         FolioEntity folio = folioRepository
                 .findByIdForUpdate(request.folioId())
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Folio with id: " + request.folioId() + " not found"
                 ));
 
@@ -68,44 +69,44 @@ public class PaymentService {
             PaymentRefundRequest request
     ) {
         PaymentEntity existingPayment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Payment with id: " + paymentId + " not found"
                 ));
 
         FolioEntity folio = folioRepository
                 .findByIdForUpdate(existingPayment.getFolio().getId())
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Folio not found"
                 ));
 
         ensureFolioIsOpen(folio);
 
         PaymentEntity originalPayment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Payment with id: " + paymentId + " not found"
                 ));
 
         if (originalPayment.getReversalOf() != null) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "A refund cannot be refunded"
             );
         }
 
         if (originalPayment.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Only positive payments can be refunded"
             );
         }
 
         if (paymentRepository.existsByReversalOfId(paymentId)) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "This payment has already been refunded"
             );
         }
 
         if (request == null || request.reason() == null
                 || request.reason().isBlank()) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Refund reason must be specified"
             );
         }
@@ -135,7 +136,7 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public PaymentResponse getById(Long id) {
         PaymentEntity payment = paymentRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Payment with id: " + id + " not found"
                 ));
 
@@ -153,7 +154,7 @@ public class PaymentService {
     @Transactional(readOnly = true)
     public List<PaymentResponse> getByFolioId(Long folioId) {
         if (!folioRepository.existsById(folioId)) {
-            throw new EntityNotFoundException(
+            throw new NotFoundException(
                     "Folio with id: " + folioId + " not found"
             );
         }
@@ -166,26 +167,26 @@ public class PaymentService {
 
     private void validatePayment(PaymentRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Payment request must be specified"
             );
         }
 
         if (request.folioId() == null) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Folio ID must be specified"
             );
         }
 
         if (request.method() == null) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Payment method must be specified"
             );
         }
 
         if (request.amount() == null
                 || request.amount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Payment amount must be greater than zero"
             );
         }
@@ -193,7 +194,7 @@ public class PaymentService {
 
     private void ensureFolioIsOpen(FolioEntity folio) {
         if (folio.getStatus() != FolioStatus.OPEN) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Cannot modify a closed folio"
             );
         }

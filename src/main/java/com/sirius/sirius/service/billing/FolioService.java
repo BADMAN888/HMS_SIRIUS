@@ -3,6 +3,10 @@ package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.FolioRequest;
 import com.sirius.sirius.dto.FolioResponse;
+import com.sirius.sirius.exeption.ConflictException;
+import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.UnauthorizedException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.mappers.FolioMapper;
 import com.sirius.sirius.store.entity.UserEntity;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
@@ -19,7 +23,6 @@ import com.sirius.sirius.store.repository.FolioRepository;
 import com.sirius.sirius.store.repository.FolioStatusHistoryRepository;
 import com.sirius.sirius.store.repository.HotelRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -90,7 +93,7 @@ public class FolioService {
     @Transactional(readOnly = true)
     public List<FolioResponse> getByReservationId(Long reservationId) {
         if (!reservationRepository.existsById(reservationId)) {
-            throw new EntityNotFoundException(
+            throw new NotFoundException(
                     "Reservation with id: " + reservationId + " not found"
             );
         }
@@ -104,7 +107,7 @@ public class FolioService {
     @Transactional(readOnly = true)
     public List<FolioResponse> getByHotelId(Long hotelId) {
         if (!hotelRepository.existsById(hotelId)) {
-            throw new EntityNotFoundException(
+            throw new NotFoundException(
                     "Hotel with id: " + hotelId + " not found"
             );
         }
@@ -123,7 +126,7 @@ public class FolioService {
         ensureFolioIsOpen(folio);
 
         if (accrualIds == null || accrualIds.isEmpty()) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "At least one accrual must be selected"
             );
         }
@@ -136,21 +139,21 @@ public class FolioService {
                 accrualRepository.findAllById(uniqueIds);
 
         if (accruals.size() != uniqueIds.size()) {
-            throw new EntityNotFoundException(
+            throw new NotFoundException(
                     "One or more accruals were not found"
             );
         }
 
         for (AccrualEntity accrual : accruals) {
             if (accrual.getFolio() != null) {
-                throw new IllegalStateException(
+                throw new ConflictException(
                         "Accrual " + accrual.getId()
                                 + " already belongs to a folio"
                 );
             }
 
             if (!accrual.getHotel().getId().equals(folio.getHotel().getId())) {
-                throw new IllegalStateException(
+                throw new ConflictException(
                         "Accrual " + accrual.getId()
                                 + " belongs to another hotel"
                 );
@@ -160,7 +163,7 @@ public class FolioService {
                     && folio.getReservation() != null
                     && !accrual.getReservation().getId()
                     .equals(folio.getReservation().getId())) {
-                throw new IllegalStateException(
+                throw new ConflictException(
                         "Accrual " + accrual.getId()
                                 + " belongs to another reservation"
                 );
@@ -181,7 +184,7 @@ public class FolioService {
         ensureFolioIsOpen(folio);
 
         if (folio.getBalance().compareTo(BigDecimal.ZERO) > 0) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Cannot close a folio with an outstanding balance"
             );
         }
@@ -202,7 +205,7 @@ public class FolioService {
         requireAdmin();
 
         if (reason == null || reason.isBlank()) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Reason is required to reopen a folio"
             );
         }
@@ -210,7 +213,7 @@ public class FolioService {
         FolioEntity folio = findFolioForUpdate(id);
 
         if (folio.getStatus() != FolioStatus.CLOSED) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Only a closed folio can be reopened"
             );
         }
@@ -232,7 +235,7 @@ public class FolioService {
 
         if (!folio.getPayments().isEmpty()
                 || !folio.getAccruals().isEmpty()) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "A folio with financial records cannot be deleted"
             );
         }
@@ -276,7 +279,7 @@ public class FolioService {
         if (authentication == null
                 || !authentication.isAuthenticated()
                 || !(authentication.getPrincipal() instanceof UserEntity user)) {
-            throw new AccessDeniedException(
+            throw new UnauthorizedException(
                     "Authenticated user not found"
             );
         }
@@ -286,35 +289,35 @@ public class FolioService {
 
     private FolioEntity findFolio(Long id) {
         return folioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Folio with id: " + id + " not found"
                 ));
     }
 
     private FolioEntity findFolioForUpdate(Long id) {
         return folioRepository.findByIdForUpdate(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Folio with id: " + id + " not found"
                 ));
     }
 
     private HotelEntity findHotel(Long id) {
         return hotelRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Hotel with id: " + id + " not found"
                 ));
     }
 
     private ReservationEntity findReservation(Long id) {
         return reservationRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Reservation with id: " + id + " not found"
                 ));
     }
 
     private CustomerEntity findCustomer(Long id) {
         return customerRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Customer with id: " + id + " not found"
                 ));
     }
@@ -328,7 +331,7 @@ public class FolioService {
         }
 
         if (!reservation.getRoom().getHotel().getId().equals(hotel.getId())) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Reservation belongs to another hotel"
             );
         }
@@ -336,7 +339,7 @@ public class FolioService {
 
     private void ensureFolioIsOpen(FolioEntity folio) {
         if (folio.getStatus() == FolioStatus.CLOSED) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "A closed folio cannot be modified"
             );
         }

@@ -1,6 +1,6 @@
-
 package com.sirius.sirius.service.reservation;
 
+import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
@@ -10,7 +10,6 @@ import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.repository.AccrualRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -106,7 +105,7 @@ public class ReservationChargeRecalculationService {
             FolioEntity folio = folioRepository
                     .findByIdForUpdate(folioId)
                     .orElseThrow(() ->
-                            new EntityNotFoundException(
+                            new NotFoundException(
                                     "Folio not found: " + folioId
                             )
                     );

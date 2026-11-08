@@ -1,14 +1,15 @@
-
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.FacilityPriceRequest;
 import com.sirius.sirius.dto.FacilityPriceResponse;
+import com.sirius.sirius.exeption.ConflictException;
+import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.mappers.FacilityPriceMapper;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
 import com.sirius.sirius.store.entity.biling.FacilityPriceEntity;
 import com.sirius.sirius.store.repository.FacilityPriceRepository;
 import com.sirius.sirius.store.repository.FacilityRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,12 @@ public class FacilityPriceService {
 
     @Transactional
     public FacilityPriceResponse create(FacilityPriceRequest request) {
+        if (request == null) {
+            throw new ValidationException(
+                    "Дані ціни послуги повинні бути вказані"
+            );
+        }
+
         validatePrice(request.price());
         validatePeriod(request.validFrom(), request.validTo());
 
@@ -73,21 +80,23 @@ public class FacilityPriceService {
         getFacility(facilityId);
 
         if (date == null) {
-            throw new IllegalArgumentException("Дата послуги не може бути порожньою");
+            throw new ValidationException(
+                    "Дата послуги не може бути порожньою"
+            );
         }
 
         List<FacilityPriceEntity> applicablePrices =
                 facilityPriceRepository.findApplicablePrices(facilityId, date);
 
         if (applicablePrices.isEmpty()) {
-            throw new EntityNotFoundException(
+            throw new NotFoundException(
                     "Для послуги з ID " + facilityId
                             + " не знайдено ціну на дату " + date
             );
         }
 
         if (applicablePrices.size() > 1) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Для послуги з ID " + facilityId
                             + " знайдено декілька цін на дату " + date
             );
@@ -98,35 +107,43 @@ public class FacilityPriceService {
 
     private FacilityEntity getFacility(Long id) {
         return facilityRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Послугу з ID " + id + " не знайдено"
                 ));
     }
 
     private FacilityPriceEntity getFacilityPrice(Long id) {
         return facilityPriceRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Ціну послуги з ID " + id + " не знайдено"
                 ));
     }
 
     private void validatePrice(BigDecimal price) {
         if (price == null || price.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Ціна послуги повинна бути більшою за нуль"
+            );
+        }
+
+        try {
+            price.setScale(2, RoundingMode.UNNECESSARY);
+        } catch (ArithmeticException exception) {
+            throw new ValidationException(
+                    "Ціна послуги не може мати більше двох знаків після коми"
             );
         }
     }
 
     private void validatePeriod(LocalDate validFrom, LocalDate validTo) {
         if (validFrom == null) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Дата початку дії ціни обов'язкова"
             );
         }
 
         if (validTo != null && validTo.isBefore(validFrom)) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Дата завершення дії ціни не може бути раніше дати початку"
             );
         }
@@ -145,7 +162,7 @@ public class FacilityPriceService {
         );
 
         if (overlapping) {
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Період дії ціни перетинається з уже наявним періодом"
             );
         }

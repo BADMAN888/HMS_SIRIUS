@@ -2,6 +2,7 @@ package com.sirius.sirius.service.profile;
 
 import com.sirius.sirius.dto.GuestDocumentRequest;
 import com.sirius.sirius.dto.GuestDocumentResponse;
+import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.GuestDocumentMapper;
 import com.sirius.sirius.store.entity.reservation.GuestDocumentEntity;
@@ -21,7 +22,9 @@ public class GuestDocumentService {
     public GuestDocumentResponse getById(Long id) {
         GuestDocumentEntity document = guestDocumentRepository.findById(id)
                 .orElseThrow(() ->
-                        new NotFoundException("Guest document with id: " + id + " not found")
+                        new NotFoundException(
+                                "Guest document with id: " + id + " not found"
+                        )
                 );
 
         return guestDocumentMapper.toResponse(document);
@@ -35,9 +38,10 @@ public class GuestDocumentService {
     }
 
     public GuestDocumentResponse create(GuestDocumentRequest request) {
-
-        if (guestDocumentRepository.existsByDocumentNumber(request.documentNumber())) {
-            throw new IllegalArgumentException(
+        if (guestDocumentRepository.existsByDocumentNumber(
+                request.documentNumber()
+        )) {
+            throw new ConflictException(
                     "Guest document with number: "
                             + request.documentNumber()
                             + " already exists"
@@ -54,16 +58,19 @@ public class GuestDocumentService {
     }
 
     public GuestDocumentResponse update(Long id, GuestDocumentRequest request) {
-
         GuestDocumentEntity document = guestDocumentRepository.findById(id)
                 .orElseThrow(() ->
-                        new NotFoundException("Guest document with id: " + id + " not found")
+                        new NotFoundException(
+                                "Guest document with id: " + id + " not found"
+                        )
                 );
 
         if (!document.getDocumentNumber().equals(request.documentNumber())
-                && guestDocumentRepository.existsByDocumentNumber(request.documentNumber())) {
+                && guestDocumentRepository.existsByDocumentNumber(
+                request.documentNumber()
+        )) {
 
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Guest document with number: "
                             + request.documentNumber()
                             + " already exists"
@@ -79,10 +86,11 @@ public class GuestDocumentService {
     }
 
     public void delete(Long id) {
-
         GuestDocumentEntity document = guestDocumentRepository.findById(id)
                 .orElseThrow(() ->
-                        new NotFoundException("Guest document with id: " + id + " not found")
+                        new NotFoundException(
+                                "Guest document with id: " + id + " not found"
+                        )
                 );
 
         guestDocumentRepository.delete(document);

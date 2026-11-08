@@ -1,7 +1,7 @@
-
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.service.billing.FacilityPriceService;
 import com.sirius.sirius.service.billing.PriceService;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
@@ -12,7 +12,6 @@ import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.TaxStatus;
 import com.sirius.sirius.store.repository.AccrualRepository;
 import com.sirius.sirius.store.repository.FacilityRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -201,7 +200,7 @@ public class ReservationAccrualService {
                         taxStatus
                 )
                 .orElseThrow(() ->
-                        new EntityNotFoundException(
+                        new NotFoundException(
                                 "Для готелю не налаштована активна послуга туристичного збору: "
                                         + taxStatus
                         )

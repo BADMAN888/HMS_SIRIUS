@@ -2,6 +2,7 @@ package com.sirius.sirius.service.profile;
 
 import com.sirius.sirius.dto.ProfileRequest;
 import com.sirius.sirius.dto.ProfileResponse;
+import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.GuestDocumentMapper;
 import com.sirius.sirius.mappers.ProfileMapper;
@@ -43,11 +44,10 @@ public class ProfileService {
     }
 
     public ProfileResponse create(ProfileRequest request) {
-
         if (request.phoneNumber() != null
                 && profileRepository.existsByPhoneNumber(request.phoneNumber())) {
 
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Profile with phone number: "
                             + request.phoneNumber()
                             + " already exists"
@@ -57,7 +57,7 @@ public class ProfileService {
         if (request.email() != null
                 && profileRepository.existsByEmail(request.email())) {
 
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Profile with email: "
                             + request.email()
                             + " already exists"
@@ -67,11 +67,10 @@ public class ProfileService {
         ProfileEntity profile = profileMapper.toEntity(request);
 
         if (request.guestDocument() != null) {
-
             if (guestDocumentRepository.existsByDocumentNumber(
-                    request.guestDocument().documentNumber())) {
-
-                throw new IllegalArgumentException(
+                    request.guestDocument().documentNumber()
+            )) {
+                throw new ConflictException(
                         "Guest document with number: "
                                 + request.guestDocument().documentNumber()
                                 + " already exists"
@@ -84,14 +83,12 @@ public class ProfileService {
             profile.setGuestDocument(document);
         }
 
-        ProfileEntity savedProfile =
-                profileRepository.save(profile);
+        ProfileEntity savedProfile = profileRepository.save(profile);
 
         return profileMapper.toResponse(savedProfile);
     }
 
     public ProfileResponse update(Long id, ProfileRequest request) {
-
         ProfileEntity profile = profileRepository.findById(id)
                 .orElseThrow(() ->
                         new NotFoundException(
@@ -103,7 +100,7 @@ public class ProfileService {
                 && !request.phoneNumber().equals(profile.getPhoneNumber())
                 && profileRepository.existsByPhoneNumber(request.phoneNumber())) {
 
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Profile with phone number: "
                             + request.phoneNumber()
                             + " already exists"
@@ -114,7 +111,7 @@ public class ProfileService {
                 && !request.email().equals(profile.getEmail())
                 && profileRepository.existsByEmail(request.email())) {
 
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Profile with email: "
                             + request.email()
                             + " already exists"
@@ -124,13 +121,11 @@ public class ProfileService {
         profileMapper.updateEntity(request, profile);
 
         if (request.guestDocument() != null) {
-
             if (profile.getGuestDocument() == null) {
-
                 if (guestDocumentRepository.existsByDocumentNumber(
-                        request.guestDocument().documentNumber())) {
-
-                    throw new IllegalArgumentException(
+                        request.guestDocument().documentNumber()
+                )) {
+                    throw new ConflictException(
                             "Guest document with number: "
                                     + request.guestDocument().documentNumber()
                                     + " already exists"
@@ -143,16 +138,15 @@ public class ProfileService {
                 profile.setGuestDocument(document);
 
             } else {
-
-                GuestDocumentEntity document =
-                        profile.getGuestDocument();
+                GuestDocumentEntity document = profile.getGuestDocument();
 
                 if (!document.getDocumentNumber()
                         .equals(request.guestDocument().documentNumber())
                         && guestDocumentRepository.existsByDocumentNumber(
-                        request.guestDocument().documentNumber())) {
+                        request.guestDocument().documentNumber()
+                )) {
 
-                    throw new IllegalArgumentException(
+                    throw new ConflictException(
                             "Guest document with number: "
                                     + request.guestDocument().documentNumber()
                                     + " already exists"
@@ -166,14 +160,12 @@ public class ProfileService {
             }
         }
 
-        ProfileEntity updatedProfile =
-                profileRepository.save(profile);
+        ProfileEntity updatedProfile = profileRepository.save(profile);
 
         return profileMapper.toResponse(updatedProfile);
     }
 
     public void delete(Long id) {
-
         ProfileEntity profile = profileRepository.findById(id)
                 .orElseThrow(() ->
                         new NotFoundException(

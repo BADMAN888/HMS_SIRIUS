@@ -1,8 +1,10 @@
-
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.AccrualRequest;
 import com.sirius.sirius.dto.AccrualResponse;
+import com.sirius.sirius.exeption.ConflictException;
+import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.mappers.AccrualMapper;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.CustomerEntity;
@@ -17,7 +19,6 @@ import com.sirius.sirius.store.repository.CustomerRepository;
 import com.sirius.sirius.store.repository.FacilityRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -62,10 +63,16 @@ public class AccrualService {
 
     @Transactional
     public AccrualResponse create(AccrualRequest request) {
+        if (request == null) {
+            throw new ValidationException(
+                    "Дані нарахування повинні бути вказані"
+            );
+        }
+
         FacilityEntity facility = getFacility(request.facilityId());
 
         if (!facility.isActive()) {
-            throw new IllegalArgumentException(
+            throw new ConflictException(
                     "Неможливо створити нарахування: послуга неактивна"
             );
         }
@@ -137,7 +144,7 @@ public class AccrualService {
         AccrualEntity accrual = getAccrual(id);
 
         if (accrual.getFolio() != null) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Неможливо видалити нарахування, яке вже прив'язане до Folio"
             );
         }
@@ -147,42 +154,42 @@ public class AccrualService {
 
     private AccrualEntity getAccrual(Long id) {
         return accrualRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Нарахування з ID " + id + " не знайдено"
                 ));
     }
 
     private FacilityEntity getFacility(Long id) {
         return facilityRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Послугу з ID " + id + " не знайдено"
                 ));
     }
 
     private ReservationEntity getReservation(Long id) {
         return reservationRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Бронювання з ID " + id + " не знайдено"
                 ));
     }
 
     private CustomerEntity getRecipient(Long id) {
         return customerRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Отримувача з ID " + id + " не знайдено"
                 ));
     }
 
     private FolioEntity getFolio(Long id) {
         return folioRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Folio з ID " + id + " не знайдено"
                 ));
     }
 
     private void ensureFolioExists(Long id) {
         if (!folioRepository.existsById(id)) {
-            throw new EntityNotFoundException(
+            throw new NotFoundException(
                     "Folio з ID " + id + " не знайдено"
             );
         }
@@ -197,7 +204,7 @@ public class AccrualService {
         }
 
         if (!reservation.getRoom().getHotel().getId().equals(hotel.getId())) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Бронювання та послуга належать до різних готелів"
             );
         }
@@ -213,7 +220,7 @@ public class AccrualService {
         }
 
         if (!folio.getHotel().getId().equals(hotel.getId())) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Folio та послуга належать до різних готелів"
             );
         }
@@ -221,13 +228,13 @@ public class AccrualService {
         if (reservation != null
                 && folio.getReservation() != null
                 && !folio.getReservation().getId().equals(reservation.getId())) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Folio та бронювання не відповідають одне одному"
             );
         }
 
         if (reservation != null && folio.getReservation() == null) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Folio не прив'язаний до переданого бронювання"
             );
         }
@@ -235,11 +242,12 @@ public class AccrualService {
 
     private void ensureFolioIsOpen(FolioEntity folio) {
         if (folio.getStatus() == FolioStatus.CLOSED) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Неможливо додати нарахування до закритого Folio"
             );
         }
     }
+
     public List<AccrualResponse> getUnassignedByHotelId(Long hotelId) {
         return accrualRepository.findAllByHotelIdAndFolioIsNull(hotelId)
                 .stream()

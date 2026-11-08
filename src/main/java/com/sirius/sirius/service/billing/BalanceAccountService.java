@@ -2,6 +2,9 @@ package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.BalanceAccountResponse;
 import com.sirius.sirius.dto.BalanceTransactionResponse;
+import com.sirius.sirius.exeption.ConflictException;
+import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.mappers.BalanceAccountMapper;
 import com.sirius.sirius.mappers.BalanceTransactionMapper;
 import com.sirius.sirius.store.entity.biling.BalanceAccountEntity;
@@ -20,7 +23,6 @@ import com.sirius.sirius.store.repository.CustomerRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
 import com.sirius.sirius.store.repository.HotelRepository;
 import com.sirius.sirius.store.repository.PaymentRepository;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,7 +55,7 @@ public class BalanceAccountService {
     ) {
         BalanceAccountEntity account = balanceAccountRepository
                 .findByCustomerIdAndHotelId(customerId, hotelId)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Balance account not found for customer " + customerId
                                 + " and hotel " + hotelId
                 ));
@@ -164,7 +166,7 @@ public class BalanceAccountService {
 
         BalanceAccountEntity account = getAccountForUpdate(accountId);
         FolioEntity folio = folioRepository.findByIdForUpdate(folioId)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Folio not found with id: " + folioId
                 ));
 
@@ -205,7 +207,7 @@ public class BalanceAccountService {
     @Transactional(readOnly = true)
     public List<BalanceTransactionResponse> getTransactions(Long accountId) {
         if (!balanceAccountRepository.existsById(accountId)) {
-            throw new EntityNotFoundException(
+            throw new NotFoundException(
                     "Balance account not found with id: " + accountId
             );
         }
@@ -231,12 +233,12 @@ public class BalanceAccountService {
             Long hotelId
     ) {
         CustomerEntity customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Customer not found with id: " + customerId
                 ));
 
         HotelEntity hotel = hotelRepository.findById(hotelId)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Hotel not found with id: " + hotelId
                 ));
 
@@ -252,7 +254,7 @@ public class BalanceAccountService {
 
     private BalanceAccountEntity getAccountForUpdate(Long accountId) {
         return balanceAccountRepository.findByIdForUpdate(accountId)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new NotFoundException(
                         "Balance account not found with id: " + accountId
                 ));
     }
@@ -283,13 +285,13 @@ public class BalanceAccountService {
 
     private void validateAmount(BigDecimal amount) {
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Amount must be greater than zero"
             );
         }
 
         if (amount.scale() > 2) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Amount cannot have more than 2 decimal places"
             );
         }
@@ -297,7 +299,7 @@ public class BalanceAccountService {
 
     private void validateActive(BalanceAccountEntity account) {
         if (account.getStatus() != BalanceAccountStatus.ACTIVE) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Balance account is not active"
             );
         }
@@ -305,7 +307,7 @@ public class BalanceAccountService {
 
     private void validateOpenFolio(FolioEntity folio) {
         if (folio.getStatus() != FolioStatus.OPEN) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Cannot pay a closed folio"
             );
         }
@@ -316,7 +318,7 @@ public class BalanceAccountService {
             FolioEntity folio
     ) {
         if (!account.getHotel().getId().equals(folio.getHotel().getId())) {
-            throw new IllegalArgumentException(
+            throw new ValidationException(
                     "Balance account and folio belong to different hotels"
             );
         }
@@ -327,7 +329,7 @@ public class BalanceAccountService {
             BigDecimal amount
     ) {
         if (account.getBalance().compareTo(amount) < 0) {
-            throw new IllegalStateException(
+            throw new ConflictException(
                     "Insufficient balance"
             );
         }
