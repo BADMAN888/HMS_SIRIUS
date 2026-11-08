@@ -4,6 +4,7 @@ package com.sirius.sirius.service.billing;
 import com.sirius.sirius.dto.FolioRequest;
 import com.sirius.sirius.dto.FolioResponse;
 import com.sirius.sirius.exeption.ConflictException;
+import com.sirius.sirius.exeption.ForbiddenException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.exeption.UnauthorizedException;
 import com.sirius.sirius.exeption.ValidationException;
@@ -266,7 +267,7 @@ public class FolioService {
         UserEntity user = getCurrentUser();
 
         if (user.getRole() != Role.ADMIN) {
-            throw new AccessDeniedException(
+            throw new ForbiddenException(
                     "Only administrators can reopen a folio"
             );
         }

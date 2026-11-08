@@ -2,13 +2,14 @@ package com.sirius.sirius.service.auth;
 
 import com.sirius.sirius.dto.auth.AuthRequest;
 import com.sirius.sirius.dto.auth.AuthResponse;
+import com.sirius.sirius.exeption.ConflictException;
+import com.sirius.sirius.exeption.UnauthorizedException;
 import com.sirius.sirius.store.entity.RefreshTokenEntity;
 import com.sirius.sirius.store.entity.UserEntity;
 import com.sirius.sirius.store.enums.Role;
 import com.sirius.sirius.security.JwtService;
 import com.sirius.sirius.store.repository.UserRepository;
 import jakarta.transaction.Transactional;
-import jakarta.validation.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -25,7 +26,9 @@ public class AuthService {
     @Transactional
     public AuthResponse register(AuthRequest request) {
         if (userRepository.findByEmail(request.email()).isPresent()) {
-            throw new ValidationException("Email already exists");
+            throw new ConflictException(
+                    "User with this email already exists"
+            );
         }
 
         UserEntity user = new UserEntity();
@@ -45,7 +48,7 @@ public class AuthService {
     public AuthResponse login(AuthRequest request) {
         UserEntity user = userRepository.findByEmail(request.email())
                 .orElseThrow(() ->
-                        new ValidationException("Invalid credentials")
+                        new UnauthorizedException("Invalid credentials")
                 );
 
         boolean matches = passwordEncoder.matches(
@@ -54,7 +57,7 @@ public class AuthService {
         );
 
         if (!matches) {
-            throw new ValidationException("Invalid credentials");
+            throw new UnauthorizedException("Invalid credentials");
         }
 
         return createAuthResponse(user);

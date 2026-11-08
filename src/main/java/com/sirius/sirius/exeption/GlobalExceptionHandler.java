@@ -1,7 +1,6 @@
-
 package com.sirius.sirius.exeption;
 
-import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -11,6 +10,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -19,32 +19,28 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(ValidationException.class)
+    public ResponseEntity<ErrorResponse> handleValidation(
+            ValidationException ex,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.BAD_REQUEST,
+                ex.getMessage(),
+                request
+        );
+    }
+
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorResponse> handleNotFound(
             NotFoundException ex,
             HttpServletRequest request
     ) {
-        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleEntityNotFound(
-            EntityNotFoundException ex,
-            HttpServletRequest request
-    ) {
-        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
-    }
-
-    @ExceptionHandler({
-            BadRequestException.class,
-            ValidationException.class,
-            IllegalArgumentException.class
-    })
-    public ResponseEntity<ErrorResponse> handleBadRequest(
-            RuntimeException ex,
-            HttpServletRequest request
-    ) {
-        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+        return build(
+                HttpStatus.NOT_FOUND,
+                ex.getMessage(),
+                request
+        );
     }
 
     @ExceptionHandler(ConflictException.class)
@@ -52,7 +48,11 @@ public class GlobalExceptionHandler {
             ConflictException ex,
             HttpServletRequest request
     ) {
-        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
+        return build(
+                HttpStatus.CONFLICT,
+                ex.getMessage(),
+                request
+        );
     }
 
     @ExceptionHandler(UnauthorizedException.class)
@@ -60,7 +60,23 @@ public class GlobalExceptionHandler {
             UnauthorizedException ex,
             HttpServletRequest request
     ) {
-        return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+        return build(
+                HttpStatus.UNAUTHORIZED,
+                ex.getMessage(),
+                request
+        );
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    public ResponseEntity<ErrorResponse> handleForbidden(
+            ForbiddenException ex,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.FORBIDDEN,
+                ex.getMessage(),
+                request
+        );
     }
 
     @ExceptionHandler(AuthenticationException.class)
@@ -82,7 +98,7 @@ public class GlobalExceptionHandler {
     ) {
         return build(
                 HttpStatus.FORBIDDEN,
-                ex.getMessage(),
+                "Access denied",
                 request
         );
     }
@@ -95,10 +111,48 @@ public class GlobalExceptionHandler {
         String message = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
-                .map(error -> error.getField() + " " + error.getDefaultMessage())
+                .map(error ->
+                        error.getField() + " " + error.getDefaultMessage()
+                )
                 .collect(Collectors.joining(", "));
 
-        return build(HttpStatus.BAD_REQUEST, message, request);
+        return build(
+                HttpStatus.BAD_REQUEST,
+                message,
+                request
+        );
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(
+            ConstraintViolationException ex,
+            HttpServletRequest request
+    ) {
+        String message = ex.getConstraintViolations()
+                .stream()
+                .map(violation ->
+                        violation.getPropertyPath() + " "
+                                + violation.getMessage()
+                )
+                .collect(Collectors.joining(", "));
+
+        return build(
+                HttpStatus.BAD_REQUEST,
+                message,
+                request
+        );
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleUnreadableMessage(
+            HttpMessageNotReadableException ex,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.BAD_REQUEST,
+                "Request body is missing or malformed",
+                request
+        );
     }
 
     @ExceptionHandler(Exception.class)

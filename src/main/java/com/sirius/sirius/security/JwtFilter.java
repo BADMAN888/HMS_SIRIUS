@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.security;
 
 import com.sirius.sirius.store.entity.UserEntity;
@@ -9,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,6 +24,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final SecurityErrorResponseWriter errorResponseWriter;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -56,10 +57,14 @@ public class JwtFilter extends OncePerRequestFilter {
 
             if (user == null) {
                 SecurityContextHolder.clearContext();
-                response.sendError(
-                        HttpServletResponse.SC_UNAUTHORIZED,
+
+                errorResponseWriter.write(
+                        request,
+                        response,
+                        HttpStatus.UNAUTHORIZED,
                         "Invalid access token"
                 );
+
                 return;
             }
 
@@ -82,8 +87,10 @@ public class JwtFilter extends OncePerRequestFilter {
         } catch (JwtException | IllegalArgumentException ex) {
             SecurityContextHolder.clearContext();
 
-            response.sendError(
-                    HttpServletResponse.SC_UNAUTHORIZED,
+            errorResponseWriter.write(
+                    request,
+                    response,
+                    HttpStatus.UNAUTHORIZED,
                     "Invalid or expired access token"
             );
         }

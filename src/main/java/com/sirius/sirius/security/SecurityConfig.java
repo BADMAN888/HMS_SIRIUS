@@ -1,11 +1,10 @@
-
 package com.sirius.sirius.security;
 
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -21,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
+    private final SecurityErrorResponseWriter errorResponseWriter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(
@@ -34,12 +34,23 @@ public class SecurityConfig {
                                 SessionCreationPolicy.STATELESS
                         )
                 )
-                .exceptionHandling(exceptions ->
-                        exceptions.authenticationEntryPoint(
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(
                                 (request, response, authException) ->
-                                        response.sendError(
-                                                HttpServletResponse.SC_UNAUTHORIZED,
-                                                "Unauthorized"
+                                        errorResponseWriter.write(
+                                                request,
+                                                response,
+                                                HttpStatus.UNAUTHORIZED,
+                                                "Authentication required"
+                                        )
+                        )
+                        .accessDeniedHandler(
+                                (request, response, accessDeniedException) ->
+                                        errorResponseWriter.write(
+                                                request,
+                                                response,
+                                                HttpStatus.FORBIDDEN,
+                                                "Access denied"
                                         )
                         )
                 )
