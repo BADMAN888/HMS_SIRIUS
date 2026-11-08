@@ -105,6 +105,7 @@ public class FolioEntity {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
+
     public BigDecimal getBalance() {
         return totalAmount.subtract(paidAmount)
                 .max(BigDecimal.ZERO);

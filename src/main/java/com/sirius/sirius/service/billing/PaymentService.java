@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.service.billing;
 
+import com.sirius.sirius.dto.PaymentRefundRequest;
 import com.sirius.sirius.dto.PaymentRequest;
 import com.sirius.sirius.dto.PaymentResponse;
 import com.sirius.sirius.mappers.PaymentMapper;
@@ -54,12 +55,77 @@ public class PaymentService {
 
         PaymentEntity saved = paymentRepository.save(payment);
 
-        BigDecimal currentPaidAmount = folio.getPaidAmount() == null
-                ? BigDecimal.ZERO
-                : folio.getPaidAmount();
-
-        folio.setPaidAmount(currentPaidAmount.add(amount));
         folio.getPayments().add(saved);
+        folio.recalculatePaidAmount();
+
+        folioRepository.save(folio);
+
+        return paymentMapper.toResponse(saved);
+    }
+
+    public PaymentResponse refund(
+            Long paymentId,
+            PaymentRefundRequest request
+    ) {
+        PaymentEntity existingPayment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Payment with id: " + paymentId + " not found"
+                ));
+
+        FolioEntity folio = folioRepository
+                .findByIdForUpdate(existingPayment.getFolio().getId())
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Folio not found"
+                ));
+
+        ensureFolioIsOpen(folio);
+
+        PaymentEntity originalPayment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Payment with id: " + paymentId + " not found"
+                ));
+
+        if (originalPayment.getReversalOf() != null) {
+            throw new IllegalStateException(
+                    "A refund cannot be refunded"
+            );
+        }
+
+        if (originalPayment.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException(
+                    "Only positive payments can be refunded"
+            );
+        }
+
+        if (paymentRepository.existsByReversalOfId(paymentId)) {
+            throw new IllegalStateException(
+                    "This payment has already been refunded"
+            );
+        }
+
+        if (request == null || request.reason() == null
+                || request.reason().isBlank()) {
+            throw new IllegalArgumentException(
+                    "Refund reason must be specified"
+            );
+        }
+
+        PaymentEntity refund = PaymentEntity.builder()
+                .folio(folio)
+                .method(originalPayment.getMethod())
+                .amount(originalPayment.getAmount().negate())
+                .description(
+                        "Refund of payment #" + originalPayment.getId()
+                                + ": " + request.reason()
+                )
+                .paidAt(LocalDateTime.now(clock))
+                .reversalOf(originalPayment)
+                .build();
+
+        PaymentEntity saved = paymentRepository.save(refund);
+
+        folio.getPayments().add(saved);
+        folio.recalculatePaidAmount();
 
         folioRepository.save(folio);
 
@@ -128,7 +194,7 @@ public class PaymentService {
     private void ensureFolioIsOpen(FolioEntity folio) {
         if (folio.getStatus() != FolioStatus.OPEN) {
             throw new IllegalStateException(
-                    "Cannot add payments to a closed folio"
+                    "Cannot modify a closed folio"
             );
         }
     }

@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.store.entity.biling;
 
 import com.sirius.sirius.store.enums.PaymentMethod;
@@ -38,4 +39,8 @@ public class PaymentEntity {
 
     @Column(nullable = false, name = "paid_at")
     LocalDateTime paidAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reversal_of_id")
+    PaymentEntity reversalOf;
 }

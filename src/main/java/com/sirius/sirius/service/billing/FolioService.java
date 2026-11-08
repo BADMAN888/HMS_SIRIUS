@@ -1,27 +1,34 @@
+
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.FolioRequest;
 import com.sirius.sirius.dto.FolioResponse;
 import com.sirius.sirius.mappers.FolioMapper;
+import com.sirius.sirius.store.entity.UserEntity;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.CustomerEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
+import com.sirius.sirius.store.entity.biling.FolioStatusHistoryEntity;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.FolioStatus;
+import com.sirius.sirius.store.enums.Role;
 import com.sirius.sirius.store.repository.AccrualRepository;
 import com.sirius.sirius.store.repository.CustomerRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
+import com.sirius.sirius.store.repository.FolioStatusHistoryRepository;
 import com.sirius.sirius.store.repository.HotelRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -34,6 +41,7 @@ public class FolioService {
     private final ReservationRepository reservationRepository;
     private final CustomerRepository customerRepository;
     private final AccrualRepository accrualRepository;
+    private final FolioStatusHistoryRepository folioStatusHistoryRepository;
     private final FolioMapper folioMapper;
 
     public FolioResponse create(FolioRequest request) {
@@ -107,8 +115,11 @@ public class FolioService {
                 .toList();
     }
 
-    public FolioResponse attachAccruals(Long folioId, List<Long> accrualIds) {
-        FolioEntity folio = findFolio(folioId);
+    public FolioResponse attachAccruals(
+            Long folioId,
+            List<Long> accrualIds
+    ) {
+        FolioEntity folio = findFolioForUpdate(folioId);
         ensureFolioIsOpen(folio);
 
         if (accrualIds == null || accrualIds.isEmpty()) {
@@ -165,7 +176,8 @@ public class FolioService {
     }
 
     public FolioResponse close(Long id) {
-        FolioEntity folio = findFolio(id);
+        FolioEntity folio = findFolioForUpdate(id);
+
         ensureFolioIsOpen(folio);
 
         if (folio.getBalance().compareTo(BigDecimal.ZERO) > 0) {
@@ -177,11 +189,46 @@ public class FolioService {
         folio.setStatus(FolioStatus.CLOSED);
         folio.setClosedAt(LocalDateTime.now());
 
+        saveStatusHistory(
+                folio,
+                FolioStatus.CLOSED,
+                "Folio closed"
+        );
+
+        return folioMapper.toResponse(folioRepository.save(folio));
+    }
+
+    public FolioResponse reopen(Long id, String reason) {
+        requireAdmin();
+
+        if (reason == null || reason.isBlank()) {
+            throw new IllegalArgumentException(
+                    "Reason is required to reopen a folio"
+            );
+        }
+
+        FolioEntity folio = findFolioForUpdate(id);
+
+        if (folio.getStatus() != FolioStatus.CLOSED) {
+            throw new IllegalStateException(
+                    "Only a closed folio can be reopened"
+            );
+        }
+
+        folio.setStatus(FolioStatus.OPEN);
+        folio.setClosedAt(null);
+
+        saveStatusHistory(
+                folio,
+                FolioStatus.OPEN,
+                reason.trim()
+        );
+
         return folioMapper.toResponse(folioRepository.save(folio));
     }
 
     public void delete(Long id) {
-        FolioEntity folio = findFolio(id);
+        FolioEntity folio = findFolioForUpdate(id);
 
         if (!folio.getPayments().isEmpty()
                 || !folio.getAccruals().isEmpty()) {
@@ -193,8 +240,59 @@ public class FolioService {
         folioRepository.delete(folio);
     }
 
+    private void saveStatusHistory(
+            FolioEntity folio,
+            FolioStatus status,
+            String reason
+    ) {
+        UserEntity user = getCurrentUser();
+
+        FolioStatusHistoryEntity history =
+                FolioStatusHistoryEntity.builder()
+                        .folio(folio)
+                        .status(status)
+                        .reason(reason)
+                        .changedBy(user.getEmail())
+                        .changedAt(LocalDateTime.now())
+                        .build();
+
+        folioStatusHistoryRepository.save(history);
+    }
+
+    private void requireAdmin() {
+        UserEntity user = getCurrentUser();
+
+        if (user.getRole() != Role.ADMIN) {
+            throw new AccessDeniedException(
+                    "Only administrators can reopen a folio"
+            );
+        }
+    }
+
+    private UserEntity getCurrentUser() {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal() instanceof UserEntity user)) {
+            throw new AccessDeniedException(
+                    "Authenticated user not found"
+            );
+        }
+
+        return user;
+    }
+
     private FolioEntity findFolio(Long id) {
         return folioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Folio with id: " + id + " not found"
+                ));
+    }
+
+    private FolioEntity findFolioForUpdate(Long id) {
+        return folioRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Folio with id: " + id + " not found"
                 ));

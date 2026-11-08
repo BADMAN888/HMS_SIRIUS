@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.mappers;
 
 import com.sirius.sirius.dto.PaymentResponse;
@@ -9,5 +10,6 @@ import org.mapstruct.Mapping;
 public interface PaymentMapper {
 
     @Mapping(target = "folioId", source = "folio.id")
+    @Mapping(target = "reversalOfPaymentId", source = "reversalOf.id")
     PaymentResponse toResponse(PaymentEntity entity);
 }

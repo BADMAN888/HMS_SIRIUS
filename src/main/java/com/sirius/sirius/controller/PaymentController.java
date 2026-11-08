@@ -1,5 +1,6 @@
 package com.sirius.sirius.controller;
 
+import com.sirius.sirius.dto.PaymentRefundRequest;
 import com.sirius.sirius.dto.PaymentRequest;
 import com.sirius.sirius.dto.PaymentResponse;
 import com.sirius.sirius.service.billing.PaymentService;
@@ -45,6 +46,15 @@ public class PaymentController {
     ) {
         return ResponseEntity.ok(
                 paymentService.getByFolioId(folioId)
+        );
+    }
+    @PostMapping("/{id}/refund")
+    public ResponseEntity<PaymentResponse> refund(
+            @PathVariable Long id,
+            @Valid @RequestBody PaymentRefundRequest request
+    ) {
+        return ResponseEntity.ok(
+                paymentService.refund(id, request)
         );
     }
 }

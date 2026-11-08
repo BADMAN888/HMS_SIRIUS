@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.PaymentMethod;
@@ -17,7 +18,9 @@ public record PaymentResponse(
 
         String description,
 
-        LocalDateTime paidAt
+        LocalDateTime paidAt,
+
+        Long reversalOfPaymentId
 
 ) {
 }
