@@ -1,6 +1,7 @@
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.service.billing.FolioService;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,10 +24,11 @@ import java.time.LocalDateTime;
 public class ReservationLifecycleService {
 
     private final ReservationRepository reservationRepository;
+    private final FolioService folioService;
     private final Clock clock;
 
     public void cancel(Long id) {
-        ReservationEntity reservation = findById(id);
+        ReservationEntity reservation = findByIdForUpdate(id);
 
         if (reservation.getStatus() != ReservationStatus.RESERVED
                 && reservation.getStatus() != ReservationStatus.CONFIRMED) {
@@ -39,7 +42,7 @@ public class ReservationLifecycleService {
     }
 
     public void checkIn(Long id) {
-        ReservationEntity reservation = findById(id);
+        ReservationEntity reservation = findByIdForUpdate(id);
 
         if (reservation.getStatus() != ReservationStatus.RESERVED
                 && reservation.getStatus() != ReservationStatus.CONFIRMED) {
@@ -78,7 +81,7 @@ public class ReservationLifecycleService {
     }
 
     public void checkOut(Long id) {
-        ReservationEntity reservation = findById(id);
+        ReservationEntity reservation = findByIdForUpdate(id);
 
         if (reservation.getStatus() != ReservationStatus.IN_HOUSE) {
             throw new BadRequestException(
@@ -87,26 +90,16 @@ public class ReservationLifecycleService {
             );
         }
 
-        LocalDateTime now = LocalDateTime.now(clock);
-
         RoomEntity room = reservation.getRoom();
         room.setStatus(RoomStatus.CLEANING);
 
         reservation.setStatus(ReservationStatus.COMPLETED);
 
-        if (reservation.getFolios() != null) {
-            for (FolioEntity folio : reservation.getFolios()) {
-                if (folio.getStatus() == FolioStatus.OPEN
-                        && folio.getBalance().compareTo(BigDecimal.ZERO) == 0) {
-                    folio.setStatus(FolioStatus.CLOSED);
-                    folio.setClosedAt(now);
-                }
-            }
-        }
+        closeSettledFolios(reservation);
     }
 
     public void noShow(Long id) {
-        ReservationEntity reservation = findById(id);
+        ReservationEntity reservation = findByIdForUpdate(id);
 
         if (reservation.getStatus() != ReservationStatus.RESERVED
                 && reservation.getStatus() != ReservationStatus.CONFIRMED) {
@@ -127,8 +120,27 @@ public class ReservationLifecycleService {
         reservation.setStatus(ReservationStatus.NO_SHOW);
     }
 
-    private ReservationEntity findById(Long id) {
-        return reservationRepository.findById(id)
+    private void closeSettledFolios(ReservationEntity reservation) {
+        if (reservation.getFolios() == null) {
+            return;
+        }
+
+        List<Long> folioIds = reservation.getFolios()
+                .stream()
+                .filter(folio -> folio.getStatus() == FolioStatus.OPEN)
+                .filter(folio ->
+                        folio.getBalance().compareTo(BigDecimal.ZERO) == 0
+                )
+                .map(FolioEntity::getId)
+                .toList();
+
+        for (Long folioId : folioIds) {
+            folioService.close(folioId);
+        }
+    }
+
+    private ReservationEntity findByIdForUpdate(Long id) {
+        return reservationRepository.findByIdForUpdate(id)
                 .orElseThrow(() ->
                         new BadRequestException(
                                 "Reservation with id: " + id + " not found"
