@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.store.entity.biling;
 
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
@@ -97,6 +96,23 @@ public class FolioEntity {
                 .map(AccrualEntity::getAmount)
                 .filter(amount -> amount != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public void addPayment(PaymentEntity payment) {
+        if (payment == null) {
+            throw new IllegalArgumentException(
+                    "Payment must not be null"
+            );
+        }
+
+        if (payments == null) {
+            payments = new ArrayList<>();
+        }
+
+        payment.setFolio(this);
+        payments.add(payment);
+
+        recalculatePaidAmount();
     }
 
     public void recalculatePaidAmount() {

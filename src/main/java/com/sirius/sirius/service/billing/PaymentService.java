@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.PaymentRefundRequest;
@@ -63,9 +62,7 @@ public class PaymentService {
 
         PaymentEntity saved = paymentRepository.save(payment);
 
-        folio.getPayments().add(saved);
-        folio.recalculatePaidAmount();
-
+        folio.addPayment(saved);
         folioRepository.save(folio);
 
         return paymentMapper.toResponse(saved);
@@ -142,8 +139,7 @@ public class PaymentService {
 
         PaymentEntity saved = paymentRepository.save(refund);
 
-        folio.getPayments().add(saved);
-        folio.recalculatePaidAmount();
+        folio.addPayment(saved);
 
         if (balanceAccount != null) {
             restoreBalance(
