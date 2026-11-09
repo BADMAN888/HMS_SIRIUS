@@ -25,6 +25,7 @@ public class ReservationLifecycleService {
 
     private final ReservationRepository reservationRepository;
     private final FolioService folioService;
+    private final ReservationIncludedBreakfastService includedBreakfastService;
     private final Clock clock;
 
     public void cancel(Long id) {
@@ -39,6 +40,8 @@ public class ReservationLifecycleService {
         }
 
         reservation.setStatus(ReservationStatus.CANCELLED);
+
+        includedBreakfastService.cancelRemaining(reservation.getId());
     }
 
     public void checkIn(Long id) {
@@ -95,6 +98,8 @@ public class ReservationLifecycleService {
 
         reservation.setStatus(ReservationStatus.COMPLETED);
 
+        includedBreakfastService.cancelRemaining(reservation.getId());
+
         closeSettledFolios(reservation);
     }
 
@@ -118,6 +123,8 @@ public class ReservationLifecycleService {
         }
 
         reservation.setStatus(ReservationStatus.NO_SHOW);
+
+        includedBreakfastService.cancelRemaining(reservation.getId());
     }
 
     private void closeSettledFolios(ReservationEntity reservation) {

@@ -75,7 +75,8 @@ public class RateService {
                 response.categoryId(),
                 priceService.getCurrentPrice(entity.getId())
                         .orElse(null),
-                response.active()
+                response.active(),
+                response.breakfastIncluded()
         );
     }
 

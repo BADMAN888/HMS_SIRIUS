@@ -6,6 +6,7 @@ import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationIncludedBreakfastEntity;
 import com.sirius.sirius.store.repository.ReservationIncludedBreakfastRepository;
+import com.sirius.sirius.store.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ public class ReservationIncludedBreakfastService {
 
     private final ReservationIncludedBreakfastRepository repository;
     private final Clock clock;
+    private final ReservationRepository reservationRepository;
 
     public void synchronize(ReservationEntity reservation) {
         LocalDate today = LocalDate.now(clock);
@@ -87,6 +89,14 @@ public class ReservationIncludedBreakfastService {
     public List<ReservationIncludedBreakfastResponse> getAll(
             Long reservationId
     ) {
+        reservationRepository.findById(reservationId)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Reservation with id: "
+                                        + reservationId + " not found"
+                        )
+                );
+
         return repository
                 .findAllByReservationIdOrderByServiceDateAsc(reservationId)
                 .stream()
@@ -150,5 +160,19 @@ public class ReservationIncludedBreakfastService {
                 entity.getQuantity() - entity.getServedQuantity(),
                 entity.isCancelled()
         );
+    }
+    public void cancelRemaining(Long reservationId) {
+        LocalDate today = LocalDate.now(clock);
+
+        List<ReservationIncludedBreakfastEntity> breakfasts =
+                repository.findAllByReservationIdOrderByServiceDateAsc(
+                        reservationId
+                );
+
+        for (ReservationIncludedBreakfastEntity breakfast : breakfasts) {
+            if (!breakfast.getServiceDate().isBefore(today)) {
+                breakfast.setCancelled(true);
+            }
+        }
     }
 }
