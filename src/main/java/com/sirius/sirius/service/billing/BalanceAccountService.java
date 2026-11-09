@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.BalanceAccountResponse;
@@ -149,6 +148,7 @@ public class BalanceAccountService {
         validateAmount(amount);
 
         BalanceAccountEntity account = getAccountForUpdate(accountId);
+
         validateActive(account);
         validateSufficientBalance(account, amount);
 
@@ -201,13 +201,12 @@ public class BalanceAccountService {
                 .paidAt(LocalDateTime.now(clock))
                 .build();
 
-        paymentRepository.save(payment);
+        PaymentEntity savedPayment = paymentRepository.save(payment);
 
-        folio.getPayments().add(payment);
-        folio.setPaidAmount(folio.getPaidAmount().add(amount));
+        folio.addPayment(savedPayment);
 
-        folioRepository.save(folio);
         balanceAccountRepository.save(account);
+        folioRepository.save(folio);
 
         createTransaction(
                 account,

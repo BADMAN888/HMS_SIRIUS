@@ -184,9 +184,17 @@ public class FolioService {
 
         ensureFolioIsOpen(folio);
 
-        if (folio.getBalance().compareTo(BigDecimal.ZERO) > 0) {
+        int balanceComparison = folio.getBalance().compareTo(BigDecimal.ZERO);
+
+        if (balanceComparison > 0) {
             throw new ConflictException(
                     "Cannot close a folio with an outstanding balance"
+            );
+        }
+
+        if (balanceComparison < 0) {
+            throw new ConflictException(
+                    "Cannot close a folio with an overpayment"
             );
         }
 

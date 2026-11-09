@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.AccrualRequest;
@@ -63,11 +64,7 @@ public class AccrualService {
 
     @Transactional
     public AccrualResponse create(AccrualRequest request) {
-        if (request == null) {
-            throw new ValidationException(
-                    "Дані нарахування повинні бути вказані"
-            );
-        }
+        validateCreateRequest(request);
 
         FacilityEntity facility = getFacility(request.facilityId());
 
@@ -87,7 +84,7 @@ public class AccrualService {
 
         FolioEntity folio = request.folioId() == null
                 ? null
-                : getFolio(request.folioId());
+                : getFolioForUpdate(request.folioId());
 
         if (reservation == null && folio != null) {
             reservation = folio.getReservation();
@@ -152,6 +149,33 @@ public class AccrualService {
         accrualRepository.delete(accrual);
     }
 
+    private void validateCreateRequest(AccrualRequest request) {
+        if (request == null) {
+            throw new ValidationException(
+                    "Дані нарахування повинні бути вказані"
+            );
+        }
+
+        if (request.quantity() == null
+                || request.quantity().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ValidationException(
+                    "Кількість послуги повинна бути більшою за нуль"
+            );
+        }
+
+        if (request.serviceDate() == null) {
+            throw new ValidationException(
+                    "Дата надання послуги повинна бути вказана"
+            );
+        }
+
+        if (request.facilityId() == null) {
+            throw new ValidationException(
+                    "Послуга повинна бути вказана"
+            );
+        }
+    }
+
     private AccrualEntity getAccrual(Long id) {
         return accrualRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException(
@@ -180,8 +204,8 @@ public class AccrualService {
                 ));
     }
 
-    private FolioEntity getFolio(Long id) {
-        return folioRepository.findById(id)
+    private FolioEntity getFolioForUpdate(Long id) {
+        return folioRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new NotFoundException(
                         "Folio з ID " + id + " не знайдено"
                 ));
