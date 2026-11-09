@@ -42,4 +42,8 @@ public class RateEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "category_id", nullable = false)
     RoomCategoryEntity category;
+
+    @Column(name = "breakfast_included", nullable = false)
+    @Builder.Default
+    boolean breakfastIncluded = false;
 }

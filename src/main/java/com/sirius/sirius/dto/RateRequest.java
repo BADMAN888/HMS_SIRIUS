@@ -20,6 +20,8 @@ public record RateRequest(
         @NotNull
         Long categoryId,
 
-        boolean active
+        boolean active,
+
+        boolean breakfastIncluded
 ) {
 }

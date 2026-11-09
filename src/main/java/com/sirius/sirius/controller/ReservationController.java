@@ -4,9 +4,12 @@ import com.sirius.sirius.dto.ReservationCheckInResponse;
 import com.sirius.sirius.dto.ReservationCheckOutResponse;
 import com.sirius.sirius.dto.ReservationCommentRequest;
 import com.sirius.sirius.dto.ReservationCommentResponse;
+import com.sirius.sirius.dto.ReservationIncludedBreakfastResponse;
+import com.sirius.sirius.dto.ReservationIncludedBreakfastServedRequest;
 import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.service.reservation.ReservationCommentService;
+import com.sirius.sirius.service.reservation.ReservationIncludedBreakfastService;
 import com.sirius.sirius.service.reservation.ReservationLifecycleService;
 import com.sirius.sirius.service.reservation.ReservationService;
 import com.sirius.sirius.store.enums.ReservationStatus;
@@ -27,6 +30,7 @@ public class ReservationController {
     private final ReservationService reservationService;
     private final ReservationLifecycleService lifecycleService;
     private final ReservationCommentService commentService;
+    private final ReservationIncludedBreakfastService includedBreakfastService;
 
     @PostMapping
     public ResponseEntity<ReservationResponse> create(
@@ -186,6 +190,29 @@ public class ReservationController {
     ) {
         commentService.delete(id, commentId);
         return ResponseEntity.noContent().build();
+    }
+    @GetMapping("/{id}/included-breakfasts")
+    public ResponseEntity<List<ReservationIncludedBreakfastResponse>>
+    getIncludedBreakfasts(@PathVariable Long id) {
+        return ResponseEntity.ok(
+                includedBreakfastService.getAll(id)
+        );
+    }
+
+    @PatchMapping("/{id}/included-breakfasts/{breakfastId}/served")
+    public ResponseEntity<ReservationIncludedBreakfastResponse>
+    updateIncludedBreakfastServed(
+            @PathVariable Long id,
+            @PathVariable Long breakfastId,
+            @Valid @RequestBody ReservationIncludedBreakfastServedRequest request
+    ) {
+        return ResponseEntity.ok(
+                includedBreakfastService.updateServedQuantity(
+                        id,
+                        breakfastId,
+                        request.servedQuantity()
+                )
+        );
     }
 }
 

@@ -40,6 +40,7 @@ public class ReservationService {
     private final ReservationChargeRecalculationService chargeRecalculationService;
     private final ReservationGuestService guestService;
     private final ReservationValidationService validationService;
+    private final ReservationIncludedBreakfastService includedBreakfastService;
 
     private final Clock clock;
 
@@ -98,6 +99,7 @@ public class ReservationService {
                 reservationRepository.saveAndFlush(reservation);
 
         accrualService.create(saved);
+        includedBreakfastService.synchronize(saved);
 
         return reservationMapper.toResponse(saved);
     }
@@ -180,6 +182,8 @@ public class ReservationService {
         reservation.setGuests(guests);
 
         chargeRecalculationService.recalculate(reservation);
+
+        includedBreakfastService.synchronize(reservation);
 
         reservationRepository.saveAndFlush(reservation);
 
