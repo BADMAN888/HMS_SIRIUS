@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.BalanceAccountResponse;
@@ -18,24 +19,48 @@ public class BalanceAccountController {
 
     private final BalanceAccountService balanceAccountService;
 
-    @GetMapping("/customer/{customerId}/hotel/{hotelId}")
-    public ResponseEntity<BalanceAccountResponse> getByCustomerAndHotel(
-            @PathVariable Long customerId,
+    @GetMapping("/profile/{profileId}/hotel/{hotelId}")
+    public ResponseEntity<BalanceAccountResponse> getByProfileAndHotel(
+            @PathVariable Long profileId,
             @PathVariable Long hotelId
     ) {
         return ResponseEntity.ok(
-                balanceAccountService.getByCustomerAndHotel(customerId, hotelId)
+                balanceAccountService.getByProfileAndHotel(
+                        profileId,
+                        hotelId
+                )
         );
     }
 
-    @PostMapping("/customer/{customerId}/hotel/{hotelId}")
-    public ResponseEntity<BalanceAccountResponse> create(
-            @PathVariable Long customerId,
+    @PostMapping("/profile/{profileId}/hotel/{hotelId}")
+    public ResponseEntity<BalanceAccountResponse> getOrCreate(
+            @PathVariable Long profileId,
             @PathVariable Long hotelId
     ) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(balanceAccountService.getOrCreate(customerId, hotelId));
+                .body(
+                        balanceAccountService.getOrCreate(
+                                profileId,
+                                hotelId
+                        )
+                );
+    }
+
+    @PostMapping("/profile/{profileId}/hotel/{hotelId}/deposit")
+    public ResponseEntity<BalanceAccountResponse> deposit(
+            @PathVariable Long profileId,
+            @PathVariable Long hotelId,
+            @RequestBody BalanceOperationRequest request
+    ) {
+        return ResponseEntity.ok(
+                balanceAccountService.deposit(
+                        profileId,
+                        hotelId,
+                        request.amount(),
+                        request.description()
+                )
+        );
     }
 
     @GetMapping("/{accountId}/transactions")
@@ -44,22 +69,6 @@ public class BalanceAccountController {
     ) {
         return ResponseEntity.ok(
                 balanceAccountService.getTransactions(accountId)
-        );
-    }
-
-    @PostMapping("/customer/{customerId}/hotel/{hotelId}/deposit")
-    public ResponseEntity<BalanceAccountResponse> deposit(
-            @PathVariable Long customerId,
-            @PathVariable Long hotelId,
-            @RequestBody BalanceOperationRequest request
-    ) {
-        return ResponseEntity.ok(
-                balanceAccountService.deposit(
-                        customerId,
-                        hotelId,
-                        request.amount(),
-                        request.description()
-                )
         );
     }
 

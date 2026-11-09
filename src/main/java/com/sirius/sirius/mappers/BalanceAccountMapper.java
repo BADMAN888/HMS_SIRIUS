@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.mappers;
 
 import com.sirius.sirius.dto.BalanceAccountResponse;
@@ -8,7 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface BalanceAccountMapper {
 
-    @Mapping(target = "customerId", source = "customer.id")
+    @Mapping(target = "profileId", source = "customer.id")
     @Mapping(target = "hotelId", source = "hotel.id")
     BalanceAccountResponse toResponse(BalanceAccountEntity entity);
 }

@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.store.repository;
 
 import com.sirius.sirius.store.entity.biling.BalanceAccountEntity;
@@ -9,7 +10,8 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
 
-public interface BalanceAccountRepository extends JpaRepository<BalanceAccountEntity, Long> {
+public interface BalanceAccountRepository
+        extends JpaRepository<BalanceAccountEntity, Long> {
 
     Optional<BalanceAccountEntity> findByCustomerIdAndHotelId(
             Long customerId,
@@ -24,5 +26,17 @@ public interface BalanceAccountRepository extends JpaRepository<BalanceAccountEn
             """)
     Optional<BalanceAccountEntity> findByIdForUpdate(
             @Param("accountId") Long accountId
+    );
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+            SELECT account
+            FROM BalanceAccountEntity account
+            WHERE account.customer.id = :profileId
+              AND account.hotel.id = :hotelId
+            """)
+    Optional<BalanceAccountEntity> findByProfileIdAndHotelIdForUpdate(
+            @Param("profileId") Long profileId,
+            @Param("hotelId") Long hotelId
     );
 }

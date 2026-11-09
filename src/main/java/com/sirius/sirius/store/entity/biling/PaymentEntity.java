@@ -43,4 +43,8 @@ public class PaymentEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reversal_of_id")
     PaymentEntity reversalOf;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "balance_account_id")
+    BalanceAccountEntity balanceAccount;
 }

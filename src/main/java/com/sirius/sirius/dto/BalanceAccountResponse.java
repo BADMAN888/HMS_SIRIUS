@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.BalanceAccountStatus;
@@ -9,7 +10,7 @@ public record BalanceAccountResponse(
 
         Long id,
 
-        Long customerId,
+        Long profileId,
 
         Long hotelId,
 

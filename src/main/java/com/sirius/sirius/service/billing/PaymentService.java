@@ -8,10 +8,15 @@ import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.mappers.PaymentMapper;
+import com.sirius.sirius.store.entity.biling.BalanceAccountEntity;
+import com.sirius.sirius.store.entity.biling.BalanceTransactionEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.PaymentEntity;
+import com.sirius.sirius.store.enums.BalanceTransactionType;
 import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.enums.PaymentMethod;
+import com.sirius.sirius.store.repository.BalanceAccountRepository;
+import com.sirius.sirius.store.repository.BalanceTransactionRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
 import com.sirius.sirius.store.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +35,9 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final FolioRepository folioRepository;
+    private final BalanceAccountRepository balanceAccountRepository;
+    private final BalanceTransactionRepository balanceTransactionRepository;
+
     private final PaymentMapper paymentMapper;
     private final Clock clock;
 
@@ -67,20 +75,10 @@ public class PaymentService {
             Long paymentId,
             PaymentRefundRequest request
     ) {
-        PaymentEntity existingPayment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new NotFoundException(
-                        "Payment with id: " + paymentId + " not found"
-                ));
+        validateRefundRequest(request);
 
-        FolioEntity folio = folioRepository
-                .findByIdForUpdate(existingPayment.getFolio().getId())
-                .orElseThrow(() -> new NotFoundException(
-                        "Folio not found"
-                ));
-
-        ensureFolioIsOpen(folio);
-
-        PaymentEntity originalPayment = paymentRepository.findById(paymentId)
+        PaymentEntity originalPayment = paymentRepository
+                .findByIdForUpdate(paymentId)
                 .orElseThrow(() -> new NotFoundException(
                         "Payment with id: " + paymentId + " not found"
                 ));
@@ -97,28 +95,42 @@ public class PaymentService {
             );
         }
 
-        if (originalPayment.getMethod() == PaymentMethod.BALANCE) {
-            throw new ConflictException(
-                    "Balance payments must be refunded through BalanceAccountService"
-            );
-        }
-
         if (paymentRepository.existsByReversalOfId(paymentId)) {
             throw new ConflictException(
                     "This payment has already been refunded"
             );
         }
 
-        if (request == null || request.reason() == null
-                || request.reason().isBlank()) {
-            throw new ValidationException(
-                    "Refund reason must be specified"
-            );
+        BalanceAccountEntity balanceAccount = null;
+
+        if (originalPayment.getMethod() == PaymentMethod.BALANCE) {
+            if (originalPayment.getBalanceAccount() == null) {
+                throw new ConflictException(
+                        "Balance account is not linked to the original payment"
+                );
+            }
+
+            balanceAccount = balanceAccountRepository
+                    .findByIdForUpdate(
+                            originalPayment.getBalanceAccount().getId()
+                    )
+                    .orElseThrow(() -> new NotFoundException(
+                            "Balance account not found"
+                    ));
         }
+
+        FolioEntity folio = folioRepository
+                .findByIdForUpdate(originalPayment.getFolio().getId())
+                .orElseThrow(() -> new NotFoundException(
+                        "Folio not found"
+                ));
+
+        ensureFolioIsOpen(folio);
 
         PaymentEntity refund = PaymentEntity.builder()
                 .folio(folio)
                 .method(originalPayment.getMethod())
+                .balanceAccount(balanceAccount)
                 .amount(originalPayment.getAmount().negate())
                 .description(
                         "Refund of payment #" + originalPayment.getId()
@@ -132,6 +144,14 @@ public class PaymentService {
 
         folio.getPayments().add(saved);
         folio.recalculatePaidAmount();
+
+        if (balanceAccount != null) {
+            restoreBalance(
+                    balanceAccount,
+                    originalPayment,
+                    request.reason()
+            );
+        }
 
         folioRepository.save(folio);
 
@@ -170,6 +190,36 @@ public class PaymentService {
                 .toList();
     }
 
+    private void restoreBalance(
+            BalanceAccountEntity account,
+            PaymentEntity originalPayment,
+            String reason
+    ) {
+        BigDecimal refundAmount = originalPayment.getAmount();
+
+        account.setBalance(account.getBalance().add(refundAmount));
+        balanceAccountRepository.save(account);
+
+        BalanceTransactionEntity transaction =
+                new BalanceTransactionEntity();
+
+        transaction.setBalanceAccount(account);
+        transaction.setType(BalanceTransactionType.REFUND);
+        transaction.setAmount(refundAmount);
+        transaction.setBalanceAfter(account.getBalance());
+        transaction.setDescription(
+                "Refund of payment #" + originalPayment.getId()
+                        + ": " + reason
+        );
+        transaction.setFolio(originalPayment.getFolio());
+        transaction.setReservation(
+                originalPayment.getFolio().getReservation()
+        );
+        transaction.setCreatedAt(LocalDateTime.now(clock));
+
+        balanceTransactionRepository.save(transaction);
+    }
+
     private void validatePayment(PaymentRequest request) {
         if (request == null) {
             throw new ValidationException(
@@ -205,6 +255,16 @@ public class PaymentService {
         if (request.amount().stripTrailingZeros().scale() > 2) {
             throw new ValidationException(
                     "Amount cannot have more than 2 decimal places"
+            );
+        }
+    }
+
+    private void validateRefundRequest(PaymentRefundRequest request) {
+        if (request == null
+                || request.reason() == null
+                || request.reason().isBlank()) {
+            throw new ValidationException(
+                    "Refund reason must be specified"
             );
         }
     }
