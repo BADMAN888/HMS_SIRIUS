@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.mappers;
 
 import com.sirius.sirius.dto.FolioResponse;
@@ -18,5 +19,6 @@ public interface FolioMapper {
     @Mapping(target = "reservationId", source = "reservation.id")
     @Mapping(target = "recipientId", source = "recipient.id")
     @Mapping(target = "payerId", source = "payer.id")
+    @Mapping(target = "balance", expression = "java(entity.getBalance())")
     FolioResponse toResponse(FolioEntity entity);
 }

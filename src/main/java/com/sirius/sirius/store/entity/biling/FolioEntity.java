@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.store.entity.biling;
 
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
@@ -105,14 +106,7 @@ public class FolioEntity {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-
     public BigDecimal getBalance() {
-        return totalAmount.subtract(paidAmount)
-                .max(BigDecimal.ZERO);
-    }
-
-    public BigDecimal getAdvanceAmount() {
-        return paidAmount.subtract(totalAmount)
-                .max(BigDecimal.ZERO);
+        return totalAmount.subtract(paidAmount);
     }
 }

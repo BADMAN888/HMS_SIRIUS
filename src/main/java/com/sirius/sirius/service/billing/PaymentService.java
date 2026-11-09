@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.PaymentRefundRequest;
@@ -10,6 +11,7 @@ import com.sirius.sirius.mappers.PaymentMapper;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.PaymentEntity;
 import com.sirius.sirius.store.enums.FolioStatus;
+import com.sirius.sirius.store.enums.PaymentMethod;
 import com.sirius.sirius.store.repository.FolioRepository;
 import com.sirius.sirius.store.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +19,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -42,14 +43,12 @@ public class PaymentService {
                 ));
 
         ensureFolioIsOpen(folio);
-
-        BigDecimal amount = request.amount()
-                .setScale(2, RoundingMode.HALF_UP);
+        ensurePaymentDoesNotExceedBalance(folio, request.amount());
 
         PaymentEntity payment = PaymentEntity.builder()
                 .folio(folio)
                 .method(request.method())
-                .amount(amount)
+                .amount(request.amount())
                 .description(request.description())
                 .paidAt(LocalDateTime.now(clock))
                 .build();
@@ -95,6 +94,12 @@ public class PaymentService {
         if (originalPayment.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ConflictException(
                     "Only positive payments can be refunded"
+            );
+        }
+
+        if (originalPayment.getMethod() == PaymentMethod.BALANCE) {
+            throw new ConflictException(
+                    "Balance payments must be refunded through BalanceAccountService"
             );
         }
 
@@ -184,10 +189,41 @@ public class PaymentService {
             );
         }
 
+        if (request.method() == PaymentMethod.BALANCE) {
+            throw new ValidationException(
+                    "Balance payments must be processed through BalanceAccountService"
+            );
+        }
+
         if (request.amount() == null
                 || request.amount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new ValidationException(
                     "Payment amount must be greater than zero"
+            );
+        }
+
+        if (request.amount().stripTrailingZeros().scale() > 2) {
+            throw new ValidationException(
+                    "Amount cannot have more than 2 decimal places"
+            );
+        }
+    }
+
+    private void ensurePaymentDoesNotExceedBalance(
+            FolioEntity folio,
+            BigDecimal amount
+    ) {
+        BigDecimal balance = folio.getBalance();
+
+        if (balance.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ConflictException(
+                    "Folio has no outstanding balance"
+            );
+        }
+
+        if (amount.compareTo(balance) > 0) {
+            throw new ConflictException(
+                    "Payment amount exceeds the outstanding folio balance"
             );
         }
     }

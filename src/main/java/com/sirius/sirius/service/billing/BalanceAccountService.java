@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.BalanceAccountResponse;
@@ -174,6 +175,7 @@ public class BalanceAccountService {
         validateOpenFolio(folio);
         validateSameHotel(account, folio);
         validateSufficientBalance(account, amount);
+        validateFolioBalance(folio, amount);
 
         account.setBalance(account.getBalance().subtract(amount));
 
@@ -290,7 +292,7 @@ public class BalanceAccountService {
             );
         }
 
-        if (amount.scale() > 2) {
+        if (amount.stripTrailingZeros().scale() > 2) {
             throw new ValidationException(
                     "Amount cannot have more than 2 decimal places"
             );
@@ -331,6 +333,25 @@ public class BalanceAccountService {
         if (account.getBalance().compareTo(amount) < 0) {
             throw new ConflictException(
                     "Insufficient balance"
+            );
+        }
+    }
+
+    private void validateFolioBalance(
+            FolioEntity folio,
+            BigDecimal amount
+    ) {
+        BigDecimal balance = folio.getBalance();
+
+        if (balance.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ConflictException(
+                    "Folio has no outstanding balance"
+            );
+        }
+
+        if (amount.compareTo(balance) > 0) {
+            throw new ConflictException(
+                    "Payment amount exceeds the outstanding folio balance"
             );
         }
     }
