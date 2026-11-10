@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.DocumentType;
@@ -6,7 +7,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record GuestDocumentRequest(
-
         @NotNull
         DocumentType documentType,
 
@@ -15,8 +15,10 @@ public record GuestDocumentRequest(
         String documentNumber,
 
         @NotBlank
+        @Size(max = 20)
         String issueDate,
 
+        @Size(max = 20)
         String expiryDate
 ) {
 }
