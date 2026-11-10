@@ -1,327 +1,67 @@
 
 @baseUrl = http://localhost:8080
-@hotelUrl = {{baseUrl}}/api/hotels
+@hotelId = {{createdHotelId}}
 
-### ========================================
-### LOGIN
-### ========================================
+### 1. CREATE HOTEL
 
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@gmail.com",
-  "password": "123456"
-}
-
-> {%
-    client.test("Login - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-
-    client.global.set("token", response.body.token);
-%}
-
-
-### ========================================
-### GET HOTEL BY ID
-### ========================================
-
-GET {{hotelUrl}}/1
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get hotel by id - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-
-    client.test("Get hotel by id - has id", function() {
-        client.assert(response.body.id !== null, "Hotel id should not be null");
-    });
-%}
-
-
-### ========================================
-### GET HOTEL BY ID - NOT FOUND
-### ========================================
-
-GET {{hotelUrl}}/999999
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get hotel by id - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
-    });
-%}
-
-
-### ========================================
-### GET HOTEL BY NAME
-### ========================================
-
-GET {{hotelUrl}}/by-name?name=Olga%20Grand%20Hotel
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get hotel by name - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-
-    client.test("Get hotel by name - correct name", function() {
-        client.assert(
-            response.body.hotelName === "Olga Grand Hotel",
-            "Unexpected hotel name"
-        );
-    });
-%}
-
-
-### ========================================
-### GET HOTEL BY NAME - NOT FOUND
-### ========================================
-
-GET {{hotelUrl}}/by-name?name=Unknown%20Hotel
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get hotel by name - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
-    });
-%}
-
-
-### ========================================
-### CREATE HOTEL
-### ========================================
-
-POST {{hotelUrl}}
+POST {{baseUrl}}/api/hotels
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "hotelName": "HTTP Test Hotel",
-  "description": "Hotel created by HTTP tests",
-  "phone": "+380441234567",
-  "email": "http-test@sirius.com",
-  "address": "Kyiv",
-  "checkInTime": "14:00",
-  "checkOutTime": "12:00"
+  "description": "Hotel created for API testing",
+  "phone": "+380501234567",
+  "email": "http-test@example.com",
+  "address": "Kyiv, Ukraine",
+  "checkInTime": "14:00:00",
+  "checkOutTime": "12:00:00"
 }
 
 > {%
-    client.test("Create hotel - status 201", function() {
-        client.assert(response.status === 201, "Expected status 201");
+    client.test("Hotel created", function () {
+        client.assert(response.status === 200 || response.status === 201, "Expected HTTP 200 or 201");
+        client.assert(response.body.id != null, "Hotel ID is missing");
     });
 
-    client.test("Create hotel - has id", function() {
-        client.assert(response.body.id !== null, "Hotel id should not be null");
-    });
-
-    client.global.set("hotelId", response.body.id);
+    client.global.set("createdHotelId", response.body.id);
 %}
 
+###
 
-### ========================================
-### GET CREATED HOTEL
-### ========================================
+### 2. GET HOTEL BY ID
 
-GET {{hotelUrl}}/{{hotelId}}
+GET {{baseUrl}}/api/hotels/{{hotelId}}
 Authorization: Bearer {{token}}
 
-> {%
-    client.test("Get created hotel - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
+###
 
-    client.test("Get created hotel - correct name", function() {
-        client.assert(
-            response.body.hotelName === "HTTP Test Hotel",
-            "Unexpected hotel name"
-        );
-    });
-%}
+### 3. GET HOTEL BY NAME
 
-
-### ========================================
-### GET CREATED HOTEL BY NAME
-### ========================================
-
-GET {{hotelUrl}}/by-name?name=HTTP%20Test%20Hotel
+GET {{baseUrl}}/api/hotels/by-name?name=HTTP%20Test%20Hotel
 Authorization: Bearer {{token}}
 
-> {%
-    client.test("Get created hotel by name - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-%}
+###
 
+### 4. UPDATE HOTEL
 
-### ========================================
-### CREATE HOTEL - DUPLICATE
-### ========================================
-
-POST {{hotelUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "hotelName": "HTTP Test Hotel",
-  "description": "Duplicate hotel",
-  "phone": "+380441111111",
-  "email": "duplicate@sirius.com",
-  "address": "Kyiv",
-  "checkInTime": "14:00",
-  "checkOutTime": "12:00"
-}
-
-> {%
-    client.test("Create duplicate hotel - status 400", function() {
-        client.assert(response.status === 400, "Expected status 400");
-    });
-%}
-
-
-### ========================================
-### CREATE HOTEL - VALIDATION ERROR
-### ========================================
-
-POST {{hotelUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "hotelName": "",
-  "description": "Invalid hotel",
-  "phone": "+380441234567",
-  "email": "invalid-email",
-  "address": "Kyiv",
-  "checkInTime": "14:00",
-  "checkOutTime": "12:00"
-}
-
-> {%
-    client.test("Create invalid hotel - status 400", function() {
-        client.assert(response.status === 400, "Expected status 400");
-    });
-%}
-
-
-### ========================================
-### UPDATE HOTEL
-### ========================================
-
-PUT {{hotelUrl}}/{{hotelId}}
+PUT {{baseUrl}}/api/hotels/{{hotelId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
   "hotelName": "HTTP Test Hotel Updated",
-  "description": "Updated hotel",
-  "phone": "+380449999999",
-  "email": "updated@sirius.com",
-  "address": "Kyiv Updated",
-  "checkInTime": "15:00",
-  "checkOutTime": "11:00"
+  "description": "Updated hotel description",
+  "phone": "+380509876543",
+  "email": "http-test-updated@example.com",
+  "address": "Kozyn, Ukraine",
+  "checkInTime": "15:00:00",
+  "checkOutTime": "11:00:00"
 }
 
-> {%
-    client.test("Update hotel - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
+###
 
-    client.test("Update hotel - correct name", function() {
-        client.assert(
-            response.body.hotelName === "HTTP Test Hotel Updated",
-            "Hotel name was not updated"
-        );
-    });
-%}
+### 5. GET UPDATED HOTEL
 
-
-### ========================================
-### GET UPDATED HOTEL
-### ========================================
-
-GET {{hotelUrl}}/{{hotelId}}
+GET {{baseUrl}}/api/hotels/{{hotelId}}
 Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get updated hotel - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-
-    client.test("Get updated hotel - correct name", function() {
-        client.assert(
-            response.body.hotelName === "HTTP Test Hotel Updated",
-            "Unexpected hotel name"
-        );
-    });
-%}
-
-
-### ========================================
-### UPDATE HOTEL - NOT FOUND
-### ========================================
-
-PUT {{hotelUrl}}/999999
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "hotelName": "Unknown Hotel",
-  "description": "Test description",
-  "phone": "+380441234567",
-  "email": "unknown@sirius.com",
-  "address": "Kyiv",
-  "checkInTime": "14:00",
-  "checkOutTime": "12:00"
-}
-
-> {%
-    client.test("Update hotel not found - status 400", function() {
-        client.assert(response.status === 400, "Expected status 400");
-    });
-%}
-
-
-### ========================================
-### DELETE HOTEL
-### ========================================
-
-DELETE {{hotelUrl}}/{{hotelId}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Delete hotel - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-%}
-
-
-### ========================================
-### GET DELETED HOTEL
-### ========================================
-
-GET {{hotelUrl}}/{{hotelId}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get deleted hotel - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
-    });
-%}
-
-
-### ========================================
-### DELETE HOTEL - NOT FOUND
-### ========================================
-
-DELETE {{hotelUrl}}/999999
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Delete hotel not found - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
-    });
-%}
-

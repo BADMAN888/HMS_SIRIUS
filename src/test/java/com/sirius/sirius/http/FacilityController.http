@@ -1,0 +1,76 @@
+
+@baseUrl = http://localhost:8080
+@hotelId = {{createdHotelId}}
+@facilityId = {{createdFacilityId}}
+
+### 1. CREATE FACILITY
+
+POST {{baseUrl}}/api/facilities
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "name": "HTTP Test Facility",
+  "description": "Facility created for API testing",
+  "unit": "SERVICE",
+  "active": true,
+  "type": "STANDARD",
+  "taxStatus": "RESIDENT"
+}
+
+> {%
+    client.test("Facility created", function () {
+        client.assert(response.status === 201, "Expected HTTP 201");
+        client.assert(response.body.id != null, "Facility ID is missing");
+    });
+
+    client.global.set("createdFacilityId", response.body.id);
+%}
+
+###
+
+### 2. GET FACILITY BY ID
+
+GET {{baseUrl}}/api/facilities/{{facilityId}}
+Authorization: Bearer {{token}}
+
+###
+
+### 3. GET ALL FACILITIES BY HOTEL
+
+GET {{baseUrl}}/api/facilities/hotel/{{hotelId}}
+Authorization: Bearer {{token}}
+
+###
+
+### 4. GET ACTIVE FACILITIES BY HOTEL
+
+GET {{baseUrl}}/api/facilities/hotel/{{hotelId}}/active
+Authorization: Bearer {{token}}
+
+###
+
+### 5. UPDATE FACILITY
+
+PUT {{baseUrl}}/api/facilities/{{facilityId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "name": "HTTP Test Facility Updated",
+  "description": "Updated facility description",
+  "unit": "SERVICE",
+  "active": true,
+  "type": "STANDARD",
+  "taxStatus": "RESIDENT"
+}
+
+###
+
+### 6. DEACTIVATE FACILITY
+
+PATCH {{baseUrl}}/api/facilities/{{facilityId}}/deactivate
+Authorization: Bearer {{token}}
+

@@ -1,0 +1,32 @@
+
+@baseUrl = http://localhost:8080
+
+@accrualId = {{createdAccrualId}}
+@paymentId = {{createdPaymentId}}
+
+### 1. CORRECT RESERVATION FINANCIALS
+
+POST {{baseUrl}}/api/reservation-financial-corrections
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "accrualId": {{accrualId}},
+  "amount": 1000.00,
+  "type": "REFUND",
+  "payments": [
+    {
+      "paymentId": {{paymentId}},
+      "amount": 1000.00
+    }
+  ],
+  "reason": "HTTP test financial correction"
+}
+
+> {%
+    client.test("Financial correction response received", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body.accrualId != null, "Accrual ID is missing");
+        client.assert(response.body.type != null, "Correction type is missing");
+    });
+%}

@@ -1,0 +1,30 @@
+
+@baseUrl = http://localhost:8080
+@facilityId = {{createdFacilityId}}
+
+### 1. CREATE FACILITY PRICE
+
+POST {{baseUrl}}/api/facility-prices
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "facilityId": {{facilityId}},
+  "price": 500.00,
+  "validFrom": "2026-11-10",
+  "validTo": "2027-12-31"
+}
+
+###
+
+### 2. GET FACILITY PRICE HISTORY
+
+GET {{baseUrl}}/api/facility-prices/facility/{{facilityId}}
+Authorization: Bearer {{token}}
+
+###
+
+### 3. GET FACILITY PRICE FOR DATE
+
+GET {{baseUrl}}/api/facility-prices/facility/{{facilityId}}/date/2026-11-10
+Authorization: Bearer {{token}}

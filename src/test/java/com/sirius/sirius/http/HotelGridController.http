@@ -1,0 +1,52 @@
+
+@baseUrl = http://localhost:8080
+
+### 1. GET HOTEL GRID
+
+GET {{baseUrl}}/api/hotel-grid?startDate=2026-11-15&endDate=2026-12-15
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Hotel grid retrieved", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+    });
+%}
+
+###
+
+### 2. GET HOTEL GRID - ONE WEEK
+
+GET {{baseUrl}}/api/hotel-grid?startDate=2026-11-15&endDate=2026-11-22
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Weekly hotel grid retrieved", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+    });
+%}
+
+###
+
+### 3. GET HOTEL GRID - INVALID DATE FORMAT
+
+GET {{baseUrl}}/api/hotel-grid?startDate=15-11-2026&endDate=22-11-2026
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Invalid date format rejected", function () {
+        client.assert(response.status === 400, "Expected HTTP 400");
+    });
+%}
+
+###
+
+### 4. GET HOTEL GRID - MISSING END DATE
+
+GET {{baseUrl}}/api/hotel-grid?startDate=2026-11-15
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Missing end date rejected", function () {
+        client.assert(response.status === 400, "Expected HTTP 400");
+    });
+%}

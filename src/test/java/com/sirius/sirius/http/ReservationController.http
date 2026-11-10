@@ -1,0 +1,213 @@
+
+@baseUrl = http://localhost:8080
+
+@roomId = {{createdRoomId}}
+@rateId = {{createdRateId}}
+@paymentCategoryId = {{createdCategoryId}}
+@guestId = {{createdProfileId}}
+@reservationId = {{createdReservationId}}
+@commentId = {{createdCommentId}}
+@breakfastId = {{createdBreakfastId}}
+
+### 1. CREATE RESERVATION
+
+POST {{baseUrl}}/api/reservations
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomId": {{roomId}},
+  "rateId": {{rateId}},
+  "paymentCategoryId": {{paymentCategoryId}},
+  "primaryGuestId": {{guestId}},
+  "guestIds": [{{guestId}}],
+  "checkIn": "2026-11-15T14:00:00",
+  "checkOut": "2026-11-17T12:00:00",
+  "adults": 1,
+  "children": 0,
+  "taxStatus": "RESIDENT",
+  "externalBookingNumber": "HTTP-RES-001",
+  "bookingSource": "HTTP_TEST"
+}
+
+> {%
+    client.test("Reservation created", function () {
+        client.assert(response.status === 201, "Expected HTTP 201");
+        client.assert(response.body.id != null, "Reservation ID is missing");
+    });
+
+    client.global.set("createdReservationId", response.body.id);
+%}
+
+###
+
+### 2. GET ALL RESERVATIONS
+
+GET {{baseUrl}}/api/reservations
+Authorization: Bearer {{token}}
+
+###
+
+### 3. GET RESERVATION BY ID
+
+GET {{baseUrl}}/api/reservations/{{reservationId}}
+Authorization: Bearer {{token}}
+
+###
+
+### 4. GET RESERVATIONS BY STATUS
+
+GET {{baseUrl}}/api/reservations/status/RESERVED
+Authorization: Bearer {{token}}
+
+###
+
+### 5. GET RESERVATIONS BY CHECK-IN DATE
+
+GET {{baseUrl}}/api/reservations/check-in?date=2026-11-15
+Authorization: Bearer {{token}}
+
+###
+
+### 6. GET RESERVATIONS BY CHECK-OUT DATE
+
+GET {{baseUrl}}/api/reservations/check-out?date=2026-11-17
+Authorization: Bearer {{token}}
+
+###
+
+### 7. GET RESERVATIONS BY DATE
+
+GET {{baseUrl}}/api/reservations/date?date=2026-11-15
+Authorization: Bearer {{token}}
+
+###
+
+### 8. GET RESERVATIONS BY DATE RANGE
+
+GET {{baseUrl}}/api/reservations/date-range?startDate=2026-11-15&endDate=2026-11-17
+Authorization: Bearer {{token}}
+
+###
+
+### 9. UPDATE RESERVATION
+
+PUT {{baseUrl}}/api/reservations/{{reservationId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomId": {{roomId}},
+  "rateId": {{rateId}},
+  "paymentCategoryId": {{paymentCategoryId}},
+  "primaryGuestId": {{guestId}},
+  "guestIds": [{{guestId}}],
+  "checkIn": "2026-11-15T14:00:00",
+  "checkOut": "2026-11-18T12:00:00",
+  "adults": 1,
+  "children": 0,
+  "taxStatus": "RESIDENT",
+  "externalBookingNumber": "HTTP-RES-001",
+  "bookingSource": "HTTP_TEST"
+}
+
+###
+
+### 10. GET RESERVATION COMMENTS
+
+GET {{baseUrl}}/api/reservations/{{reservationId}}/comments
+Authorization: Bearer {{token}}
+
+###
+
+### 11. CREATE RESERVATION COMMENT
+
+POST {{baseUrl}}/api/reservations/{{reservationId}}/comments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "HTTP test reservation comment"
+}
+
+> {%
+    client.test("Comment created", function () {
+        client.assert(response.status === 201, "Expected HTTP 201");
+        client.assert(response.body.id != null, "Comment ID is missing");
+    });
+
+    client.global.set("createdCommentId", response.body.id);
+%}
+
+###
+
+### 12. UPDATE RESERVATION COMMENT
+
+PUT {{baseUrl}}/api/reservations/{{reservationId}}/comments/{{commentId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "text": "Updated HTTP test reservation comment"
+}
+
+###
+
+### 13. DELETE RESERVATION COMMENT
+
+DELETE {{baseUrl}}/api/reservations/{{reservationId}}/comments/{{commentId}}
+Authorization: Bearer {{token}}
+
+###
+
+### 14. GET INCLUDED BREAKFASTS
+
+GET {{baseUrl}}/api/reservations/{{reservationId}}/included-breakfasts
+Authorization: Bearer {{token}}
+
+###
+
+### 15. MARK INCLUDED BREAKFAST AS SERVED
+
+PATCH {{baseUrl}}/api/reservations/{{reservationId}}/included-breakfasts/{{breakfastId}}/served
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "servedQuantity": 1
+}
+
+###
+
+### 16. CHECK-IN RESERVATION
+
+PATCH {{baseUrl}}/api/reservations/{{reservationId}}/check-in
+Authorization: Bearer {{token}}
+
+###
+
+### 17. CHECK-OUT RESERVATION
+
+PATCH {{baseUrl}}/api/reservations/{{reservationId}}/check-out
+Authorization: Bearer {{token}}
+
+###
+
+### 18. CANCEL RESERVATION
+
+PATCH {{baseUrl}}/api/reservations/{{reservationId}}/cancel
+Authorization: Bearer {{token}}
+
+###
+
+### 19. MARK RESERVATION AS NO-SHOW
+
+PATCH {{baseUrl}}/api/reservations/{{reservationId}}/no-show
+Authorization: Bearer {{token}}
+
+###
+
+### 20. DELETE RESERVATION
+
+DELETE {{baseUrl}}/api/reservations/{{reservationId}}
+Authorization: Bearer {{token}}

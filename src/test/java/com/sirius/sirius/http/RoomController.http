@@ -1,0 +1,91 @@
+
+@baseUrl = http://localhost:8080
+@hotelId = {{createdHotelId}}
+@categoryId = {{createdCategoryId}}
+@roomId = {{createdRoomId}}
+
+### 1. CREATE ROOM
+
+POST {{baseUrl}}/api/rooms
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "HTTP-101",
+  "floor": 1,
+  "hotelId": "{{hotelId}}",
+  "categoryId": "{{categoryId}}"
+}
+
+> {%
+    client.global.set("createdRoomId", response.body.id);
+%}
+
+###
+
+### 2. GET ALL ROOMS
+
+GET {{baseUrl}}/api/rooms
+Authorization: Bearer {{token}}
+
+###
+
+### 3. GET ROOM BY ID
+
+GET {{baseUrl}}/api/rooms/{{roomId}}
+Authorization: Bearer {{token}}
+
+###
+
+### 4. GET ROOMS BY HOTEL
+
+GET {{baseUrl}}/api/rooms/hotel/{{hotelId}}
+Authorization: Bearer {{token}}
+
+###
+
+### 5. GET ROOMS BY CATEGORY
+
+GET {{baseUrl}}/api/rooms/category/{{categoryId}}
+Authorization: Bearer {{token}}
+
+###
+
+### 6. GET ROOMS BY HOTEL AND STATUS
+
+GET {{baseUrl}}/api/rooms/hotel/{{hotelId}}/status/AVAILABLE
+Authorization: Bearer {{token}}
+
+###
+
+### 7. GET ROOMS BY CATEGORY AND STATUS
+
+GET {{baseUrl}}/api/rooms/category/{{categoryId}}/status/AVAILABLE
+Authorization: Bearer {{token}}
+
+###
+
+### 8. UPDATE ROOM
+
+PUT {{baseUrl}}/api/rooms/{{roomId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomNumber": "HTTP-101-UPDATED",
+  "floor": 2,
+  "hotelId": "{{hotelId}}",
+  "categoryId": "{{categoryId}}"
+}
+
+###
+
+### 9. UPDATE ROOM STATUS
+
+PATCH {{baseUrl}}/api/rooms/{{roomId}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "AVAILABLE"
+}

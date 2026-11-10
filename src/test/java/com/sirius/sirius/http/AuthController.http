@@ -1,0 +1,68 @@
+
+@baseUrl = http://localhost:8080
+
+### 1. REGISTER
+
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "http-test@sirius.com",
+  "password": "TestPassword123!"
+}
+
+> {%
+    client.test("Registration successful", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body.token != null, "Token is missing");
+        client.assert(response.body.refreshToken != null, "Refresh token is missing");
+    });
+
+    client.global.set("token", response.body.token);
+    client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+###
+
+### 2. LOGIN
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "http-test@sirius.com",
+  "password": "TestPassword123!"
+}
+
+> {%
+    client.test("Login successful", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body.token != null, "Token is missing");
+        client.assert(response.body.refreshToken != null, "Refresh token is missing");
+    });
+
+    client.global.set("token", response.body.token);
+    client.global.set("refreshToken", response.body.refreshToken);
+%}
+
+###
+
+### 3. REFRESH TOKEN
+
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+> {%
+    client.test("Token refresh successful", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body.token != null, "Token is missing");
+        client.assert(response.body.refreshToken != null, "Refresh token is missing");
+    });
+
+    client.global.set("token", response.body.token);
+    client.global.set("refreshToken", response.body.refreshToken);
+%}

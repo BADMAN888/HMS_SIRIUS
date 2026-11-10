@@ -1,211 +1,58 @@
 
 @baseUrl = http://localhost:8080
-@priceUrl = {{baseUrl}}/api/prices
-@rateId = 1
-@priceDate = 2099-01-15
+@documentId = {{createdDocumentId}}
 
-### ========================================
-### LOGIN
-### ========================================
+### 1. CREATE GUEST DOCUMENT
 
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@gmail.com",
-  "password": "123456"
-}
-
-> {%
-    client.test("Login - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-
-    client.global.set("token", response.body.token);
-%}
-
-
-### ========================================
-### CREATE PRICE
-### ========================================
-
-POST {{priceUrl}}
+POST {{baseUrl}}/api/guest-documents
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "rateId": {{rateId}},
-  "price": 5000.00,
-  "validFrom": "{{priceDate}}",
-  "validTo": "2099-12-31"
+  "documentType": "PASSPORT",
+  "documentNumber": "HTTP123456",
+  "issuedBy": "Test Authority",
+  "issueDate": "2020-01-15",
+  "expirationDate": "2030-01-15"
 }
 
 > {%
-    client.test("Create price - status 201", function() {
-        client.assert(response.status === 201, "Expected status 201");
-    });
-
-    client.test("Create price - ID exists", function() {
-        client.assert(response.body.id !== undefined, "ID is missing");
-    });
-
-    client.test("Create price - rate ID is correct", function() {
-        client.assert(response.body.rateId === 1, "Rate ID is incorrect");
-    });
-
-    client.test("Create price - price is correct", function() {
-        client.assert(Number(response.body.price) === 5000, "Price is incorrect");
-    });
-
-    client.global.set("priceId", response.body.id);
+    client.global.set("createdDocumentId", response.body.id);
 %}
 
+###
 
-### ========================================
-### GET PRICE HISTORY BY RATE
-### ========================================
+### 2. GET ALL GUEST DOCUMENTS
 
-GET {{priceUrl}}/rate/{{rateId}}
+GET {{baseUrl}}/api/guest-documents
 Authorization: Bearer {{token}}
 
-> {%
-    client.test("Get price history - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
+###
 
-    client.test("Get price history - response is array", function() {
-        client.assert(Array.isArray(response.body), "Response is not an array");
-    });
-%}
+### 3. GET GUEST DOCUMENT BY ID
 
-
-### ========================================
-### GET PRICE FOR DATE
-### ========================================
-
-GET {{priceUrl}}/rate/{{rateId}}/date/{{priceDate}}
+GET {{baseUrl}}/api/guest-documents/{{documentId}}
 Authorization: Bearer {{token}}
 
-> {%
-    client.test("Get price for date - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
+###
 
-    client.test("Get price for date - correct rate", function() {
-        client.assert(response.body.rateId === 1, "Rate ID is incorrect");
-    });
+### 4. UPDATE GUEST DOCUMENT
 
-    client.test("Get price for date - correct amount", function() {
-        client.assert(Number(response.body.price) === 5000, "Price is incorrect");
-    });
-%}
-
-
-### ========================================
-### CREATE PRICE - RATE NOT FOUND
-### ========================================
-
-POST {{priceUrl}}
+PUT {{baseUrl}}/api/guest-documents/{{documentId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "rateId": 999999,
-  "price": 5000.00,
-  "validFrom": "2099-01-15",
-  "validTo": "2099-12-31"
+  "documentType": "PASSPORT",
+  "documentNumber": "HTTP654321",
+  "issuedBy": "Updated Test Authority",
+  "issueDate": "2021-02-10",
+  "expirationDate": "2031-02-10"
 }
 
-> {%
-    client.test("Create price with missing rate - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
-    });
-%}
+###
 
+### 5. DELETE GUEST DOCUMENT
 
-### ========================================
-### CREATE PRICE - INACTIVE RATE
-### ========================================
-
-POST {{priceUrl}}
+DELETE {{baseUrl}}/api/guest-documents/{{documentId}}
 Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "rateId": 1,
-  "price": 5000.00,
-  "validFrom": "2099-01-15",
-  "validTo": "2099-12-31"
-}
-
-> {%
-    client.test("Create price for inactive rate - status 400", function() {
-        client.assert(response.status === 400, "Expected status 400");
-    });
-%}
-
-
-### ========================================
-### CREATE PRICE - INVALID PRICE
-### ========================================
-
-POST {{priceUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "rateId": 1,
-  "price": 0,
-  "validFrom": "2099-01-15",
-  "validTo": "2099-12-31"
-}
-
-> {%
-    client.test("Create invalid price - status 400", function() {
-        client.assert(response.status === 400, "Expected status 400");
-    });
-%}
-
-
-### ========================================
-### CREATE PRICE - INVALID PERIOD
-### ========================================
-
-POST {{priceUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "rateId": 1,
-  "price": 5000.00,
-  "validFrom": "2099-12-31",
-  "validTo": "2099-01-15"
-}
-
-> {%
-    client.test("Create invalid period - status 400", function() {
-        client.assert(response.status === 400, "Expected status 400");
-    });
-%}
-
-
-### ========================================
-### CREATE PRICE - OVERLAPPING PERIOD
-### ========================================
-
-POST {{priceUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "rateId": 1,
-  "price": 6000.00,
-  "validFrom": "2099-01-15",
-  "validTo": "2099-12-31"
-}
-
-> {%
-    client.test("Create overlapping price - status 400", function() {
-        client.assert(response.status === 400, "Expected status 400");
-    });
-%}

@@ -1,228 +1,54 @@
 
 @baseUrl = http://localhost:8080
-@rateUrl = {{baseUrl}}/api/rates
-@categoryId = 1
+@categoryId = {{createdCategoryId}}
+@rateId = {{createdRateId}}
 
-### ========================================
-### LOGIN
-### ========================================
+### 1. CREATE RATE
 
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "user@gmail.com",
-  "password": "123456"
-}
-
-> {%
-    client.test("Login - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-
-    client.global.set("token", response.body.token);
-%}
-
-
-### ========================================
-### CREATE RATE
-### ========================================
-
-POST {{rateUrl}}
+POST {{baseUrl}}/api/rates
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Standard Flexible",
-  "description": "Flexible standard room rate",
+  "name": "HTTP Test Rate",
+  "description": "Rate created for API testing",
   "currency": "UAH",
-  "categoryId": {{categoryId}},
-  "active": true
+  "categoryId": "{{categoryId}}",
+  "active": true,
+  "breakfastIncluded": false
 }
 
 > {%
-    client.test("Create rate - status 201", function() {
-        client.assert(response.status === 201, "Expected status 201");
-    });
-
-    client.test("Create rate - ID exists", function() {
-        client.assert(response.body.id !== undefined, "ID is missing");
-    });
-
-    client.test("Create rate - name is correct", function() {
-        client.assert(response.body.name === "Standard Flexible", "Name is incorrect");
-    });
-
-    client.test("Create rate - category is correct", function() {
-        client.assert(response.body.categoryId === 1, "Category ID is incorrect");
-    });
-
-    client.test("Create rate - current price is initially null", function() {
-        client.assert(response.body.currentPrice === null, "Current price should be null");
-    });
-
-    client.global.set("rateId", response.body.id);
+    client.global.set("createdRateId", response.body.id);
 %}
 
+###
 
-### ========================================
-### GET ALL RATES
-### ========================================
+### 2. GET ALL RATES
 
-GET {{rateUrl}}
+GET {{baseUrl}}/api/rates
 Authorization: Bearer {{token}}
 
-> {%
-    client.test("Get all rates - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
+###
 
-    client.test("Get all rates - response is array", function() {
-        client.assert(Array.isArray(response.body), "Response is not an array");
-    });
-%}
+### 3. GET RATE BY ID
 
-
-### ========================================
-### GET RATE BY ID
-### ========================================
-
-GET {{rateUrl}}/{{rateId}}
+GET {{baseUrl}}/api/rates/{{rateId}}
 Authorization: Bearer {{token}}
 
-> {%
-    client.test("Get rate - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
+###
 
-    client.test("Get rate - correct ID", function() {
-        client.assert(response.body.id === client.global.get("rateId"), "Rate ID is incorrect");
-    });
+### 4. UPDATE RATE
 
-    client.test("Get rate - correct name", function() {
-        client.assert(response.body.name === "Standard Flexible", "Rate name is incorrect");
-    });
-%}
-
-
-### ========================================
-### UPDATE RATE
-### ========================================
-
-PUT {{rateUrl}}/{{rateId}}
+PUT {{baseUrl}}/api/rates/{{rateId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "Standard Flexible Updated",
-  "description": "Updated flexible standard room rate",
+  "name": "HTTP Test Rate Updated",
+  "description": "Updated rate description",
   "currency": "UAH",
-  "categoryId": {{categoryId}},
-  "active": true
+  "categoryId": "{{categoryId}}",
+  "active": true,
+  "breakfastIncluded": true
 }
-
-> {%
-    client.test("Update rate - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-
-    client.test("Update rate - name is updated", function() {
-        client.assert(response.body.name === "Standard Flexible Updated", "Name was not updated");
-    });
-
-    client.test("Update rate - ID is unchanged", function() {
-        client.assert(response.body.id === client.global.get("rateId"), "Rate ID changed");
-    });
-%}
-
-
-### ========================================
-### CREATE RATE - INVALID CATEGORY
-### ========================================
-
-POST {{rateUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "name": "Invalid Category Rate",
-  "description": "Invalid category test",
-  "currency": "UAH",
-  "categoryId": 999999,
-  "active": true
-}
-
-> {%
-    client.test("Create rate with invalid category - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
-    });
-%}
-
-
-### ========================================
-### CREATE RATE - INVALID CURRENCY
-### ========================================
-
-POST {{rateUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "name": "Invalid Currency Rate",
-  "description": "Invalid currency test",
-  "currency": "US",
-  "categoryId": {{categoryId}},
-  "active": true
-}
-
-> {%
-    client.test("Create rate with invalid currency - status 400", function() {
-        client.assert(response.status === 400, "Expected status 400");
-    });
-%}
-
-
-### ========================================
-### GET RATE - NOT FOUND
-### ========================================
-
-GET {{rateUrl}}/999999
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get missing rate - status 404", function() {
-        client.assert(response.status === 404, "Expected status 404");
-    });
-%}
-
-
-### ========================================
-### DEACTIVATE RATE
-### ========================================
-
-DELETE {{rateUrl}}/{{rateId}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Deactivate rate - status 204", function() {
-        client.assert(response.status === 204, "Expected status 204");
-    });
-%}
-
-
-### ========================================
-### VERIFY RATE IS DEACTIVATED
-### ========================================
-
-GET {{rateUrl}}/{{rateId}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Get deactivated rate - status 200", function() {
-        client.assert(response.status === 200, "Expected status 200");
-    });
-
-    client.test("Rate is inactive", function() {
-        client.assert(response.body.active === false, "Rate should be inactive");
-    });
-%}

@@ -1,0 +1,90 @@
+
+@baseUrl = http://localhost:8080
+
+@profileId = {{createdProfileId}}
+@hotelId = {{createdHotelId}}
+@accountId = {{createdBalanceAccountId}}
+@folioId = {{createdFolioId}}
+
+### 1. GET BALANCE ACCOUNT BY PROFILE AND HOTEL
+
+GET {{baseUrl}}/api/balance-accounts/profile/{{profileId}}/hotel/{{hotelId}}
+Authorization: Bearer {{token}}
+
+###
+
+### 2. GET OR CREATE BALANCE ACCOUNT
+
+POST {{baseUrl}}/api/balance-accounts/profile/{{profileId}}/hotel/{{hotelId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Balance account created or returned", function () {
+        client.assert(
+            response.status === 201 || response.status === 200,
+            "Expected HTTP 201 or 200"
+        );
+        client.assert(response.body.id != null, "Balance account ID is missing");
+    });
+
+    client.global.set("createdBalanceAccountId", response.body.id);
+%}
+
+###
+
+### 3. DEPOSIT TO BALANCE ACCOUNT
+
+POST {{baseUrl}}/api/balance-accounts/profile/{{profileId}}/hotel/{{hotelId}}/deposit
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 1000.00,
+  "description": "HTTP test deposit"
+}
+
+###
+
+### 4. GET BALANCE ACCOUNT TRANSACTIONS
+
+GET {{baseUrl}}/api/balance-accounts/{{accountId}}/transactions
+Authorization: Bearer {{token}}
+
+###
+
+### 5. REFUND FROM BALANCE ACCOUNT
+
+POST {{baseUrl}}/api/balance-accounts/{{accountId}}/refund
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 100.00,
+  "description": "HTTP test refund"
+}
+
+###
+
+### 6. DEBIT BALANCE ACCOUNT
+
+POST {{baseUrl}}/api/balance-accounts/{{accountId}}/debit
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 50.00,
+  "description": "HTTP test debit"
+}
+
+###
+
+### 7. PAY FOLIO USING BALANCE ACCOUNT
+
+POST {{baseUrl}}/api/balance-accounts/{{accountId}}/pay-folio/{{folioId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 200.00,
+  "description": "HTTP test folio payment"
+}

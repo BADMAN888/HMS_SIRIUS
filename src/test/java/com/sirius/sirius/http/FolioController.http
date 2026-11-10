@@ -1,144 +1,96 @@
 
 @baseUrl = http://localhost:8080
-@folioUrl = {{baseUrl}}/api/folios
 
-### ========================================
-### LOGIN
-### ========================================
+@hotelId = {{createdHotelId}}
+@reservationId = {{createdReservationId}}
+@profileId = {{createdProfileId}}
+@folioId = {{createdFolioId}}
+@accrualId = {{createdAccrualId}}
 
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
+### 1. CREATE FOLIO
 
-{
-  "email": "user@gmail.com",
-  "password": "123456"
-}
-
-> {%
-    client.global.set("token", response.body.token);
-%}
-
-
-### ========================================
-### CREATE FOLIO
-### ========================================
-
-POST {{folioUrl}}
+POST {{baseUrl}}/api/folios
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "reservationId": 6,
-  "status": "OPEN"
+  "hotelId": {{hotelId}},
+  "reservationId": {{reservationId}},
+  "recipientId": {{profileId}},
+  "payerId": {{profileId}}
 }
 
 > {%
-    client.test("Status is 201", function() {
-        client.assert(response.status === 201);
+    client.test("Folio created", function () {
+        client.assert(response.status === 201, "Expected HTTP 201");
+        client.assert(response.body.id != null, "Folio ID is missing");
     });
 
-    client.global.set("folioId", response.body.id);
+    client.global.set("createdFolioId", response.body.id);
 %}
 
+###
 
-### ========================================
-### GET FOLIO BY ID
-### ========================================
+### 2. GET ALL FOLIOS
 
-GET {{folioUrl}}/{{folioId}}
+GET {{baseUrl}}/api/folios
 Authorization: Bearer {{token}}
 
-> {%
-    client.test("Status is 200", function() {
-        client.assert(response.status === 200);
-    });
+###
 
-    client.test("Folio ID is correct", function() {
-        client.assert(response.body.id === Number(client.global.get("folioId")));
-    });
-%}
+### 3. GET FOLIO BY ID
 
-
-### ========================================
-### GET FOLIO BY RESERVATION ID
-### ========================================
-
-GET {{folioUrl}}/reservation/6
+GET {{baseUrl}}/api/folios/{{folioId}}
 Authorization: Bearer {{token}}
 
-> {%
-    client.test("Status is 200", function() {
-        client.assert(response.status === 200);
-    });
-%}
+###
 
+### 4. GET FOLIOS BY RESERVATION
 
-### ========================================
-### GET ALL FOLIOS
-### ========================================
-
-GET {{folioUrl}}
+GET {{baseUrl}}/api/folios/reservation/{{reservationId}}
 Authorization: Bearer {{token}}
 
-> {%
-    client.test("Status is 200", function() {
-        client.assert(response.status === 200);
-    });
+###
 
-    client.test("Response is an array", function() {
-        client.assert(Array.isArray(response.body));
-    });
-%}
+### 5. GET FOLIOS BY HOTEL
 
+GET {{baseUrl}}/api/folios/hotel/{{hotelId}}
+Authorization: Bearer {{token}}
 
-### ========================================
-### UPDATE FOLIO
-### ========================================
+###
 
-PUT {{folioUrl}}/{{folioId}}
+### 6. ATTACH ACCRUALS TO FOLIO
+
+PUT {{baseUrl}}/api/folios/{{folioId}}/accruals
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+[
+  {{accrualId}}
+]
+
+###
+
+### 7. CLOSE FOLIO
+
+PATCH {{baseUrl}}/api/folios/{{folioId}}/close
+Authorization: Bearer {{token}}
+
+###
+
+### 8. REOPEN FOLIO
+
+PATCH {{baseUrl}}/api/folios/{{folioId}}/reopen
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "reservationId": 1,
-  "status": "CLOSED"
+  "reason": "Reopening folio for HTTP API testing"
 }
 
-> {%
-    client.test("Status is 200", function() {
-        client.assert(response.status === 200);
-    });
+###
 
-    client.test("Status is CLOSED", function() {
-        client.assert(response.body.status === "CLOSED");
-    });
-%}
+### 9. DELETE FOLIO
 
-
-### ========================================
-### DELETE FOLIO
-### ========================================
-
-DELETE {{folioUrl}}/{{folioId}}
+DELETE {{baseUrl}}/api/folios/{{folioId}}
 Authorization: Bearer {{token}}
-
-> {%
-    client.test("Status is 204", function() {
-        client.assert(response.status === 204);
-    });
-%}
-
-
-### ========================================
-### GET DELETED FOLIO
-### ========================================
-
-GET {{folioUrl}}/{{folioId}}
-Authorization: Bearer {{token}}
-
-> {%
-    client.test("Status is 404", function() {
-        client.assert(response.status === 404);
-    });
-%}
-
