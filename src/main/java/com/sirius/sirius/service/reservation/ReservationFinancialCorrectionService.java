@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.dto.PaymentCorrectionAllocationRequest;
@@ -39,15 +40,15 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ReservationFinancialCorrectionService {
+
+    private static final int MAX_DESCRIPTION_LENGTH = 255;
 
     private final AccrualRepository accrualRepository;
     private final FolioRepository folioRepository;
@@ -57,6 +58,12 @@ public class ReservationFinancialCorrectionService {
     private final ProfileRepository profileRepository;
 
     private final Clock clock;
+
+    private record LockedPayment(
+            PaymentEntity payment,
+            BigDecimal amount
+    ) {
+    }
 
     public ReservationFinancialCorrectionResponse correct(
             ReservationFinancialCorrectionRequest request
@@ -93,7 +100,7 @@ public class ReservationFinancialCorrectionService {
 
         validateAccrualRemainingAmount(accrual, amount);
 
-        List<PaymentEntity> originalPayments =
+        List<LockedPayment> lockedPayments =
                 lockAndValidatePayments(request, folio);
 
         validatePaymentAllocationTotal(request, amount);
@@ -121,6 +128,8 @@ public class ReservationFinancialCorrectionService {
             );
         }
 
+        boolean fullyReversed = isFullyReversed(accrual, amount);
+
         AccrualEntity accrualReversal = reverseAccrual(
                 accrual,
                 amount,
@@ -129,20 +138,16 @@ public class ReservationFinancialCorrectionService {
 
         accrualRepository.save(accrualReversal);
 
-        accrual.setReversed(
-                isFullyReversed(accrual, amount)
-        );
+        accrual.setReversed(fullyReversed);
 
         folio.getAccruals().add(accrualReversal);
         folio.recalculateTotalAmount();
 
         List<Long> paymentReversalIds = new ArrayList<>();
 
-        for (int i = 0; i < originalPayments.size(); i++) {
-            PaymentEntity originalPayment = originalPayments.get(i);
-
-            BigDecimal allocationAmount =
-                    request.payments().get(i).amount();
+        for (LockedPayment lockedPayment : lockedPayments) {
+            PaymentEntity originalPayment = lockedPayment.payment();
+            BigDecimal allocationAmount = lockedPayment.amount();
 
             PaymentEntity reversal = createPaymentReversal(
                     originalPayment,
@@ -198,12 +203,10 @@ public class ReservationFinancialCorrectionService {
             BigDecimal amount,
             String reason
     ) {
-        String reversalName = "Сторнування: " + original.getName()
-                + " — " + reason;
-
-        if (reversalName.length() > 255) {
-            reversalName = reversalName.substring(0, 255);
-        }
+        String reversalName = limitLength(
+                "Сторно: " + reason,
+                MAX_DESCRIPTION_LENGTH
+        );
 
         return AccrualEntity.builder()
                 .hotel(original.getHotel())
@@ -245,15 +248,18 @@ public class ReservationFinancialCorrectionService {
                 ? "Перенесення на аванс"
                 : "Повернення коштів";
 
+        String description = limitLength(
+                operation + " за платежем #"
+                        + original.getId() + ": " + reason,
+                MAX_DESCRIPTION_LENGTH
+        );
+
         return PaymentEntity.builder()
                 .folio(original.getFolio())
                 .method(method)
                 .balanceAccount(account)
                 .amount(amount.negate())
-                .description(
-                        operation + " за платежем #"
-                                + original.getId() + ": " + reason
-                )
+                .description(description)
                 .paidAt(LocalDateTime.now(clock))
                 .reversalOf(original)
                 .build();
@@ -372,7 +378,7 @@ public class ReservationFinancialCorrectionService {
         return account;
     }
 
-    private List<PaymentEntity> lockAndValidatePayments(
+    private List<LockedPayment> lockAndValidatePayments(
             ReservationFinancialCorrectionRequest request,
             FolioEntity folio
     ) {
@@ -390,7 +396,7 @@ public class ReservationFinancialCorrectionService {
             }
         }
 
-        List<PaymentEntity> payments = new ArrayList<>();
+        List<LockedPayment> lockedPayments = new ArrayList<>();
 
         allocationsByPaymentId.keySet().stream()
                 .sorted()
@@ -410,10 +416,12 @@ public class ReservationFinancialCorrectionService {
                             allocation.amount()
                     );
 
-                    payments.add(payment);
+                    lockedPayments.add(
+                            new LockedPayment(payment, allocation.amount())
+                    );
                 });
 
-        return payments;
+        return lockedPayments;
     }
 
     private void validateOriginalPayment(
@@ -421,9 +429,10 @@ public class ReservationFinancialCorrectionService {
             FolioEntity folio,
             BigDecimal allocationAmount
     ) {
-        if (!payment.getFolio().getId().equals(folio.getId())) {
+        if (payment.getFolio() == null
+                || !payment.getFolio().getId().equals(folio.getId())) {
             throw new ConflictException(
-                    "Selected payment belongs to another folio"
+                    "Selected payment does not belong to the specified folio"
             );
         }
 
@@ -473,7 +482,8 @@ public class ReservationFinancialCorrectionService {
             AccrualEntity accrual,
             FolioEntity folio
     ) {
-        if (!accrual.getFolio().getId().equals(folio.getId())) {
+        if (accrual.getFolio() == null
+                || !accrual.getFolio().getId().equals(folio.getId())) {
             throw new ConflictException(
                     "Accrual belongs to another folio"
             );
@@ -527,7 +537,7 @@ public class ReservationFinancialCorrectionService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         return alreadyReversed.add(currentReversal)
-                .compareTo(accrual.getAmount()) == 0;
+                .compareTo(accrual.getAmount()) >= 0;
     }
 
     private AccrualEntity findAccrual(Long id) {
@@ -582,6 +592,14 @@ public class ReservationFinancialCorrectionService {
                 );
             }
         }
+    }
+
+    private String limitLength(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+
+        return value.substring(0, maxLength);
     }
 
     private void requireAdmin() {
