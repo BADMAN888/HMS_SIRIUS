@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.PaymentRefundRequest;
@@ -80,21 +81,21 @@ public class PaymentService {
                         "Payment with id: " + paymentId + " not found"
                 ));
 
-        if (originalPayment.getReversalOf() != null) {
-            throw new ConflictException(
-                    "A refund cannot be refunded"
-            );
-        }
+        validateRefundablePayment(originalPayment);
 
-        if (originalPayment.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ConflictException(
-                    "Only positive payments can be refunded"
-            );
-        }
+        BigDecimal refundAmount = request.amount();
 
-        if (paymentRepository.existsByReversalOfId(paymentId)) {
+        BigDecimal alreadyRefunded = calculateAlreadyRefunded(
+                originalPayment
+        );
+
+        BigDecimal refundableAmount = originalPayment.getAmount()
+                .subtract(alreadyRefunded);
+
+        if (refundAmount.compareTo(refundableAmount) > 0) {
             throw new ConflictException(
-                    "This payment has already been refunded"
+                    "Refund amount exceeds the remaining refundable amount. "
+                            + "Remaining amount: " + refundableAmount
             );
         }
 
@@ -128,7 +129,7 @@ public class PaymentService {
                 .folio(folio)
                 .method(originalPayment.getMethod())
                 .balanceAccount(balanceAccount)
-                .amount(originalPayment.getAmount().negate())
+                .amount(refundAmount.negate())
                 .description(
                         "Refund of payment #" + originalPayment.getId()
                                 + ": " + request.reason()
@@ -145,6 +146,7 @@ public class PaymentService {
             restoreBalance(
                     balanceAccount,
                     originalPayment,
+                    refundAmount,
                     request.reason()
             );
         }
@@ -186,13 +188,38 @@ public class PaymentService {
                 .toList();
     }
 
+    private void validateRefundablePayment(PaymentEntity payment) {
+        if (payment.getReversalOf() != null) {
+            throw new ConflictException(
+                    "A refund cannot be refunded"
+            );
+        }
+
+        if (payment.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ConflictException(
+                    "Only positive payments can be refunded"
+            );
+        }
+    }
+
+    private BigDecimal calculateAlreadyRefunded(
+            PaymentEntity originalPayment
+    ) {
+        return paymentRepository
+                .findAllByReversalOfId(originalPayment.getId())
+                .stream()
+                .map(PaymentEntity::getAmount)
+                .filter(amount -> amount != null)
+                .map(BigDecimal::abs)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     private void restoreBalance(
             BalanceAccountEntity account,
             PaymentEntity originalPayment,
+            BigDecimal refundAmount,
             String reason
     ) {
-        BigDecimal refundAmount = originalPayment.getAmount();
-
         account.setBalance(account.getBalance().add(refundAmount));
         balanceAccountRepository.save(account);
 
@@ -257,10 +284,18 @@ public class PaymentService {
 
     private void validateRefundRequest(PaymentRefundRequest request) {
         if (request == null
+                || request.amount() == null
+                || request.amount().compareTo(BigDecimal.ZERO) <= 0
                 || request.reason() == null
                 || request.reason().isBlank()) {
             throw new ValidationException(
-                    "Refund reason must be specified"
+                    "Refund amount and reason must be specified"
+            );
+        }
+
+        if (request.amount().stripTrailingZeros().scale() > 2) {
+            throw new ValidationException(
+                    "Refund amount cannot have more than 2 decimal places"
             );
         }
     }

@@ -15,7 +15,7 @@ public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
 
     List<PaymentEntity> findAllByFolioId(Long folioId);
 
-    boolean existsByReversalOfId(Long paymentId);
+    List<PaymentEntity> findAllByReversalOfId(Long paymentId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

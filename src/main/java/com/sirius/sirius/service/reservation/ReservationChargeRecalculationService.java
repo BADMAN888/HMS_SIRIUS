@@ -1,5 +1,7 @@
+
 package com.sirius.sirius.service.reservation;
 
+import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
@@ -14,11 +16,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -45,21 +51,19 @@ public class ReservationChargeRecalculationService {
             return;
         }
 
+        Map<Long, FolioEntity> affectedFolios =
+                lockAndValidateAffectedFolios(currentAccruals);
+
+        validateNoOverpayment(currentAccruals, affectedFolios);
+
         LocalDateTime accruedAt = LocalDateTime.now(clock);
 
-        Set<Long> affectedOpenFolioIds = new LinkedHashSet<>();
         List<AccrualEntity> reversals = new ArrayList<>();
 
         for (AccrualEntity original : currentAccruals) {
-            FolioEntity originalFolio = original.getFolio();
-
-            FolioEntity reversalFolio = null;
-
-            if (originalFolio != null
-                    && originalFolio.getStatus() == FolioStatus.OPEN) {
-                reversalFolio = originalFolio;
-                affectedOpenFolioIds.add(originalFolio.getId());
-            }
+            FolioEntity reversalFolio = original.getFolio() == null
+                    ? null
+                    : affectedFolios.get(original.getFolio().getId());
 
             original.setReversed(true);
 
@@ -71,11 +75,101 @@ public class ReservationChargeRecalculationService {
         }
 
         accrualRepository.saveAllAndFlush(currentAccruals);
-        accrualRepository.saveAll(reversals);
+        accrualRepository.saveAllAndFlush(reversals);
 
-        recalculateAffectedFolios(affectedOpenFolioIds);
+        recalculateAffectedFolios(affectedFolios);
 
         accrualService.create(reservation);
+    }
+
+    private Map<Long, FolioEntity> lockAndValidateAffectedFolios(
+            List<AccrualEntity> accruals
+    ) {
+        Set<Long> folioIds = new LinkedHashSet<>();
+
+        for (AccrualEntity accrual : accruals) {
+            if (accrual.getFolio() != null) {
+                folioIds.add(accrual.getFolio().getId());
+            }
+        }
+
+        Map<Long, FolioEntity> affectedFolios = new LinkedHashMap<>();
+
+        folioIds.stream()
+                .sorted(Comparator.naturalOrder())
+                .forEach(folioId -> {
+                    FolioEntity folio = folioRepository
+                            .findByIdForUpdate(folioId)
+                            .orElseThrow(() ->
+                                    new NotFoundException(
+                                            "Folio not found: " + folioId
+                                    )
+                            );
+
+                    if (folio.getStatus() != FolioStatus.OPEN) {
+                        throw new ConflictException(
+                                "Cannot recalculate reservation charges "
+                                        + "because folio " + folioId
+                                        + " is closed. "
+                                        + "Use administrative correction."
+                        );
+                    }
+
+                    affectedFolios.put(folioId, folio);
+                });
+
+        return affectedFolios;
+    }
+
+    private void validateNoOverpayment(
+            List<AccrualEntity> accruals,
+            Map<Long, FolioEntity> affectedFolios
+    ) {
+        Map<Long, BigDecimal> reversalAmounts = new LinkedHashMap<>();
+
+        for (AccrualEntity accrual : accruals) {
+            if (accrual.getFolio() == null) {
+                continue;
+            }
+
+            Long folioId = accrual.getFolio().getId();
+
+            BigDecimal reversalAmount = accrual.getAmount().negate();
+
+            reversalAmounts.merge(
+                    folioId,
+                    reversalAmount,
+                    BigDecimal::add
+            );
+        }
+
+        for (Map.Entry<Long, BigDecimal> entry
+                : reversalAmounts.entrySet()) {
+
+            Long folioId = entry.getKey();
+            FolioEntity folio = affectedFolios.get(folioId);
+
+            BigDecimal currentTotal = accrualRepository
+                    .findAllByFolioId(folioId)
+                    .stream()
+                    .map(AccrualEntity::getAmount)
+                    .filter(amount -> amount != null)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            BigDecimal projectedTotal = currentTotal.add(
+                    entry.getValue()
+            );
+
+            if (projectedTotal.compareTo(folio.getPaidAmount()) < 0) {
+                throw new ConflictException(
+                        "Cannot recalculate reservation charges because "
+                                + "it would create an overpayment in folio "
+                                + folioId
+                                + ". An administrator must resolve "
+                                + "the financial difference first."
+                );
+            }
+        }
     }
 
     private AccrualEntity createReversal(
@@ -100,19 +194,14 @@ public class ReservationChargeRecalculationService {
                 .build();
     }
 
-    private void recalculateAffectedFolios(Set<Long> folioIds) {
-        for (Long folioId : folioIds) {
-            FolioEntity folio = folioRepository
-                    .findByIdForUpdate(folioId)
-                    .orElseThrow(() ->
-                            new NotFoundException(
-                                    "Folio not found: " + folioId
-                            )
-                    );
+    private void recalculateAffectedFolios(
+            Map<Long, FolioEntity> affectedFolios
+    ) {
+        for (Map.Entry<Long, FolioEntity> entry
+                : affectedFolios.entrySet()) {
 
-            if (folio.getStatus() != FolioStatus.OPEN) {
-                continue;
-            }
+            Long folioId = entry.getKey();
+            FolioEntity folio = entry.getValue();
 
             List<AccrualEntity> folioAccruals =
                     accrualRepository.findAllByFolioId(folioId);
@@ -126,7 +215,9 @@ public class ReservationChargeRecalculationService {
         }
     }
 
-    private boolean isCurrentAutomaticAccrual(AccrualEntity accrual) {
+    private boolean isCurrentAutomaticAccrual(
+            AccrualEntity accrual
+    ) {
         if (accrual.isReversed() || accrual.getReversalOf() != null) {
             return false;
         }
