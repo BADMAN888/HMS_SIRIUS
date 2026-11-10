@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.exeption.BadRequestException;
@@ -12,6 +13,7 @@ import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.TaxStatus;
 import com.sirius.sirius.store.repository.AccrualRepository;
 import com.sirius.sirius.store.repository.FacilityRepository;
+import com.sirius.sirius.store.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +36,7 @@ public class ReservationAccrualService {
     private static final BigDecimal ONE_NIGHT =
             BigDecimal.ONE.setScale(3, RoundingMode.UNNECESSARY);
 
+    private final ReservationRepository reservationRepository;
     private final AccrualRepository accrualRepository;
     private final FacilityRepository facilityRepository;
     private final PriceService priceService;
@@ -41,10 +44,24 @@ public class ReservationAccrualService {
     private final Clock clock;
 
     public void create(ReservationEntity reservation) {
-        validateReservation(reservation);
+        if (reservation == null || reservation.getId() == null) {
+            throw new BadRequestException(
+                    "Reservation must be saved before accrual creation"
+            );
+        }
+
+        ReservationEntity lockedReservation = reservationRepository
+                .findByIdForUpdate(reservation.getId())
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Reservation not found: " + reservation.getId()
+                        )
+                );
+
+        validateReservation(lockedReservation);
 
         boolean alreadyCreated = accrualRepository
-                .findAllByReservationId(reservation.getId())
+                .findAllByReservationId(lockedReservation.getId())
                 .stream()
                 .anyMatch(this::isCurrentAutomaticAccrual);
 
@@ -56,8 +73,8 @@ public class ReservationAccrualService {
 
         List<AccrualEntity> accruals = new ArrayList<>();
 
-        accruals.addAll(createAccommodationAccruals(reservation));
-        accruals.addAll(createTouristTaxAccruals(reservation));
+        accruals.addAll(createAccommodationAccruals(lockedReservation));
+        accruals.addAll(createTouristTaxAccruals(lockedReservation));
 
         accrualRepository.saveAll(accruals);
     }
@@ -207,7 +224,9 @@ public class ReservationAccrualService {
                 );
     }
 
-    private boolean isCurrentAutomaticAccrual(AccrualEntity accrual) {
+    private boolean isCurrentAutomaticAccrual(
+            AccrualEntity accrual
+    ) {
         if (accrual.isReversed() || accrual.getReversalOf() != null) {
             return false;
         }
@@ -227,18 +246,6 @@ public class ReservationAccrualService {
     }
 
     private void validateReservation(ReservationEntity reservation) {
-        if (reservation == null) {
-            throw new BadRequestException(
-                    "Reservation must be specified"
-            );
-        }
-
-        if (reservation.getId() == null) {
-            throw new BadRequestException(
-                    "Reservation must be saved before accrual creation"
-            );
-        }
-
         if (reservation.getRoom() == null
                 || reservation.getRoom().getHotel() == null
                 || reservation.getRoom().getHotel().getId() == null) {

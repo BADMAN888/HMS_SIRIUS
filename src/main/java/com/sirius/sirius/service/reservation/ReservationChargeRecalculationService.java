@@ -12,6 +12,7 @@ import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.repository.AccrualRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
+import com.sirius.sirius.store.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,20 +35,35 @@ public class ReservationChargeRecalculationService {
 
     private static final String REVERSAL_PREFIX = "Сторно: ";
 
+    private final ReservationRepository reservationRepository;
     private final AccrualRepository accrualRepository;
     private final FolioRepository folioRepository;
     private final ReservationAccrualService accrualService;
     private final Clock clock;
 
     public void recalculate(ReservationEntity reservation) {
+        if (reservation == null || reservation.getId() == null) {
+            throw new ConflictException(
+                    "Reservation must be saved before recalculation"
+            );
+        }
+
+        ReservationEntity lockedReservation = reservationRepository
+                .findByIdForUpdate(reservation.getId())
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Reservation not found: " + reservation.getId()
+                        )
+                );
+
         List<AccrualEntity> currentAccruals = accrualRepository
-                .findAllByReservationId(reservation.getId())
+                .findAllByReservationId(lockedReservation.getId())
                 .stream()
                 .filter(this::isCurrentAutomaticAccrual)
                 .toList();
 
         if (currentAccruals.isEmpty()) {
-            accrualService.create(reservation);
+            accrualService.create(lockedReservation);
             return;
         }
 
@@ -79,7 +95,7 @@ public class ReservationChargeRecalculationService {
 
         recalculateAffectedFolios(affectedFolios);
 
-        accrualService.create(reservation);
+        accrualService.create(lockedReservation);
     }
 
     private Map<Long, FolioEntity> lockAndValidateAffectedFolios(
