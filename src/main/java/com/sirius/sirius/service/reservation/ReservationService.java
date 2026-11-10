@@ -23,6 +23,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -37,6 +38,7 @@ public class ReservationService {
 
     private final ReservationAvailabilityService availabilityService;
     private final ReservationAccrualService accrualService;
+    private final ReservationChargeRecalculationService recalculationService;
     private final ReservationGuestService guestService;
     private final ReservationValidationService validationService;
     private final ReservationIncludedBreakfastService includedBreakfastService;
@@ -170,6 +172,13 @@ public class ReservationService {
                 guests
         );
 
+        boolean financialChanges = hasFinancialChanges(
+                reservation,
+                request,
+                room,
+                rate
+        );
+
         reservationMapper.updateEntity(request, reservation);
 
         reservation.setRoom(room);
@@ -180,11 +189,47 @@ public class ReservationService {
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
 
-        includedBreakfastService.synchronize(reservation);
-
         reservationRepository.saveAndFlush(reservation);
 
+        if (financialChanges) {
+            recalculationService.recalculate(reservation);
+        }
+
+        includedBreakfastService.synchronize(reservation);
+
         return reservationMapper.toResponse(reservation);
+    }
+
+    private boolean hasFinancialChanges(
+            ReservationEntity reservation,
+            ReservationRequest request,
+            RoomEntity room,
+            RateEntity rate
+    ) {
+        return !Objects.equals(
+                reservation.getRoom().getId(),
+                room.getId()
+        )
+                || !Objects.equals(
+                reservation.getRate().getId(),
+                rate.getId()
+        )
+                || !Objects.equals(
+                reservation.getCheckIn().toLocalDate(),
+                request.checkIn().toLocalDate()
+        )
+                || !Objects.equals(
+                reservation.getCheckOut().toLocalDate(),
+                request.checkOut().toLocalDate()
+        )
+                || !Objects.equals(
+                reservation.getAdults(),
+                request.adults()
+        )
+                || !Objects.equals(
+                reservation.getTaxStatus(),
+                request.taxStatus()
+        );
     }
 
     @Transactional(readOnly = true)

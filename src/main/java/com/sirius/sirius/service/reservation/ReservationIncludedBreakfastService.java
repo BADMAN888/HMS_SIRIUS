@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.dto.ReservationIncludedBreakfastResponse;
@@ -47,16 +48,15 @@ public class ReservationIncludedBreakfastService {
             }
 
             if (!reservationDates.contains(serviceDate)) {
-                if (breakfast.getServedQuantity() == 0) {
-                    breakfast.setCancelled(true);
-                }
+                breakfast.setCancelled(true);
                 continue;
             }
 
             if (breakfast.getServedQuantity() == 0) {
                 breakfast.setQuantity(reservation.getAdults());
-                breakfast.setCancelled(false);
             }
+
+            breakfast.setCancelled(false);
         }
 
         if (!reservation.getRate().isBreakfastIncluded()) {
@@ -127,6 +127,12 @@ public class ReservationIncludedBreakfastService {
             );
         }
 
+        if (servedQuantity == null || servedQuantity < 0) {
+            throw new BadRequestException(
+                    "Served quantity cannot be negative or null"
+            );
+        }
+
         if (servedQuantity > breakfast.getQuantity()) {
             throw new BadRequestException(
                     "Served quantity cannot exceed included quantity"
@@ -161,6 +167,7 @@ public class ReservationIncludedBreakfastService {
                 entity.isCancelled()
         );
     }
+
     public void cancelRemaining(Long reservationId) {
         LocalDate today = LocalDate.now(clock);
 

@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -56,14 +57,19 @@ public class ReservationChargeRecalculationService {
                         )
                 );
 
+        LocalDate today = LocalDate.now(clock);
+
         List<AccrualEntity> currentAccruals = accrualRepository
                 .findAllByReservationId(lockedReservation.getId())
                 .stream()
                 .filter(this::isCurrentAutomaticAccrual)
+                .filter(accrual ->
+                        !accrual.getServiceDate().isBefore(today)
+                )
                 .toList();
 
         if (currentAccruals.isEmpty()) {
-            accrualService.create(lockedReservation);
+            accrualService.createFromDate(lockedReservation, today);
             return;
         }
 
@@ -95,7 +101,7 @@ public class ReservationChargeRecalculationService {
 
         recalculateAffectedFolios(affectedFolios);
 
-        accrualService.create(lockedReservation);
+        accrualService.createFromDate(lockedReservation, today);
     }
 
     private Map<Long, FolioEntity> lockAndValidateAffectedFolios(
@@ -150,11 +156,9 @@ public class ReservationChargeRecalculationService {
 
             Long folioId = accrual.getFolio().getId();
 
-            BigDecimal reversalAmount = accrual.getAmount().negate();
-
             reversalAmounts.merge(
                     folioId,
-                    reversalAmount,
+                    accrual.getAmount().negate(),
                     BigDecimal::add
             );
         }

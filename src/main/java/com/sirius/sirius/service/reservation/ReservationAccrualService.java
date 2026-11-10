@@ -44,19 +44,7 @@ public class ReservationAccrualService {
     private final Clock clock;
 
     public void create(ReservationEntity reservation) {
-        if (reservation == null || reservation.getId() == null) {
-            throw new BadRequestException(
-                    "Reservation must be saved before accrual creation"
-            );
-        }
-
-        ReservationEntity lockedReservation = reservationRepository
-                .findByIdForUpdate(reservation.getId())
-                .orElseThrow(() ->
-                        new NotFoundException(
-                                "Reservation not found: " + reservation.getId()
-                        )
-                );
+        ReservationEntity lockedReservation = lockReservation(reservation);
 
         validateReservation(lockedReservation);
 
@@ -71,24 +59,103 @@ public class ReservationAccrualService {
             );
         }
 
+        createAccruals(
+                lockedReservation,
+                lockedReservation.getCheckIn().toLocalDate()
+        );
+    }
+
+    public void createFromDate(
+            ReservationEntity reservation,
+            LocalDate startDate
+    ) {
+        if (startDate == null) {
+            throw new BadRequestException(
+                    "Accrual start date must be specified"
+            );
+        }
+
+        ReservationEntity lockedReservation = lockReservation(reservation);
+
+        validateReservation(lockedReservation);
+
+        LocalDate effectiveStartDate = startDate.isAfter(
+                lockedReservation.getCheckIn().toLocalDate()
+        )
+                ? startDate
+                : lockedReservation.getCheckIn().toLocalDate();
+
+        LocalDate checkOut = lockedReservation.getCheckOut().toLocalDate();
+
+        if (!effectiveStartDate.isBefore(checkOut)) {
+            return;
+        }
+
+        boolean alreadyCreated = accrualRepository
+                .findAllByReservationId(lockedReservation.getId())
+                .stream()
+                .filter(this::isCurrentAutomaticAccrual)
+                .anyMatch(accrual ->
+                        !accrual.getServiceDate().isBefore(effectiveStartDate)
+                );
+
+        if (alreadyCreated) {
+            throw new BadRequestException(
+                    "Automatic reservation accruals already exist "
+                            + "for the requested period"
+            );
+        }
+
+        createAccruals(lockedReservation, effectiveStartDate);
+    }
+
+    private ReservationEntity lockReservation(
+            ReservationEntity reservation
+    ) {
+        if (reservation == null || reservation.getId() == null) {
+            throw new BadRequestException(
+                    "Reservation must be saved before accrual creation"
+            );
+        }
+
+        return reservationRepository
+                .findByIdForUpdate(reservation.getId())
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Reservation not found: " + reservation.getId()
+                        )
+                );
+    }
+
+    private void createAccruals(
+            ReservationEntity reservation,
+            LocalDate startDate
+    ) {
         List<AccrualEntity> accruals = new ArrayList<>();
 
-        accruals.addAll(createAccommodationAccruals(lockedReservation));
-        accruals.addAll(createTouristTaxAccruals(lockedReservation));
+        accruals.addAll(
+                createAccommodationAccruals(reservation, startDate)
+        );
 
-        accrualRepository.saveAll(accruals);
+        accruals.addAll(
+                createTouristTaxAccruals(reservation, startDate)
+        );
+
+        if (!accruals.isEmpty()) {
+            accrualRepository.saveAll(accruals);
+        }
     }
 
     private List<AccrualEntity> createAccommodationAccruals(
-            ReservationEntity reservation
+            ReservationEntity reservation,
+            LocalDate startDate
     ) {
-        LocalDate checkIn = reservation.getCheckIn().toLocalDate();
         LocalDate checkOut = reservation.getCheckOut().toLocalDate();
 
         List<AccrualEntity> accruals = new ArrayList<>();
         LocalDateTime accruedAt = LocalDateTime.now(clock);
 
-        for (LocalDate serviceDate = checkIn;
+        for (LocalDate serviceDate = startDate;
              serviceDate.isBefore(checkOut);
              serviceDate = serviceDate.plusDays(1)) {
 
@@ -129,7 +196,8 @@ public class ReservationAccrualService {
     }
 
     private List<AccrualEntity> createTouristTaxAccruals(
-            ReservationEntity reservation
+            ReservationEntity reservation,
+            LocalDate startDate
     ) {
         TaxStatus taxStatus = reservation.getTaxStatus() == null
                 ? TaxStatus.RESIDENT
@@ -153,13 +221,12 @@ public class ReservationAccrualService {
         BigDecimal quantity = BigDecimal.valueOf(adults)
                 .setScale(3, RoundingMode.UNNECESSARY);
 
-        LocalDate checkIn = reservation.getCheckIn().toLocalDate();
         LocalDate checkOut = reservation.getCheckOut().toLocalDate();
 
         List<AccrualEntity> accruals = new ArrayList<>();
         LocalDateTime accruedAt = LocalDateTime.now(clock);
 
-        for (LocalDate serviceDate = checkIn;
+        for (LocalDate serviceDate = startDate;
              serviceDate.isBefore(checkOut);
              serviceDate = serviceDate.plusDays(1)) {
 
