@@ -75,11 +75,40 @@ public class PaymentService {
     ) {
         validateRefundRequest(request);
 
+        PaymentEntity paymentReference = paymentRepository
+                .findById(paymentId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Payment with id: " + paymentId + " not found"
+                ));
+
+        if (paymentReference.getFolio() == null) {
+            throw new ConflictException(
+                    "Payment is not assigned to a folio"
+            );
+        }
+
+        Long folioId = paymentReference.getFolio().getId();
+
+        FolioEntity folio = folioRepository
+                .findByIdForUpdate(folioId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Folio with id: " + folioId + " not found"
+                ));
+
+        ensureFolioIsOpen(folio);
+
         PaymentEntity originalPayment = paymentRepository
                 .findByIdForUpdate(paymentId)
                 .orElseThrow(() -> new NotFoundException(
                         "Payment with id: " + paymentId + " not found"
                 ));
+
+        if (originalPayment.getFolio() == null
+                || !originalPayment.getFolio().getId().equals(folioId)) {
+            throw new ConflictException(
+                    "Payment does not belong to the expected folio"
+            );
+        }
 
         validateRefundablePayment(originalPayment);
 
@@ -116,14 +145,6 @@ public class PaymentService {
                             "Balance account not found"
                     ));
         }
-
-        FolioEntity folio = folioRepository
-                .findByIdForUpdate(originalPayment.getFolio().getId())
-                .orElseThrow(() -> new NotFoundException(
-                        "Folio not found"
-                ));
-
-        ensureFolioIsOpen(folio);
 
         PaymentEntity refund = PaymentEntity.builder()
                 .folio(folio)

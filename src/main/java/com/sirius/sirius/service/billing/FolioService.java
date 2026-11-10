@@ -119,6 +119,7 @@ public class FolioService {
                 .toList();
     }
 
+
     public FolioResponse attachAccruals(
             Long folioId,
             List<Long> accrualIds
@@ -134,15 +135,19 @@ public class FolioService {
 
         List<Long> uniqueIds = accrualIds.stream()
                 .distinct()
+                .sorted()
                 .toList();
 
-        List<AccrualEntity> accruals =
-                accrualRepository.findAllById(uniqueIds);
+        List<AccrualEntity> accruals = new java.util.ArrayList<>();
 
-        if (accruals.size() != uniqueIds.size()) {
-            throw new NotFoundException(
-                    "One or more accruals were not found"
-            );
+        for (Long accrualId : uniqueIds) {
+            AccrualEntity accrual = accrualRepository
+                    .findByIdForUpdate(accrualId)
+                    .orElseThrow(() -> new NotFoundException(
+                            "Accrual with id: " + accrualId + " not found"
+                    ));
+
+            accruals.add(accrual);
         }
 
         for (AccrualEntity accrual : accruals) {
@@ -178,6 +183,7 @@ public class FolioService {
 
         return folioMapper.toResponse(folioRepository.save(folio));
     }
+
 
     public FolioResponse close(Long id) {
         FolioEntity folio = findFolioForUpdate(id);

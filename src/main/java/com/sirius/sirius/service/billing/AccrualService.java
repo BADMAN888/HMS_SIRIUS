@@ -135,10 +135,13 @@ public class AccrualService {
 
         return accrualMapper.toResponse(savedAccrual);
     }
-
     @Transactional
     public void delete(Long id) {
-        AccrualEntity accrual = getAccrual(id);
+        AccrualEntity accrual = accrualRepository
+                .findByIdForUpdate(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "Нарахування з ID " + id + " не знайдено"
+                ));
 
         if (accrual.getFolio() != null) {
             throw new ConflictException(

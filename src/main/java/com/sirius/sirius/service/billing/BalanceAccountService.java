@@ -70,7 +70,12 @@ public class BalanceAccountService {
             Long profileId,
             Long hotelId
     ) {
-        ProfileEntity profile = findProfile(profileId);
+        ProfileEntity profile = profileRepository
+                .findByIdForUpdate(profileId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Profile not found with id: " + profileId
+                ));
+
         HotelEntity hotel = findHotel(hotelId);
 
         BalanceAccountEntity account = balanceAccountRepository
@@ -89,7 +94,12 @@ public class BalanceAccountService {
     ) {
         validateAmount(amount);
 
-        ProfileEntity profile = findProfile(profileId);
+        ProfileEntity profile = profileRepository
+                .findByIdForUpdate(profileId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Profile not found with id: " + profileId
+                ));
+
         HotelEntity hotel = findHotel(hotelId);
 
         BalanceAccountEntity account = balanceAccountRepository
@@ -176,12 +186,12 @@ public class BalanceAccountService {
     ) {
         validateAmount(amount);
 
-        BalanceAccountEntity account = getAccountForUpdate(accountId);
-
         FolioEntity folio = folioRepository.findByIdForUpdate(folioId)
                 .orElseThrow(() -> new NotFoundException(
                         "Folio not found with id: " + folioId
                 ));
+
+        BalanceAccountEntity account = getAccountForUpdate(accountId);
 
         validateActive(account);
         validateOpenFolio(folio);
