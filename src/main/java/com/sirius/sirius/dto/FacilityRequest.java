@@ -1,14 +1,17 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.TaxStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record FacilityRequest(
 
         @NotNull
+        @Positive
         Long hotelId,
 
         @NotBlank

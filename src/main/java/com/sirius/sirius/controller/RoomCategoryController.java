@@ -1,12 +1,15 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.RoomCategoryRequest;
 import com.sirius.sirius.dto.RoomCategoryResponse;
 import com.sirius.sirius.service.hotel.RoomCategoryService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,13 +17,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/room-category")
 @RequiredArgsConstructor
+@Validated
 public class RoomCategoryController {
 
     private final RoomCategoryService roomCategoryService;
 
     @GetMapping("/{id}")
     public ResponseEntity<RoomCategoryResponse> getById(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         return ResponseEntity.ok(
                 roomCategoryService.getById(id)
@@ -36,7 +40,7 @@ public class RoomCategoryController {
 
     @GetMapping("/by-hotel/{hotelId}")
     public ResponseEntity<List<RoomCategoryResponse>> getAllByHotelId(
-            @PathVariable Long hotelId
+            @PathVariable @Positive Long hotelId
     ) {
         return ResponseEntity.ok(
                 roomCategoryService.getAllByHotelId(hotelId)
@@ -54,7 +58,7 @@ public class RoomCategoryController {
 
     @PutMapping("/{id}")
     public ResponseEntity<RoomCategoryResponse> update(
-            @PathVariable Long id,
+            @PathVariable @Positive Long id,
             @Valid @RequestBody RoomCategoryRequest request
     ) {
         return ResponseEntity.ok(
@@ -64,7 +68,7 @@ public class RoomCategoryController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> delete(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         roomCategoryService.delete(id);
 

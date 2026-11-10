@@ -1,12 +1,15 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.FacilityRequest;
 import com.sirius.sirius.dto.FacilityResponse;
 import com.sirius.sirius.service.billing.FacilityService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/facilities")
 @RequiredArgsConstructor
+@Validated
 public class FacilityController {
 
     private final FacilityService facilityService;
@@ -29,14 +33,14 @@ public class FacilityController {
 
     @GetMapping("/{id}")
     public ResponseEntity<FacilityResponse> getById(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         return ResponseEntity.ok(facilityService.getById(id));
     }
 
     @GetMapping("/hotel/{hotelId}")
     public ResponseEntity<List<FacilityResponse>> getAllByHotelId(
-            @PathVariable Long hotelId
+            @PathVariable @Positive Long hotelId
     ) {
         return ResponseEntity.ok(
                 facilityService.getAllByHotelId(hotelId)
@@ -45,7 +49,7 @@ public class FacilityController {
 
     @GetMapping("/hotel/{hotelId}/active")
     public ResponseEntity<List<FacilityResponse>> getActiveByHotelId(
-            @PathVariable Long hotelId
+            @PathVariable @Positive Long hotelId
     ) {
         return ResponseEntity.ok(
                 facilityService.getActiveByHotelId(hotelId)
@@ -54,7 +58,7 @@ public class FacilityController {
 
     @PutMapping("/{id}")
     public ResponseEntity<FacilityResponse> update(
-            @PathVariable Long id,
+            @PathVariable @Positive Long id,
             @Valid @RequestBody FacilityRequest request
     ) {
         return ResponseEntity.ok(
@@ -64,7 +68,7 @@ public class FacilityController {
 
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<Void> deactivate(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         facilityService.deactivate(id);
         return ResponseEntity.noContent().build();

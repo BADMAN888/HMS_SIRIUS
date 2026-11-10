@@ -1,9 +1,11 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.RoomStatus;
 import com.sirius.sirius.store.enums.RoomView;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record RoomRequest(
@@ -22,9 +24,11 @@ public record RoomRequest(
         RoomView roomView,
 
         @NotNull
+        @Positive
         Long hotelId,
 
         @NotNull
+        @Positive
         Long categoryId
 ) {
 }

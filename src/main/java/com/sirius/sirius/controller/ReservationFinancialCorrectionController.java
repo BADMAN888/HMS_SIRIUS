@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.ReservationFinancialCorrectionRequest;
@@ -6,11 +7,13 @@ import com.sirius.sirius.service.reservation.ReservationFinancialCorrectionServi
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/reservation-financial-corrections")
 @RequiredArgsConstructor
+@Validated
 public class ReservationFinancialCorrectionController {
 
     private final ReservationFinancialCorrectionService correctionService;

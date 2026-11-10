@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.TaxStatus;
@@ -13,10 +14,13 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 public record ReservationRequest(
+
         @NotNull
+        @Positive
         Long roomId,
 
         @NotNull
+        @Positive
         Long rateId,
 
         @NotNull
@@ -54,9 +58,12 @@ public record ReservationRequest(
         @Size(max = 100)
         String bookingSource,
 
+        @Positive
         Long sourceCompanyId,
 
+        @Positive
         Long operatorCompanyId
+
 ) {
         public ReservationRequest {
                 if (taxStatus == null) {

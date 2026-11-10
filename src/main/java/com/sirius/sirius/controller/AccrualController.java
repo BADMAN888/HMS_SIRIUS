@@ -1,12 +1,15 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.AccrualRequest;
 import com.sirius.sirius.dto.AccrualResponse;
 import com.sirius.sirius.service.billing.AccrualService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/accruals")
 @RequiredArgsConstructor
+@Validated
 public class AccrualController {
 
     private final AccrualService accrualService;
@@ -34,14 +38,14 @@ public class AccrualController {
 
     @GetMapping("/{id}")
     public ResponseEntity<AccrualResponse> getById(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         return ResponseEntity.ok(accrualService.getById(id));
     }
 
     @GetMapping("/folio/{folioId}")
     public ResponseEntity<List<AccrualResponse>> getByFolioId(
-            @PathVariable Long folioId
+            @PathVariable @Positive Long folioId
     ) {
         return ResponseEntity.ok(
                 accrualService.getByFolioId(folioId)
@@ -50,7 +54,7 @@ public class AccrualController {
 
     @GetMapping("/hotel/{hotelId}/unassigned")
     public ResponseEntity<List<AccrualResponse>> getUnassignedByHotelId(
-            @PathVariable Long hotelId
+            @PathVariable @Positive Long hotelId
     ) {
         return ResponseEntity.ok(
                 accrualService.getUnassignedByHotelId(hotelId)
@@ -59,7 +63,7 @@ public class AccrualController {
 
     @GetMapping("/reservation/{reservationId}/unassigned")
     public ResponseEntity<List<AccrualResponse>> getUnassignedByReservationId(
-            @PathVariable Long reservationId
+            @PathVariable @Positive Long reservationId
     ) {
         return ResponseEntity.ok(
                 accrualService.getUnassignedByReservationId(reservationId)
@@ -68,7 +72,7 @@ public class AccrualController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         accrualService.delete(id);
         return ResponseEntity.noContent().build();

@@ -1,8 +1,15 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.ReservationFinancialCorrectionType;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -10,6 +17,7 @@ import java.util.List;
 public record ReservationFinancialCorrectionRequest(
 
         @NotNull
+        @Positive
         Long accrualId,
 
         @NotNull
@@ -21,7 +29,7 @@ public record ReservationFinancialCorrectionRequest(
         ReservationFinancialCorrectionType type,
 
         @NotEmpty
-        List<@Valid PaymentCorrectionAllocationRequest> payments,
+        List<@NotNull @Valid PaymentCorrectionAllocationRequest> payments,
 
         @NotBlank
         @Size(max = 255)

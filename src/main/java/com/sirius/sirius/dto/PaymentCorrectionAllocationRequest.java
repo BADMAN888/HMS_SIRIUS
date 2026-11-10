@@ -1,14 +1,17 @@
+
 package com.sirius.sirius.dto;
 
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
 
 public record PaymentCorrectionAllocationRequest(
 
         @NotNull
+        @Positive
         Long paymentId,
 
         @NotNull

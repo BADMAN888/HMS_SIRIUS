@@ -1,24 +1,28 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.HotelRequest;
 import com.sirius.sirius.dto.HotelResponse;
 import com.sirius.sirius.service.hotel.HotelService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/hotels")
 @RequiredArgsConstructor
+@Validated
 public class HotelController {
 
     private final HotelService hotelService;
 
     @GetMapping("/{id}")
     public ResponseEntity<HotelResponse> getHotelById(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         return ResponseEntity.ok(
                 hotelService.getHotelById(id)
@@ -47,19 +51,21 @@ public class HotelController {
 
     @PutMapping("/{id}")
     public ResponseEntity<HotelResponse> updateHotel(
-            @PathVariable Long id,
+            @PathVariable @Positive Long id,
             @Valid @RequestBody HotelRequest request
     ) {
         return ResponseEntity.ok(
-                hotelService.updateHotel(id, request )
+                hotelService.updateHotel(id, request)
         );
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteHotel(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         hotelService.deleteHotel(id);
-        return ResponseEntity.ok("Hotel with id: " + id + " successfully deleted");
+        return ResponseEntity.ok(
+                "Hotel with id: " + id + " successfully deleted"
+        );
     }
 }

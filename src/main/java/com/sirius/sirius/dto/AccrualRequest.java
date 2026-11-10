@@ -8,11 +8,25 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record AccrualRequest(
-        @NotNull Long facilityId,
+
+        @NotNull
+        @Positive
+        Long facilityId,
+
+        @Positive
         Long reservationId,
+
+        @Positive
         Long recipientId,
+
+        @Positive
         Long folioId,
-        @NotNull LocalDate serviceDate,
-        @NotNull @Positive BigDecimal quantity
+
+        @NotNull
+        LocalDate serviceDate,
+
+        @NotNull
+        @Positive
+        BigDecimal quantity
 ) {
 }

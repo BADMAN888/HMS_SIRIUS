@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.RoomRequest;
@@ -6,8 +7,10 @@ import com.sirius.sirius.dto.RoomStatusRequest;
 import com.sirius.sirius.service.hotel.RoomService;
 import com.sirius.sirius.store.enums.RoomStatus;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,13 +18,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/rooms")
 @RequiredArgsConstructor
+@Validated
 public class RoomController {
 
     private final RoomService roomService;
 
     @GetMapping("/{id}")
     public ResponseEntity<RoomResponse> getById(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         return ResponseEntity.ok(
                 roomService.getById(id)
@@ -37,7 +41,7 @@ public class RoomController {
 
     @GetMapping("/hotel/{hotelId}")
     public ResponseEntity<List<RoomResponse>> getAllByHotelId(
-            @PathVariable Long hotelId
+            @PathVariable @Positive Long hotelId
     ) {
         return ResponseEntity.ok(
                 roomService.getAllByHotelId(hotelId)
@@ -46,7 +50,7 @@ public class RoomController {
 
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<List<RoomResponse>> getAllByCategoryId(
-            @PathVariable Long categoryId
+            @PathVariable @Positive Long categoryId
     ) {
         return ResponseEntity.ok(
                 roomService.getAllByCategoryId(categoryId)
@@ -55,7 +59,7 @@ public class RoomController {
 
     @GetMapping("/hotel/{hotelId}/status/{status}")
     public ResponseEntity<List<RoomResponse>> getAllByStatus(
-            @PathVariable Long hotelId,
+            @PathVariable @Positive Long hotelId,
             @PathVariable RoomStatus status
     ) {
         return ResponseEntity.ok(
@@ -74,7 +78,7 @@ public class RoomController {
 
     @PutMapping("/{id}")
     public ResponseEntity<RoomResponse> update(
-            @PathVariable Long id,
+            @PathVariable @Positive Long id,
             @Valid @RequestBody RoomRequest request
     ) {
         return ResponseEntity.ok(
@@ -84,7 +88,7 @@ public class RoomController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> delete(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         roomService.delete(id);
 
@@ -92,18 +96,20 @@ public class RoomController {
                 "Room with id: " + id + " successfully deleted"
         );
     }
+
     @PatchMapping("/{id}/status")
     public ResponseEntity<RoomResponse> updateRoomStatus(
-            @PathVariable Long id,
+            @PathVariable @Positive Long id,
             @Valid @RequestBody RoomStatusRequest request
     ) {
         return ResponseEntity.ok(
                 roomService.updateStatus(id, request)
         );
     }
+
     @GetMapping("/category/{categoryId}/status/{status}")
     public ResponseEntity<List<RoomResponse>> getAllByCategoryIdAndStatus(
-            @PathVariable Long categoryId,
+            @PathVariable @Positive Long categoryId,
             @PathVariable RoomStatus status
     ) {
         return ResponseEntity.ok(

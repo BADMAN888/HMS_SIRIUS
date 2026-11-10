@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.ReservationCheckInResponse;
@@ -14,9 +15,11 @@ import com.sirius.sirius.service.reservation.ReservationLifecycleService;
 import com.sirius.sirius.service.reservation.ReservationService;
 import com.sirius.sirius.store.enums.ReservationStatus;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -25,6 +28,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/reservations")
 @RequiredArgsConstructor
+@Validated
 public class ReservationController {
 
     private final ReservationService reservationService;
@@ -43,7 +47,7 @@ public class ReservationController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ReservationResponse> getById(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         return ResponseEntity.ok(
                 reservationService.getById(id)
@@ -68,7 +72,7 @@ public class ReservationController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ReservationResponse> update(
-            @PathVariable Long id,
+            @PathVariable @Positive Long id,
             @Valid @RequestBody ReservationRequest request
     ) {
         return ResponseEntity.ok(
@@ -78,7 +82,7 @@ public class ReservationController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         lifecycleService.cancel(id);
         return ResponseEntity.noContent().build();
@@ -86,7 +90,7 @@ public class ReservationController {
 
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<Void> cancel(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         lifecycleService.cancel(id);
         return ResponseEntity.noContent().build();
@@ -94,7 +98,7 @@ public class ReservationController {
 
     @PatchMapping("/{id}/check-in")
     public ResponseEntity<Void> checkIn(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         lifecycleService.checkIn(id);
         return ResponseEntity.noContent().build();
@@ -102,7 +106,7 @@ public class ReservationController {
 
     @PatchMapping("/{id}/check-out")
     public ResponseEntity<Void> checkOut(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         lifecycleService.checkOut(id);
         return ResponseEntity.noContent().build();
@@ -110,7 +114,7 @@ public class ReservationController {
 
     @PatchMapping("/{id}/no-show")
     public ResponseEntity<Void> noShow(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         lifecycleService.noShow(id);
         return ResponseEntity.noContent().build();
@@ -155,7 +159,7 @@ public class ReservationController {
 
     @GetMapping("/{id}/comments")
     public ResponseEntity<List<ReservationCommentResponse>> getComments(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         return ResponseEntity.ok(
                 commentService.getAll(id)
@@ -164,7 +168,7 @@ public class ReservationController {
 
     @PostMapping("/{id}/comments")
     public ResponseEntity<ReservationCommentResponse> createComment(
-            @PathVariable Long id,
+            @PathVariable @Positive Long id,
             @Valid @RequestBody ReservationCommentRequest request
     ) {
         return ResponseEntity
@@ -174,8 +178,8 @@ public class ReservationController {
 
     @PutMapping("/{id}/comments/{commentId}")
     public ResponseEntity<ReservationCommentResponse> updateComment(
-            @PathVariable Long id,
-            @PathVariable Long commentId,
+            @PathVariable @Positive Long id,
+            @PathVariable @Positive Long commentId,
             @Valid @RequestBody ReservationCommentRequest request
     ) {
         return ResponseEntity.ok(
@@ -185,15 +189,18 @@ public class ReservationController {
 
     @DeleteMapping("/{id}/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(
-            @PathVariable Long id,
-            @PathVariable Long commentId
+            @PathVariable @Positive Long id,
+            @PathVariable @Positive Long commentId
     ) {
         commentService.delete(id, commentId);
         return ResponseEntity.noContent().build();
     }
+
     @GetMapping("/{id}/included-breakfasts")
     public ResponseEntity<List<ReservationIncludedBreakfastResponse>>
-    getIncludedBreakfasts(@PathVariable Long id) {
+    getIncludedBreakfasts(
+            @PathVariable @Positive Long id
+    ) {
         return ResponseEntity.ok(
                 includedBreakfastService.getAll(id)
         );
@@ -202,8 +209,8 @@ public class ReservationController {
     @PatchMapping("/{id}/included-breakfasts/{breakfastId}/served")
     public ResponseEntity<ReservationIncludedBreakfastResponse>
     updateIncludedBreakfastServed(
-            @PathVariable Long id,
-            @PathVariable Long breakfastId,
+            @PathVariable @Positive Long id,
+            @PathVariable @Positive Long breakfastId,
             @Valid @RequestBody ReservationIncludedBreakfastServedRequest request
     ) {
         return ResponseEntity.ok(
@@ -215,4 +222,3 @@ public class ReservationController {
         );
     }
 }
-

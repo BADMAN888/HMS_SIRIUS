@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.OrganizationalLegalForm;
@@ -32,4 +33,3 @@ public record CompanyRequest(
 
 ) {
 }
-

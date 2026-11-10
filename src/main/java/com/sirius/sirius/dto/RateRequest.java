@@ -1,7 +1,9 @@
+
 package com.sirius.sirius.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record RateRequest(
@@ -18,6 +20,7 @@ public record RateRequest(
         String currency,
 
         @NotNull
+        @Positive
         Long categoryId,
 
         boolean active,

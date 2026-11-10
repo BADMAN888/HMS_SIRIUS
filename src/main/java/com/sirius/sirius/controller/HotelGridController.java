@@ -1,8 +1,10 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.HotelGridResponse;
 import com.sirius.sirius.service.reservation.HotelGridService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,14 +22,16 @@ public class HotelGridController {
 
     @GetMapping
     public ResponseEntity<HotelGridResponse> getGrid(
-            @RequestParam LocalDate startDate,
-            @RequestParam LocalDate endDate
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate startDate,
+
+            @RequestParam
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate endDate
     ) {
         return ResponseEntity.ok(
-                hotelGridService.getGrid(
-                        startDate,
-                        endDate
-                )
+                hotelGridService.getGrid(startDate, endDate)
         );
     }
 }

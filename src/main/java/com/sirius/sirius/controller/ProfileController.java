@@ -1,11 +1,14 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.ProfileRequest;
 import com.sirius.sirius.dto.ProfileResponse;
 import com.sirius.sirius.service.profile.ProfileService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -13,24 +16,21 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/profiles")
 @RequiredArgsConstructor
+@Validated
 public class ProfileController {
 
     private final ProfileService profileService;
 
     @GetMapping("/{id}")
     public ResponseEntity<ProfileResponse> getById(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
-        return ResponseEntity.ok(
-                profileService.getById(id)
-        );
+        return ResponseEntity.ok(profileService.getById(id));
     }
 
     @GetMapping
     public ResponseEntity<List<ProfileResponse>> getAll() {
-        return ResponseEntity.ok(
-                profileService.getAll()
-        );
+        return ResponseEntity.ok(profileService.getAll());
     }
 
     @PostMapping
@@ -44,7 +44,7 @@ public class ProfileController {
 
     @PutMapping("/{id}")
     public ResponseEntity<ProfileResponse> update(
-            @PathVariable Long id,
+            @PathVariable @Positive Long id,
             @Valid @RequestBody ProfileRequest request
     ) {
         return ResponseEntity.ok(
@@ -54,7 +54,7 @@ public class ProfileController {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> delete(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         profileService.delete(id);
 

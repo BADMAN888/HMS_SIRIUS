@@ -1,12 +1,15 @@
+
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.CompanyRequest;
 import com.sirius.sirius.dto.CompanyResponse;
 import com.sirius.sirius.service.CompanyService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -14,6 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/companies")
 @RequiredArgsConstructor
+@Validated
 public class CompanyController {
 
     private final CompanyService companyService;
@@ -36,14 +40,14 @@ public class CompanyController {
 
     @GetMapping("/{id}")
     public ResponseEntity<CompanyResponse> findById(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         return ResponseEntity.ok(companyService.findById(id));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<CompanyResponse> update(
-            @PathVariable Long id,
+            @PathVariable @Positive Long id,
             @Valid @RequestBody CompanyRequest request
     ) {
         return ResponseEntity.ok(companyService.update(id, request));
@@ -51,7 +55,7 @@ public class CompanyController {
 
     @PatchMapping("/{id}/deactivate")
     public ResponseEntity<Void> deactivate(
-            @PathVariable Long id
+            @PathVariable @Positive Long id
     ) {
         companyService.deactivate(id);
         return ResponseEntity.noContent().build();
