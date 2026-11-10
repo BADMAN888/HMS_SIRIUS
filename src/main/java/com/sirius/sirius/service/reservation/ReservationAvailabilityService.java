@@ -1,7 +1,8 @@
 package com.sirius.sirius.service.reservation;
 
-import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.ReservationConflictException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.enums.ReservationStatus;
@@ -10,7 +11,6 @@ import com.sirius.sirius.store.repository.RoomUnavailabilityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -94,19 +94,19 @@ public class ReservationAvailabilityService {
             LocalDateTime checkOut
     ) {
         if (checkIn == null || checkOut == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Check-in and check-out dates are required"
             );
         }
 
         if (!checkOut.isAfter(checkIn)) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Check-out must be after check-in"
             );
         }
 
         if (!checkOut.toLocalDate().isAfter(checkIn.toLocalDate())) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Reservation must contain at least one night"
             );
         }
@@ -114,19 +114,20 @@ public class ReservationAvailabilityService {
 
     private void validateRoomCategoryHotel(RoomEntity room) {
         if (room == null
+                || room.getId() == null
                 || room.getHotel() == null
                 || room.getHotel().getId() == null
                 || room.getCategory() == null
                 || room.getCategory().getHotel() == null
                 || room.getCategory().getHotel().getId() == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Room and its category must belong to a hotel"
             );
         }
 
         if (!room.getHotel().getId()
                 .equals(room.getCategory().getHotel().getId())) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Room category must belong to the same hotel as the room"
             );
         }
@@ -134,11 +135,11 @@ public class ReservationAvailabilityService {
 
     private void validateRate(RateEntity rate) {
         if (rate == null) {
-            throw new BadRequestException("Rate must be specified");
+            throw new ValidationException("Rate must be specified");
         }
 
         if (!rate.isActive()) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Rate with id: " + rate.getId() + " is inactive"
             );
         }
@@ -150,15 +151,17 @@ public class ReservationAvailabilityService {
     ) {
         if (rate == null || room == null
                 || rate.getCategory() == null
-                || room.getCategory() == null) {
-            throw new BadRequestException(
+                || room.getCategory() == null
+                || rate.getCategory().getId() == null
+                || room.getCategory().getId() == null) {
+            throw new ValidationException(
                     "Rate and room category must be specified"
             );
         }
 
         if (!rate.getCategory().getId()
                 .equals(room.getCategory().getId())) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Rate does not belong to the selected room category"
             );
         }
@@ -173,14 +176,14 @@ public class ReservationAvailabilityService {
                 || adults == null || children == null
                 || adults < 0 || children < 0
                 || adults + children <= 0) {
-            throw new BadRequestException("Invalid room occupancy");
+            throw new ValidationException("Invalid room occupancy");
         }
 
         int guests = adults + children;
         int capacity = room.getCategory().getCountOfBeds();
 
         if (guests > capacity) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Number of guests exceeds room capacity of " + capacity
             );
         }
@@ -200,7 +203,7 @@ public class ReservationAvailabilityService {
                         );
 
         if (unavailable) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Room with id: " + roomId
                             + " is unavailable during the selected period"
             );

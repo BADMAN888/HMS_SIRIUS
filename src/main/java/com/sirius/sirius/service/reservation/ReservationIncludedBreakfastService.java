@@ -1,9 +1,9 @@
-
 package com.sirius.sirius.service.reservation;
 
 import com.sirius.sirius.dto.ReservationIncludedBreakfastResponse;
-import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationIncludedBreakfastEntity;
 import com.sirius.sirius.store.repository.ReservationIncludedBreakfastRepository;
@@ -122,19 +122,19 @@ public class ReservationIncludedBreakfastService {
                         );
 
         if (breakfast.isCancelled()) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Cannot update a cancelled breakfast"
             );
         }
 
         if (servedQuantity == null || servedQuantity < 0) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Served quantity cannot be negative or null"
             );
         }
 
         if (servedQuantity > breakfast.getQuantity()) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Served quantity cannot exceed included quantity"
             );
         }

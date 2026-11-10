@@ -2,8 +2,9 @@ package com.sirius.sirius.service.hotel;
 
 import com.sirius.sirius.dto.RoomUnavailabilityRequest;
 import com.sirius.sirius.dto.RoomUnavailabilityResponse;
-import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.entity.hotel.RoomUnavailabilityEntity;
 import com.sirius.sirius.store.enums.RoomStatus;
@@ -32,15 +33,17 @@ public class RoomUnavailabilityService {
         LocalDateTime now = LocalDateTime.now();
 
         if (!request.endAt().isAfter(request.startAt())) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Repair end time must be after start time"
             );
         }
 
         RoomEntity room = roomRepository.findById(request.roomId())
-                .orElseThrow(() -> new NotFoundException(
-                        "Room with id: " + request.roomId() + " not found"
-                ));
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Room with id: " + request.roomId() + " not found"
+                        )
+                );
 
         List<RoomUnavailabilityEntity> conflicts =
                 unavailabilityRepository.findOverlappingPeriods(
@@ -50,14 +53,14 @@ public class RoomUnavailabilityService {
                 );
 
         if (!conflicts.isEmpty()) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Room already has a repair scheduled for this period"
             );
         }
 
         if (room.getStatus() == RoomStatus.OCCUPIED
                 || room.getStatus() == RoomStatus.RESERVED) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Cannot schedule repair for an occupied or reserved room"
             );
         }
@@ -98,12 +101,14 @@ public class RoomUnavailabilityService {
     public RoomUnavailabilityResponse finishEarly(Long repairId) {
         RoomUnavailabilityEntity repair =
                 unavailabilityRepository.findById(repairId)
-                        .orElseThrow(() -> new NotFoundException(
-                                "Repair with id: " + repairId + " not found"
-                        ));
+                        .orElseThrow(() ->
+                                new NotFoundException(
+                                        "Repair with id: " + repairId + " not found"
+                                )
+                        );
 
         if (repair.getCompletedAt() != null) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "This repair has already been completed"
             );
         }
@@ -111,7 +116,7 @@ public class RoomUnavailabilityService {
         LocalDateTime now = LocalDateTime.now();
 
         if (now.isBefore(repair.getStartAt())) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Cannot finish a repair that has not started"
             );
         }

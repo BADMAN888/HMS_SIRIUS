@@ -1,10 +1,9 @@
-
 package com.sirius.sirius.service.hotel;
 
 import com.sirius.sirius.dto.RoomRequest;
 import com.sirius.sirius.dto.RoomResponse;
 import com.sirius.sirius.dto.RoomStatusRequest;
-import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.RoomMapper;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
@@ -114,7 +113,7 @@ public class RoomService {
                 request.roomNumber(),
                 request.hotelId()
         )) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Room with number: " + request.roomNumber()
                             + " already exists in this hotel"
             );
@@ -162,7 +161,7 @@ public class RoomService {
                 request.roomNumber(),
                 request.hotelId()
         )) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Room with number: " + request.roomNumber()
                             + " already exists in this hotel"
             );

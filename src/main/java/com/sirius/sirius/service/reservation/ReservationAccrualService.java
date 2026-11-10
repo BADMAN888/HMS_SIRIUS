@@ -1,8 +1,8 @@
-
 package com.sirius.sirius.service.reservation;
 
-import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.service.billing.FacilityPriceService;
 import com.sirius.sirius.service.billing.PriceService;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
@@ -54,7 +54,7 @@ public class ReservationAccrualService {
                 .anyMatch(this::isCurrentAutomaticAccrual);
 
         if (alreadyCreated) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Automatic reservation accruals already exist"
             );
         }
@@ -70,7 +70,7 @@ public class ReservationAccrualService {
             LocalDate startDate
     ) {
         if (startDate == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Accrual start date must be specified"
             );
         }
@@ -100,7 +100,7 @@ public class ReservationAccrualService {
                 );
 
         if (alreadyCreated) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Automatic reservation accruals already exist "
                             + "for the requested period"
             );
@@ -113,7 +113,7 @@ public class ReservationAccrualService {
             ReservationEntity reservation
     ) {
         if (reservation == null || reservation.getId() == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Reservation must be saved before accrual creation"
             );
         }
@@ -165,8 +165,8 @@ public class ReservationAccrualService {
             );
 
             if (unitPrice == null || unitPrice.signum() < 0) {
-                throw new BadRequestException(
-                        "Accommodation price cannot be negative or null"
+                throw new ConflictException(
+                        "Accommodation price configuration is invalid"
                 );
             }
 
@@ -235,8 +235,8 @@ public class ReservationAccrualService {
                     .price();
 
             if (unitPrice == null || unitPrice.signum() <= 0) {
-                throw new BadRequestException(
-                        "Tourist tax price must be greater than zero"
+                throw new ConflictException(
+                        "Tourist tax price configuration is invalid"
                 );
             }
 
@@ -316,34 +316,34 @@ public class ReservationAccrualService {
         if (reservation.getRoom() == null
                 || reservation.getRoom().getHotel() == null
                 || reservation.getRoom().getHotel().getId() == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Reservation room and hotel must be specified"
             );
         }
 
         if (reservation.getRate() == null
                 || reservation.getRate().getId() == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Reservation rate must be specified"
             );
         }
 
         if (reservation.getCheckIn() == null
                 || reservation.getCheckOut() == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Reservation check-in and check-out must be specified"
             );
         }
 
         if (reservation.getAdults() == null
                 || reservation.getChildren() == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Reservation guest count must be specified"
             );
         }
 
         if (reservation.getAdults() + reservation.getChildren() <= 0) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Reservation must have at least one guest"
             );
         }
@@ -351,7 +351,7 @@ public class ReservationAccrualService {
         if (!reservation.getCheckOut().isAfter(
                 reservation.getCheckIn()
         )) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Check-out must be after check-in"
             );
         }

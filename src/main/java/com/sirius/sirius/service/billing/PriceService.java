@@ -2,9 +2,9 @@ package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.PriceRequest;
 import com.sirius.sirius.dto.PriceResponse;
-import com.sirius.sirius.exeption.BadRequestException;
 import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.mappers.PriceMapper;
 import com.sirius.sirius.store.entity.biling.PriceEntity;
 import com.sirius.sirius.store.entity.biling.RateEntity;
@@ -117,7 +117,7 @@ public class PriceService {
         findRate(rateId);
 
         if (date == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Price date must be specified"
             );
         }
@@ -144,7 +144,7 @@ public class PriceService {
 
     private RateEntity findRate(Long id) {
         if (id == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Rate id must be specified"
             );
         }
@@ -159,7 +159,7 @@ public class PriceService {
 
     private RateEntity findRateForUpdate(Long id) {
         if (id == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Rate id must be specified"
             );
         }
@@ -174,7 +174,7 @@ public class PriceService {
 
     private void validateRequest(PriceRequest request) {
         if (request == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Price request must be specified"
             );
         }
@@ -189,7 +189,7 @@ public class PriceService {
 
     private void validatePrice(BigDecimal price) {
         if (price == null || price.signum() <= 0) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Price must be greater than zero"
             );
         }
@@ -197,7 +197,7 @@ public class PriceService {
         try {
             price.setScale(2, RoundingMode.UNNECESSARY);
         } catch (ArithmeticException exception) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Price cannot have more than 2 decimal places"
             );
         }
@@ -208,13 +208,13 @@ public class PriceService {
             LocalDate validTo
     ) {
         if (validFrom == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Price start date is required"
             );
         }
 
         if (validTo != null && validTo.isBefore(validFrom)) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Price end date cannot be before start date"
             );
         }

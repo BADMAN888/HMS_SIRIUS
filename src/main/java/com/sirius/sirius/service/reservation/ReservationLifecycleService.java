@@ -1,6 +1,7 @@
 package com.sirius.sirius.service.reservation;
 
-import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.exeption.ConflictException;
+import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.service.billing.FolioService;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
@@ -33,7 +34,7 @@ public class ReservationLifecycleService {
 
         if (reservation.getStatus() != ReservationStatus.RESERVED
                 && reservation.getStatus() != ReservationStatus.CONFIRMED) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Reservation cannot be cancelled in status: "
                             + reservation.getStatus()
             );
@@ -49,7 +50,7 @@ public class ReservationLifecycleService {
 
         if (reservation.getStatus() != ReservationStatus.RESERVED
                 && reservation.getStatus() != ReservationStatus.CONFIRMED) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Reservation cannot be checked in from status: "
                             + reservation.getStatus()
             );
@@ -58,13 +59,13 @@ public class ReservationLifecycleService {
         LocalDateTime now = LocalDateTime.now(clock);
 
         if (now.isBefore(reservation.getCheckIn())) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Reservation check-in time has not arrived yet"
             );
         }
 
         if (!now.isBefore(reservation.getCheckOut())) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Reservation check-out time has already arrived"
             );
         }
@@ -73,7 +74,7 @@ public class ReservationLifecycleService {
 
         if (room.getStatus() != RoomStatus.AVAILABLE
                 && room.getStatus() != RoomStatus.RESERVED) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Room cannot be checked in. Current status: "
                             + room.getStatus()
             );
@@ -87,7 +88,7 @@ public class ReservationLifecycleService {
         ReservationEntity reservation = findByIdForUpdate(id);
 
         if (reservation.getStatus() != ReservationStatus.IN_HOUSE) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Reservation cannot be checked out from status: "
                             + reservation.getStatus()
             );
@@ -108,7 +109,7 @@ public class ReservationLifecycleService {
 
         if (reservation.getStatus() != ReservationStatus.RESERVED
                 && reservation.getStatus() != ReservationStatus.CONFIRMED) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Reservation cannot be marked as no-show from status: "
                             + reservation.getStatus()
             );
@@ -117,7 +118,7 @@ public class ReservationLifecycleService {
         LocalDateTime now = LocalDateTime.now(clock);
 
         if (now.isBefore(reservation.getCheckIn())) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Reservation check-in time has not arrived yet"
             );
         }
@@ -147,9 +148,13 @@ public class ReservationLifecycleService {
     }
 
     private ReservationEntity findByIdForUpdate(Long id) {
+        if (id == null) {
+            throw new NotFoundException("Reservation not found");
+        }
+
         return reservationRepository.findByIdForUpdate(id)
                 .orElseThrow(() ->
-                        new BadRequestException(
+                        new NotFoundException(
                                 "Reservation with id: " + id + " not found"
                         )
                 );

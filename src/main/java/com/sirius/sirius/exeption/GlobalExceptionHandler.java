@@ -1,16 +1,22 @@
+
 package com.sirius.sirius.exeption;
 
-import jakarta.validation.ConstraintViolationException;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.web.HttpMediaTypeNotAcceptableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -24,11 +30,7 @@ public class GlobalExceptionHandler {
             ValidationException ex,
             HttpServletRequest request
     ) {
-        return build(
-                HttpStatus.BAD_REQUEST,
-                ex.getMessage(),
-                request
-        );
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(NotFoundException.class)
@@ -36,11 +38,7 @@ public class GlobalExceptionHandler {
             NotFoundException ex,
             HttpServletRequest request
     ) {
-        return build(
-                HttpStatus.NOT_FOUND,
-                ex.getMessage(),
-                request
-        );
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(ConflictException.class)
@@ -48,11 +46,7 @@ public class GlobalExceptionHandler {
             ConflictException ex,
             HttpServletRequest request
     ) {
-        return build(
-                HttpStatus.CONFLICT,
-                ex.getMessage(),
-                request
-        );
+        return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(UnauthorizedException.class)
@@ -60,11 +54,7 @@ public class GlobalExceptionHandler {
             UnauthorizedException ex,
             HttpServletRequest request
     ) {
-        return build(
-                HttpStatus.UNAUTHORIZED,
-                ex.getMessage(),
-                request
-        );
+        return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
     @ExceptionHandler(ForbiddenException.class)
@@ -72,11 +62,7 @@ public class GlobalExceptionHandler {
             ForbiddenException ex,
             HttpServletRequest request
     ) {
-        return build(
-                HttpStatus.FORBIDDEN,
-                ex.getMessage(),
-                request
-        );
+        return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
     @ExceptionHandler(AuthenticationException.class)
@@ -116,11 +102,11 @@ public class GlobalExceptionHandler {
                 )
                 .collect(Collectors.joining(", "));
 
-        return build(
-                HttpStatus.BAD_REQUEST,
-                message,
-                request
-        );
+        if (message.isBlank()) {
+            message = "Request validation failed";
+        }
+
+        return build(HttpStatus.BAD_REQUEST, message, request);
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
@@ -136,9 +122,29 @@ public class GlobalExceptionHandler {
                 )
                 .collect(Collectors.joining(", "));
 
+        return build(HttpStatus.BAD_REQUEST, message, request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException ex,
+            HttpServletRequest request
+    ) {
         return build(
                 HttpStatus.BAD_REQUEST,
-                message,
+                "Invalid value for parameter: " + ex.getName(),
+                request
+        );
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParameter(
+            MissingServletRequestParameterException ex,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.BAD_REQUEST,
+                "Required parameter is missing: " + ex.getParameterName(),
                 request
         );
     }
@@ -151,6 +157,42 @@ public class GlobalExceptionHandler {
         return build(
                 HttpStatus.BAD_REQUEST,
                 "Request body is missing or malformed",
+                request
+        );
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMethodNotSupported(
+            HttpRequestMethodNotSupportedException ex,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.METHOD_NOT_ALLOWED,
+                "HTTP method is not supported for this endpoint",
+                request
+        );
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ErrorResponse> handleMediaTypeNotSupported(
+            HttpMediaTypeNotSupportedException ex,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                "Request media type is not supported",
+                request
+        );
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotAcceptableException.class)
+    public ResponseEntity<ErrorResponse> handleMediaTypeNotAcceptable(
+            HttpMediaTypeNotAcceptableException ex,
+            HttpServletRequest request
+    ) {
+        return build(
+                HttpStatus.NOT_ACCEPTABLE,
+                "Requested response media type is not available",
                 request
         );
     }

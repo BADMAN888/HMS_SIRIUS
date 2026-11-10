@@ -1,8 +1,7 @@
-
 package com.sirius.sirius.service.reservation;
 
-import com.sirius.sirius.exeption.BadRequestException;
 import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
 import com.sirius.sirius.store.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
@@ -20,12 +19,18 @@ public class ReservationGuestService {
 
     public Set<ProfileEntity> findGuests(Set<Long> guestIds) {
         if (guestIds == null || guestIds.isEmpty()) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Reservation must have at least one guest"
             );
         }
 
         Set<Long> uniqueGuestIds = new HashSet<>(guestIds);
+
+        if (uniqueGuestIds.contains(null)) {
+            throw new ValidationException(
+                    "Guest ids cannot contain null values"
+            );
+        }
 
         List<ProfileEntity> guests =
                 profileRepository.findAllById(uniqueGuestIds);
@@ -44,8 +49,14 @@ public class ReservationGuestService {
             Set<ProfileEntity> guests
     ) {
         if (primaryGuestId == null) {
-            throw new BadRequestException(
+            throw new ValidationException(
                     "Primary guest must be specified"
+            );
+        }
+
+        if (guests == null || guests.isEmpty()) {
+            throw new ValidationException(
+                    "Reservation must have at least one guest"
             );
         }
 
@@ -53,7 +64,7 @@ public class ReservationGuestService {
                 .filter(guest -> guest.getId().equals(primaryGuestId))
                 .findFirst()
                 .orElseThrow(() ->
-                        new BadRequestException(
+                        new ValidationException(
                                 "Primary guest must belong to reservation guests"
                         )
                 );

@@ -2,7 +2,7 @@ package com.sirius.sirius.service.hotel;
 
 import com.sirius.sirius.dto.RoomCategoryRequest;
 import com.sirius.sirius.dto.RoomCategoryResponse;
-import com.sirius.sirius.exeption.BadRequestException;
+import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.RoomCategoryMapper;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
@@ -57,7 +57,6 @@ public class RoomCategoryService {
 
     @Transactional
     public RoomCategoryResponse create(RoomCategoryRequest request) {
-
         HotelEntity hotel = hotelRepository.findById(request.hotelId())
                 .orElseThrow(() ->
                         new NotFoundException(
@@ -69,15 +68,13 @@ public class RoomCategoryService {
                 request.name(),
                 request.hotelId()
         )) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Room category with name: " + request.name()
                             + " already exists in this hotel"
             );
         }
 
-        RoomCategoryEntity category =
-                roomCategoryMapper.toEntity(request);
-
+        RoomCategoryEntity category = roomCategoryMapper.toEntity(request);
         category.setHotel(hotel);
 
         RoomCategoryEntity savedCategory =
@@ -111,7 +108,7 @@ public class RoomCategoryService {
                 request.name(),
                 request.hotelId()
         )) {
-            throw new BadRequestException(
+            throw new ConflictException(
                     "Room category with name: " + request.name()
                             + " already exists in this hotel"
             );
@@ -130,7 +127,6 @@ public class RoomCategoryService {
 
     @Transactional
     public void delete(Long id) {
-
         RoomCategoryEntity category = roomCategoryRepository.findById(id)
                 .orElseThrow(() ->
                         new NotFoundException(
