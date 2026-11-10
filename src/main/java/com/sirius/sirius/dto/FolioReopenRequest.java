@@ -1,4 +1,3 @@
-
 package com.sirius.sirius.dto;
 
 import jakarta.validation.constraints.NotBlank;

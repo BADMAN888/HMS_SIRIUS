@@ -37,7 +37,6 @@ public class ReservationService {
 
     private final ReservationAvailabilityService availabilityService;
     private final ReservationAccrualService accrualService;
-    private final ReservationChargeRecalculationService chargeRecalculationService;
     private final ReservationGuestService guestService;
     private final ReservationValidationService validationService;
     private final ReservationIncludedBreakfastService includedBreakfastService;
@@ -142,12 +141,6 @@ public class ReservationService {
                 paymentCategory
         );
 
-        var sourceCompany =
-                validationService.findCompany(request.sourceCompanyId());
-
-        var operatorCompany =
-                validationService.findCompany(request.operatorCompanyId());
-
         boolean keepCurrentRate = reservation.getRate()
                 .getId()
                 .equals(rate.getId());
@@ -162,6 +155,12 @@ public class ReservationService {
                 request.checkOut(),
                 keepCurrentRate
         );
+
+        var sourceCompany =
+                validationService.findCompany(request.sourceCompanyId());
+
+        var operatorCompany =
+                validationService.findCompany(request.operatorCompanyId());
 
         Set<ProfileEntity> guests =
                 guestService.findGuests(request.guestIds());
@@ -180,8 +179,6 @@ public class ReservationService {
         reservation.setOperatorCompany(operatorCompany);
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
-
-        chargeRecalculationService.recalculate(reservation);
 
         includedBreakfastService.synchronize(reservation);
 

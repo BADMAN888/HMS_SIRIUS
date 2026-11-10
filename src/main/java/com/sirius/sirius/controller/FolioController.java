@@ -1,5 +1,6 @@
 package com.sirius.sirius.controller;
 
+import com.sirius.sirius.dto.FolioReopenRequest;
 import com.sirius.sirius.dto.FolioRequest;
 import com.sirius.sirius.dto.FolioResponse;
 import com.sirius.sirius.service.billing.FolioService;
@@ -80,5 +81,14 @@ public class FolioController {
     ) {
         folioService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+    @PatchMapping("/{id}/reopen")
+    public ResponseEntity<FolioResponse> reopen(
+            @PathVariable Long id,
+            @Valid @RequestBody FolioReopenRequest request
+    ) {
+        return ResponseEntity.ok(
+                folioService.reopen(id, request.reason())
+        );
     }
 }
