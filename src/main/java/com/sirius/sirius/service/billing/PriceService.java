@@ -225,13 +225,20 @@ public class PriceService {
             LocalDate validFrom,
             LocalDate validTo
     ) {
-        if (priceRepository.existsOverlappingPrice(
+        boolean overlapping = validTo == null
+                ? priceRepository.existsOverlappingPriceWithoutEndDate(
+                rateId,
+                validFrom
+        )
+                : priceRepository.existsOverlappingPriceWithEndDate(
                 rateId,
                 validFrom,
                 validTo
-        )) {
+        );
+
+        if (overlapping) {
             throw new ConflictException(
-                    "Price period overlaps an existing price period"
+                    "Price period overlaps with an existing price"
             );
         }
     }

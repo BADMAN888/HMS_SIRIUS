@@ -22,12 +22,23 @@ public interface PriceRepository
             FROM PriceEntity rp
             WHERE rp.rate.id = :rateId
               AND (rp.validTo IS NULL OR rp.validTo >= :validFrom)
-              AND (:validTo IS NULL OR rp.validFrom <= :validTo)
+              AND rp.validFrom <= :validTo
             """)
-    boolean existsOverlappingPrice(
+    boolean existsOverlappingPriceWithEndDate(
             @Param("rateId") Long rateId,
             @Param("validFrom") LocalDate validFrom,
             @Param("validTo") LocalDate validTo
+    );
+
+    @Query("""
+            SELECT COUNT(rp) > 0
+            FROM PriceEntity rp
+            WHERE rp.rate.id = :rateId
+              AND (rp.validTo IS NULL OR rp.validTo >= :validFrom)
+            """)
+    boolean existsOverlappingPriceWithoutEndDate(
+            @Param("rateId") Long rateId,
+            @Param("validFrom") LocalDate validFrom
     );
 
     @Query("""
@@ -42,5 +53,4 @@ public interface PriceRepository
             @Param("rateId") Long rateId,
             @Param("date") LocalDate date
     );
-
 }
