@@ -1,3 +1,4 @@
+
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.FacilityPriceRequest;
@@ -154,11 +155,15 @@ public class FacilityPriceService {
             LocalDate validFrom,
             LocalDate validTo
     ) {
-        boolean overlapping = facilityPriceRepository.existsOverlappingPrice(
+        boolean overlapping = validTo == null
+                ? facilityPriceRepository.existsOverlappingPriceWithoutEndDate(
+                facilityId,
+                validFrom
+        )
+                : facilityPriceRepository.existsOverlappingPriceWithEndDate(
                 facilityId,
                 validFrom,
-                validTo,
-                null
+                validTo
         );
 
         if (overlapping) {

@@ -9,23 +9,35 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.List;
 
-public interface FacilityPriceRepository extends JpaRepository<FacilityPriceEntity, Long> {
+public interface FacilityPriceRepository
+        extends JpaRepository<FacilityPriceEntity, Long> {
 
-    List<FacilityPriceEntity> findAllByFacilityIdOrderByValidFromDesc(Long facilityId);
+    List<FacilityPriceEntity> findAllByFacilityIdOrderByValidFromDesc(
+            Long facilityId
+    );
 
     @Query("""
             SELECT COUNT(fp) > 0
             FROM FacilityPriceEntity fp
             WHERE fp.facility.id = :facilityId
-              AND (:excludeId IS NULL OR fp.id <> :excludeId)
               AND (fp.validTo IS NULL OR fp.validTo >= :validFrom)
-              AND (:validTo IS NULL OR fp.validFrom <= :validTo)
+              AND fp.validFrom <= :validTo
             """)
-    boolean existsOverlappingPrice(
+    boolean existsOverlappingPriceWithEndDate(
             @Param("facilityId") Long facilityId,
             @Param("validFrom") LocalDate validFrom,
-            @Param("validTo") LocalDate validTo,
-            @Param("excludeId") Long excludeId
+            @Param("validTo") LocalDate validTo
+    );
+
+    @Query("""
+            SELECT COUNT(fp) > 0
+            FROM FacilityPriceEntity fp
+            WHERE fp.facility.id = :facilityId
+              AND (fp.validTo IS NULL OR fp.validTo >= :validFrom)
+            """)
+    boolean existsOverlappingPriceWithoutEndDate(
+            @Param("facilityId") Long facilityId,
+            @Param("validFrom") LocalDate validFrom
     );
 
     @Query("""

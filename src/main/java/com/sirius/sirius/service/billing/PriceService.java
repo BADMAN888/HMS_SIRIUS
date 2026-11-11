@@ -8,6 +8,7 @@ import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.mappers.PriceMapper;
 import com.sirius.sirius.store.entity.biling.PriceEntity;
 import com.sirius.sirius.store.entity.biling.RateEntity;
+import com.sirius.sirius.store.repository.FacilityPriceRepository;
 import com.sirius.sirius.store.repository.PriceRepository;
 import com.sirius.sirius.store.repository.RateRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class PriceService {
     private final RateRepository rateRepository;
     private final PriceMapper priceMapper;
     private final Clock clock;
+    private final FacilityPriceRepository facilityPriceRepository;
 
     @Transactional
     public PriceResponse create(PriceRequest request) {
@@ -221,25 +223,26 @@ public class PriceService {
     }
 
     private void validateNoOverlappingPrice(
-            Long rateId,
+            Long facilityId,
             LocalDate validFrom,
             LocalDate validTo
     ) {
         boolean overlapping = validTo == null
-                ? priceRepository.existsOverlappingPriceWithoutEndDate(
-                rateId,
+                ? facilityPriceRepository.existsOverlappingPriceWithoutEndDate(
+                facilityId,
                 validFrom
         )
-                : priceRepository.existsOverlappingPriceWithEndDate(
-                rateId,
+                : facilityPriceRepository.existsOverlappingPriceWithEndDate(
+                facilityId,
                 validFrom,
                 validTo
         );
 
         if (overlapping) {
             throw new ConflictException(
-                    "Price period overlaps with an existing price"
+                    "Період дії ціни перетинається з уже наявним періодом"
             );
         }
     }
+
 }
