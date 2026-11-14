@@ -6,8 +6,8 @@ POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "email": "http-test@sirius.com",
-  "password": "TestPassword123!"
+  "email": "test@sirius.com",
+  "password": "Password123"
 }
 
 > {%
@@ -27,8 +27,8 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "http-test@sirius.com",
-  "password": "TestPassword123!"
+  "email": "test@sirius.com",
+  "password": "Password123"
 }
 
 > {%
