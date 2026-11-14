@@ -1,63 +1,123 @@
 
 @baseUrl = http://localhost:8080
-@companyId = {{createdCompanyId}}
+@profileId = {{createdProfileId}}
 
-### 1. CREATE COMPANY
+### 1. CREATE PROFILE
 
-POST {{baseUrl}}/api/companies
+POST {{baseUrl}}/api/profiles
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "fullName": "HTTP Test Company LLC",
-  "shortName": "HTTP Test Company",
-  "edrpou": "12345678",
-  "registrationDate": "2020-01-15",
-  "organizationalLegalForm": "LLC"
+  "firstName": "HTTP",
+  "lastName": "Test",
+  "middleName": "Profile",
+  "phoneNumber": "+380991234567",
+  "email": "http.profile@sirius.com",
+  "gender": "MALE",
+  "address": "Kyiv, Ukraine"
 }
 
 > {%
-    client.test("Company created", function () {
+    client.test("Profile created", function () {
         client.assert(response.status === 201, "Expected HTTP 201");
-        client.assert(response.body.id != null, "Company ID is missing");
+        client.assert(response.body.id != null, "Profile ID is missing");
+        client.assert(response.body.firstName === "HTTP", "Incorrect first name");
     });
 
-    client.global.set("createdCompanyId", response.body.id);
+    client.global.set("createdProfileId", response.body.id);
 %}
 
 ###
 
-### 2. GET ALL COMPANIES
+### 2. GET ALL PROFILES
 
-GET {{baseUrl}}/api/companies
+GET {{baseUrl}}/api/profiles
 Authorization: Bearer {{token}}
+
+> {%
+    client.test("Profiles retrieved", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(Array.isArray(response.body), "Expected an array");
+    });
+%}
 
 ###
 
-### 3. GET COMPANY BY ID
+### 3. GET PROFILE BY ID
 
-GET {{baseUrl}}/api/companies/{{companyId}}
+GET {{baseUrl}}/api/profiles/{{profileId}}
 Authorization: Bearer {{token}}
+
+> {%
+    client.test("Profile retrieved by ID", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body.id != null, "Profile ID is missing");
+    });
+%}
 
 ###
 
-### 4. UPDATE COMPANY
+### 4. UPDATE PROFILE
 
-PUT {{baseUrl}}/api/companies/{{companyId}}
+PUT {{baseUrl}}/api/profiles/{{profileId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "fullName": "HTTP Test Company Updated LLC",
-  "shortName": "HTTP Test Updated",
-  "edrpou": "12345678",
-  "registrationDate": "2020-01-15",
-  "organizationalLegalForm": "LLC"
+  "firstName": "HTTP Updated",
+  "lastName": "Test",
+  "middleName": "Profile",
+  "phoneNumber": "+380991234567",
+  "email": "http.profile@sirius.com",
+  "gender": "MALE",
+  "address": "Updated address, Kyiv"
 }
+
+> {%
+    client.test("Profile updated", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body.firstName === "HTTP Updated", "First name was not updated");
+        client.assert(response.body.address === "Updated address, Kyiv", "Address was not updated");
+    });
+%}
 
 ###
 
-### 5. DEACTIVATE COMPANY
+### 5. GET PROFILE RESERVATIONS
 
-PATCH {{baseUrl}}/api/companies/{{companyId}}/deactivate
+GET {{baseUrl}}/api/profiles/2/reservations
 Authorization: Bearer {{token}}
+
+> {%
+    client.test("Profile reservations retrieved", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(Array.isArray(response.body), "Expected an array");
+
+        if (response.body.length > 0) {
+            const reservation = response.body[0];
+
+            client.assert(reservation.confirmationNumber != null, "Reservation number is missing");
+            client.assert(reservation.checkIn != null, "Check-in is missing");
+            client.assert(reservation.checkOut != null, "Check-out is missing");
+            client.assert(reservation.roomCategory != null, "Room category is missing");
+            client.assert(reservation.roomNumber != null, "Room number is missing");
+            client.assert(reservation.rateName != null, "Rate is missing");
+        }
+    });
+%}
+
+###
+
+### 6. DELETE PROFILE
+
+DELETE {{baseUrl}}/api/profiles/{{profileId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Profile deleted", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+    });
+
+    client.global.clear("createdProfileId");
+%}

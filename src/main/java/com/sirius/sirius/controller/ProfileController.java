@@ -2,7 +2,9 @@
 package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.ProfileRequest;
+import com.sirius.sirius.dto.ProfileReservationResponse;
 import com.sirius.sirius.dto.ProfileResponse;
+import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.service.profile.ProfileService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -60,6 +62,14 @@ public class ProfileController {
 
         return ResponseEntity.ok(
                 "Profile with id: " + id + " successfully deleted"
+        );
+    }
+    @GetMapping("/{id}/reservations")
+    public ResponseEntity<List<ProfileReservationResponse>> getReservations(
+            @PathVariable @Positive Long id
+    ) {
+        return ResponseEntity.ok(
+                profileService.getReservations(id)
         );
     }
 }

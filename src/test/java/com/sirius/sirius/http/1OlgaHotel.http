@@ -70,8 +70,8 @@ POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "test@sirius.com",
-  "password": "Password123"
+  "email": "user@gmail.com",
+  "password": "123456"
 }
 
 > {%

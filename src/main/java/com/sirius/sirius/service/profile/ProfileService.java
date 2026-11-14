@@ -1,17 +1,22 @@
 package com.sirius.sirius.service.profile;
 
 import com.sirius.sirius.dto.ProfileRequest;
+import com.sirius.sirius.dto.ProfileReservationResponse;
 import com.sirius.sirius.dto.ProfileResponse;
+import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.GuestDocumentMapper;
 import com.sirius.sirius.mappers.ProfileMapper;
+import com.sirius.sirius.mappers.ReservationMapper;
 import com.sirius.sirius.store.entity.reservation.GuestDocumentEntity;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
 import com.sirius.sirius.store.repository.GuestDocumentRepository;
 import com.sirius.sirius.store.repository.ProfileRepository;
+import com.sirius.sirius.store.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -24,6 +29,9 @@ public class ProfileService {
 
     private final ProfileMapper profileMapper;
     private final GuestDocumentMapper guestDocumentMapper;
+    private final ReservationRepository reservationRepository;
+    private final ReservationMapper reservationMapper;
+
 
     public ProfileResponse getById(Long id) {
         ProfileEntity profile = profileRepository.findById(id)
@@ -174,5 +182,26 @@ public class ProfileService {
                 );
 
         profileRepository.delete(profile);
+    }
+    @Transactional(readOnly = true)
+    public List<ProfileReservationResponse> getReservations(Long profileId) {
+        profileRepository.findById(profileId)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Profile with id: " + profileId + " not found"
+                        )
+                );
+
+        return reservationRepository.findAllByGuestProfileId(profileId)
+                .stream()
+                .map(reservation -> new ProfileReservationResponse(
+                        reservation.getConfirmationNumber(),
+                        reservation.getCheckIn(),
+                        reservation.getCheckOut(),
+                        reservation.getRoom().getCategory().getName(),
+                        reservation.getRoom().getRoomNumber(),
+                        reservation.getRate().getName()
+                ))
+                .toList();
     }
 }

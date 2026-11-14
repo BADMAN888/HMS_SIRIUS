@@ -75,4 +75,18 @@ public interface ReservationRepository
             LocalDateTime end,
             LocalDateTime start
     );
+    @Query("""
+        select distinct r
+        from ReservationEntity r
+        left join r.guests guest
+        join fetch r.room room
+        join fetch room.category
+        join fetch r.rate
+        where r.primaryGuest.id = :profileId
+           or guest.id = :profileId
+        order by r.checkIn desc
+        """)
+    List<ReservationEntity> findAllByGuestProfileId(
+            @Param("profileId") Long profileId
+    );
 }
