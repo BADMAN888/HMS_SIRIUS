@@ -3,6 +3,7 @@ package com.sirius.sirius.store.entity.reservation;
 
 import com.sirius.sirius.store.enums.DocumentType;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -15,7 +16,10 @@ import java.time.LocalDate;
         uniqueConstraints = {
                 @UniqueConstraint(
                         name = "uk_guest_document_type_number",
-                        columnNames = {"document_type", "document_number"}
+                        columnNames = {
+                                "document_type",
+                                "document_number"
+                        }
                 )
         }
 )
@@ -39,6 +43,7 @@ public class GuestDocumentEntity {
     @Column(name = "document_type", nullable = false)
     DocumentType documentType;
 
+    @NotBlank
     @Column(name = "document_number", nullable = false, length = 50)
     @Size(max = 50)
     String documentNumber;
