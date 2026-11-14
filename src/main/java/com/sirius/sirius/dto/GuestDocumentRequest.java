@@ -6,7 +6,10 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
+
 public record GuestDocumentRequest(
+
         @NotNull
         DocumentType documentType,
 
@@ -14,11 +17,14 @@ public record GuestDocumentRequest(
         @Size(max = 50)
         String documentNumber,
 
-        @NotBlank
-        @Size(max = 20)
-        String issueDate,
+        LocalDate issueDate,
+
+        LocalDate expiryDate,
+
+        @Size(max = 100)
+        String issuingAuthority,
 
         @Size(max = 20)
-        String expiryDate
+        String recordNumber
 ) {
 }

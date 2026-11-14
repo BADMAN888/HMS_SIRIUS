@@ -32,15 +32,18 @@ public class GuestDocumentController {
 
     @GetMapping
     public ResponseEntity<List<GuestDocumentResponse>> getAll() {
-        return ResponseEntity.ok(guestDocumentService.getAll());
+        return ResponseEntity.ok(
+                guestDocumentService.getAll()
+        );
     }
 
-    @PostMapping
+    @PostMapping("/profile/{profileId}")
     public ResponseEntity<GuestDocumentResponse> create(
+            @PathVariable @Positive Long profileId,
             @Valid @RequestBody GuestDocumentRequest request
     ) {
         return ResponseEntity.status(201).body(
-                guestDocumentService.create(request)
+                guestDocumentService.create(profileId, request)
         );
     }
 
@@ -55,13 +58,11 @@ public class GuestDocumentController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> delete(
+    public ResponseEntity<Void> delete(
             @PathVariable @Positive Long id
     ) {
         guestDocumentService.delete(id);
 
-        return ResponseEntity.ok(
-                "Guest document with id: " + id + " successfully deleted"
-        );
+        return ResponseEntity.noContent().build();
     }
 }

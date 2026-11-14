@@ -1,17 +1,13 @@
+
 package com.sirius.sirius.service.profile;
 
 import com.sirius.sirius.dto.ProfileRequest;
 import com.sirius.sirius.dto.ProfileReservationResponse;
 import com.sirius.sirius.dto.ProfileResponse;
-import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
-import com.sirius.sirius.mappers.GuestDocumentMapper;
 import com.sirius.sirius.mappers.ProfileMapper;
-import com.sirius.sirius.mappers.ReservationMapper;
-import com.sirius.sirius.store.entity.reservation.GuestDocumentEntity;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
-import com.sirius.sirius.store.repository.GuestDocumentRepository;
 import com.sirius.sirius.store.repository.ProfileRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,24 +18,15 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProfileService {
 
     private final ProfileRepository profileRepository;
-    private final GuestDocumentRepository guestDocumentRepository;
-
     private final ProfileMapper profileMapper;
-    private final GuestDocumentMapper guestDocumentMapper;
     private final ReservationRepository reservationRepository;
-    private final ReservationMapper reservationMapper;
-
 
     public ProfileResponse getById(Long id) {
-        ProfileEntity profile = profileRepository.findById(id)
-                .orElseThrow(() ->
-                        new NotFoundException(
-                                "Profile with id: " + id + " not found"
-                        )
-                );
+        ProfileEntity profile = findProfile(id);
 
         return profileMapper.toResponse(profile);
     }
@@ -51,146 +38,39 @@ public class ProfileService {
                 .toList();
     }
 
+    @Transactional
     public ProfileResponse create(ProfileRequest request) {
-        if (request.phoneNumber() != null
-                && profileRepository.existsByPhoneNumber(request.phoneNumber())) {
-
-            throw new ConflictException(
-                    "Profile with phone number: "
-                            + request.phoneNumber()
-                            + " already exists"
-            );
-        }
-
-        if (request.email() != null
-                && profileRepository.existsByEmail(request.email())) {
-
-            throw new ConflictException(
-                    "Profile with email: "
-                            + request.email()
-                            + " already exists"
-            );
-        }
+        validateUniqueContacts(request, null);
 
         ProfileEntity profile = profileMapper.toEntity(request);
-
-        if (request.guestDocument() != null) {
-            if (guestDocumentRepository.existsByDocumentNumber(
-                    request.guestDocument().documentNumber()
-            )) {
-                throw new ConflictException(
-                        "Guest document with number: "
-                                + request.guestDocument().documentNumber()
-                                + " already exists"
-                );
-            }
-
-            GuestDocumentEntity document =
-                    guestDocumentMapper.toEntity(request.guestDocument());
-
-            profile.setGuestDocument(document);
-        }
 
         ProfileEntity savedProfile = profileRepository.save(profile);
 
         return profileMapper.toResponse(savedProfile);
     }
 
+    @Transactional
     public ProfileResponse update(Long id, ProfileRequest request) {
-        ProfileEntity profile = profileRepository.findById(id)
-                .orElseThrow(() ->
-                        new NotFoundException(
-                                "Profile with id: " + id + " not found"
-                        )
-                );
+        ProfileEntity profile = findProfile(id);
 
-        if (request.phoneNumber() != null
-                && !request.phoneNumber().equals(profile.getPhoneNumber())
-                && profileRepository.existsByPhoneNumber(request.phoneNumber())) {
-
-            throw new ConflictException(
-                    "Profile with phone number: "
-                            + request.phoneNumber()
-                            + " already exists"
-            );
-        }
-
-        if (request.email() != null
-                && !request.email().equals(profile.getEmail())
-                && profileRepository.existsByEmail(request.email())) {
-
-            throw new ConflictException(
-                    "Profile with email: "
-                            + request.email()
-                            + " already exists"
-            );
-        }
+        validateUniqueContacts(request, profile);
 
         profileMapper.updateEntity(request, profile);
-
-        if (request.guestDocument() != null) {
-            if (profile.getGuestDocument() == null) {
-                if (guestDocumentRepository.existsByDocumentNumber(
-                        request.guestDocument().documentNumber()
-                )) {
-                    throw new ConflictException(
-                            "Guest document with number: "
-                                    + request.guestDocument().documentNumber()
-                                    + " already exists"
-                    );
-                }
-
-                GuestDocumentEntity document =
-                        guestDocumentMapper.toEntity(request.guestDocument());
-
-                profile.setGuestDocument(document);
-
-            } else {
-                GuestDocumentEntity document = profile.getGuestDocument();
-
-                if (!document.getDocumentNumber()
-                        .equals(request.guestDocument().documentNumber())
-                        && guestDocumentRepository.existsByDocumentNumber(
-                        request.guestDocument().documentNumber()
-                )) {
-
-                    throw new ConflictException(
-                            "Guest document with number: "
-                                    + request.guestDocument().documentNumber()
-                                    + " already exists"
-                    );
-                }
-
-                guestDocumentMapper.updateEntity(
-                        request.guestDocument(),
-                        document
-                );
-            }
-        }
 
         ProfileEntity updatedProfile = profileRepository.save(profile);
 
         return profileMapper.toResponse(updatedProfile);
     }
 
+    @Transactional
     public void delete(Long id) {
-        ProfileEntity profile = profileRepository.findById(id)
-                .orElseThrow(() ->
-                        new NotFoundException(
-                                "Profile with id: " + id + " not found"
-                        )
-                );
+        ProfileEntity profile = findProfile(id);
 
         profileRepository.delete(profile);
     }
-    @Transactional(readOnly = true)
+
     public List<ProfileReservationResponse> getReservations(Long profileId) {
-        profileRepository.findById(profileId)
-                .orElseThrow(() ->
-                        new NotFoundException(
-                                "Profile with id: " + profileId + " not found"
-                        )
-                );
+        findProfile(profileId);
 
         return reservationRepository.findAllByGuestProfileId(profileId)
                 .stream()
@@ -203,5 +83,49 @@ public class ProfileService {
                         reservation.getRate().getName()
                 ))
                 .toList();
+    }
+
+    private ProfileEntity findProfile(Long id) {
+        return profileRepository.findById(id)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Profile with id: " + id + " not found"
+                        )
+                );
+    }
+
+    private void validateUniqueContacts(
+            ProfileRequest request,
+            ProfileEntity existingProfile
+    ) {
+        if (request.phoneNumber() != null
+                && !request.phoneNumber().equals(
+                existingProfile == null
+                        ? null
+                        : existingProfile.getPhoneNumber()
+        )
+                && profileRepository.existsByPhoneNumber(request.phoneNumber())) {
+
+            throw new ConflictException(
+                    "Profile with phone number: "
+                            + request.phoneNumber()
+                            + " already exists"
+            );
+        }
+
+        if (request.email() != null
+                && !request.email().equals(
+                existingProfile == null
+                        ? null
+                        : existingProfile.getEmail()
+        )
+                && profileRepository.existsByEmail(request.email())) {
+
+            throw new ConflictException(
+                    "Profile with email: "
+                            + request.email()
+                            + " already exists"
+            );
+        }
     }
 }

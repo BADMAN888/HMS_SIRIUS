@@ -1,6 +1,9 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.DocumentType;
+
+import java.time.LocalDate;
 
 public record GuestDocumentResponse(
 
@@ -10,8 +13,12 @@ public record GuestDocumentResponse(
 
         String documentNumber,
 
-        String issueDate,
+        LocalDate issueDate,
 
-        String expiryDate
+        LocalDate expiryDate,
+
+        String issuingAuthority,
+
+        String recordNumber
 ) {
 }
