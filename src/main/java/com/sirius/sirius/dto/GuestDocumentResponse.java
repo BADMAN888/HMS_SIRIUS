@@ -20,5 +20,6 @@ public record GuestDocumentResponse(
         String issuingAuthority,
 
         String recordNumber
+
 ) {
 }

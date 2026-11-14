@@ -1,6 +1,11 @@
+
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.Gender;
+import com.sirius.sirius.store.enums.Nationality;
+
+import java.time.LocalDate;
+import java.util.Set;
 
 public record ProfileResponse(
 
@@ -18,8 +23,17 @@ public record ProfileResponse(
 
         Gender gender,
 
+        LocalDate dateOfBirth,
+
+        String placeOfBirth,
+
+        Nationality nationality,
+
         String address,
 
-        GuestDocumentResponse guestDocument
+        String registrationAddress,
+
+        Set<GuestDocumentResponse> guestDocuments
+
 ) {
 }

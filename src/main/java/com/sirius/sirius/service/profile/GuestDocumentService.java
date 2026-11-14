@@ -5,6 +5,7 @@ import com.sirius.sirius.dto.GuestDocumentRequest;
 import com.sirius.sirius.dto.GuestDocumentResponse;
 import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.mappers.GuestDocumentMapper;
 import com.sirius.sirius.store.entity.reservation.GuestDocumentEntity;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
@@ -43,14 +44,15 @@ public class GuestDocumentService {
             Long profileId,
             GuestDocumentRequest request
     ) {
+        validateDates(request);
+        validateUniqueDocument(request, null);
+
         ProfileEntity profile = profileRepository.findById(profileId)
                 .orElseThrow(() ->
                         new NotFoundException(
                                 "Profile with id: " + profileId + " not found"
                         )
                 );
-
-        validateUniqueDocument(request, null);
 
         GuestDocumentEntity document =
                 guestDocumentMapper.toEntity(request);
@@ -69,6 +71,8 @@ public class GuestDocumentService {
             Long id,
             GuestDocumentRequest request
     ) {
+        validateDates(request);
+
         GuestDocumentEntity document = findDocument(id);
 
         validateUniqueDocument(request, document);
@@ -95,6 +99,17 @@ public class GuestDocumentService {
                                 "Guest document with id: " + id + " not found"
                         )
                 );
+    }
+
+    private void validateDates(GuestDocumentRequest request) {
+        if (request.issueDate() != null
+                && request.expiryDate() != null
+                && request.issueDate().isAfter(request.expiryDate())) {
+
+            throw new ValidationException(
+                    "Document issue date cannot be after expiry date"
+            );
+        }
     }
 
     private void validateUniqueDocument(

@@ -26,5 +26,6 @@ public record GuestDocumentRequest(
 
         @Size(max = 20)
         String recordNumber
+
 ) {
 }

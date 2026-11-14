@@ -4,7 +4,6 @@ package com.sirius.sirius.service.profile;
 import com.sirius.sirius.dto.ProfileRequest;
 import com.sirius.sirius.dto.ProfileReservationResponse;
 import com.sirius.sirius.dto.ProfileResponse;
-import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.ProfileMapper;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
@@ -32,7 +31,7 @@ public class ProfileService {
     }
 
     public List<ProfileResponse> getAll() {
-        return profileRepository.findAll()
+        return profileRepository.findAllWithGuestDocuments()
                 .stream()
                 .map(profileMapper::toResponse)
                 .toList();
@@ -40,8 +39,6 @@ public class ProfileService {
 
     @Transactional
     public ProfileResponse create(ProfileRequest request) {
-        validateUniqueContacts(request, null);
-
         ProfileEntity profile = profileMapper.toEntity(request);
 
         ProfileEntity savedProfile = profileRepository.save(profile);
@@ -52,8 +49,6 @@ public class ProfileService {
     @Transactional
     public ProfileResponse update(Long id, ProfileRequest request) {
         ProfileEntity profile = findProfile(id);
-
-        validateUniqueContacts(request, profile);
 
         profileMapper.updateEntity(request, profile);
 
@@ -86,46 +81,11 @@ public class ProfileService {
     }
 
     private ProfileEntity findProfile(Long id) {
-        return profileRepository.findById(id)
+        return profileRepository.findByIdWithGuestDocuments(id)
                 .orElseThrow(() ->
                         new NotFoundException(
                                 "Profile with id: " + id + " not found"
                         )
                 );
-    }
-
-    private void validateUniqueContacts(
-            ProfileRequest request,
-            ProfileEntity existingProfile
-    ) {
-        if (request.phoneNumber() != null
-                && !request.phoneNumber().equals(
-                existingProfile == null
-                        ? null
-                        : existingProfile.getPhoneNumber()
-        )
-                && profileRepository.existsByPhoneNumber(request.phoneNumber())) {
-
-            throw new ConflictException(
-                    "Profile with phone number: "
-                            + request.phoneNumber()
-                            + " already exists"
-            );
-        }
-
-        if (request.email() != null
-                && !request.email().equals(
-                existingProfile == null
-                        ? null
-                        : existingProfile.getEmail()
-        )
-                && profileRepository.existsByEmail(request.email())) {
-
-            throw new ConflictException(
-                    "Profile with email: "
-                            + request.email()
-                            + " already exists"
-            );
-        }
     }
 }
