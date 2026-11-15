@@ -64,18 +64,18 @@
 ### AUTH
 ### ==================================================
 
-### LOGIN
+### REGISTER TEST USER
 
-POST {{baseUrl}}/auth/login
+POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "email": "user@gmail.com",
+  "email": "olga.{{runCode}}@gmail.com",
   "password": "123456"
 }
 
 > {%
-    client.test("Login successful", function () {
+    client.test("Test user registered", function () {
         client.assert(response.status === 200);
     });
 
@@ -1030,6 +1030,9 @@ Content-Type: application/json
   "email": "danylo.{{runCode}}@gmail.com",
   "gender": "MALE",
   "address": "Kyiv, Ukraine",
+  "comment": null,
+  "vip": false,
+  "inBlackList": false,
   "guestDocument": {
     "documentType": "ID_CARD",
     "documentNumber": "SR{{runCode}}103",
