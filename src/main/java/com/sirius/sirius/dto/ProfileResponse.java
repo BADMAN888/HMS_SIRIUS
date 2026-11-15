@@ -25,13 +25,17 @@ public record ProfileResponse(
 
         LocalDate dateOfBirth,
 
-        String placeOfBirth,
-
         Nationality nationality,
 
         String address,
 
         String registrationAddress,
+
+        String comment,
+
+        boolean vip,
+
+        boolean inBlackList,
 
         Set<GuestDocumentResponse> guestDocuments
 

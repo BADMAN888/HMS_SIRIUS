@@ -31,6 +31,13 @@ public interface ProfileRepository extends JpaRepository<ProfileEntity, Long> {
             """)
     List<ProfileEntity> findAllWithGuestDocuments();
 
+    @Query("""
+            SELECT profile
+            FROM ProfileEntity profile
+            WHERE profile.inBlackList = true OR profile.vip = true
+            """)
+    List<ProfileEntity> findAllBlacklistedOrVip();
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             SELECT profile

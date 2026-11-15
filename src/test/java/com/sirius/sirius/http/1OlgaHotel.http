@@ -960,6 +960,9 @@ Content-Type: application/json
   "email": "maksym.{{runCode}}@gmail.com",
   "gender": "MALE",
   "address": "Kyiv, Ukraine",
+  "comment": "VIP guest {{runCode}}",
+  "vip": true,
+  "inBlackList": false,
   "guestDocument": {
     "documentType": "PASSPORT",
     "documentNumber": "SR{{runCode}}101",
@@ -992,6 +995,9 @@ Content-Type: application/json
   "email": "sofia.{{runCode}}@gmail.com",
   "gender": "FEMALE",
   "address": "London, United Kingdom",
+  "comment": "Blacklisted guest {{runCode}}",
+  "vip": false,
+  "inBlackList": true,
   "guestDocument": {
     "documentType": "PASSPORT",
     "documentNumber": "SR{{runCode}}102",
@@ -1051,6 +1057,22 @@ Authorization: Bearer {{token}}
     client.test("Profiles loaded", function () {
         client.assert(response.status === 200);
         client.assert(Array.isArray(response.body));
+    });
+%}
+
+###
+
+### GET VIP AND BLACKLISTED PROFILES
+
+GET {{profileUrl}}/vip-or-blacklisted
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("VIP and blacklisted profiles loaded", function () {
+        client.assert(response.status === 200);
+        client.assert(Array.isArray(response.body));
+        client.assert(response.body.some(function (profile) { return profile.vip === true; }));
+        client.assert(response.body.some(function (profile) { return profile.inBlackList === true; }));
     });
 %}
 

@@ -55,10 +55,6 @@ public class ProfileEntity extends CustomerEntity {
     @Column(name = "date_of_birth")
     LocalDate dateOfBirth;
 
-    @Column(name = "place_of_birth", length = 150)
-    @Size(max = 150)
-    String placeOfBirth;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "nationality", length = 50)
     Nationality nationality;
@@ -70,6 +66,18 @@ public class ProfileEntity extends CustomerEntity {
     @Column(name = "registration_address", length = 250)
     @Size(max = 250)
     String registrationAddress;
+
+    @Column(name = "comment", length = 1000)
+    @Size(max = 1000)
+    String comment;
+
+    @Column(name = "vip", nullable = false)
+    @Builder.Default
+    boolean vip = false;
+
+    @Column(name = "in_black_list", nullable = false)
+    @Builder.Default
+    boolean inBlackList = false;
 
     @ManyToMany(mappedBy = "guests")
     @Builder.Default

@@ -15,7 +15,10 @@ Content-Type: application/json
   "phoneNumber": "+380991234567",
   "email": "http.profile@sirius.com",
   "gender": "MALE",
-  "address": "Kyiv, Ukraine"
+  "address": "Kyiv, Ukraine",
+  "comment": "Preferred guest",
+  "vip": true,
+  "inBlackList": false
 }
 
 > {%
@@ -23,6 +26,8 @@ Content-Type: application/json
         client.assert(response.status === 201, "Expected HTTP 201");
         client.assert(response.body.id != null, "Profile ID is missing");
         client.assert(response.body.firstName === "HTTP", "Incorrect first name");
+        client.assert(response.body.vip === true, "VIP flag was not saved");
+        client.assert(response.body.comment === "Preferred guest", "Comment was not saved");
     });
 
     client.global.set("createdProfileId", response.body.id);
@@ -39,6 +44,21 @@ Authorization: Bearer {{token}}
     client.test("Profiles retrieved", function () {
         client.assert(response.status === 200, "Expected HTTP 200");
         client.assert(Array.isArray(response.body), "Expected an array");
+    });
+%}
+
+###
+
+### 2A. GET VIP AND BLACKLISTED PROFILES
+
+GET {{baseUrl}}/api/profiles/vip-or-blacklisted
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("VIP and blacklisted profiles retrieved", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(Array.isArray(response.body), "Expected an array");
+        client.assert(response.body.some(function (profile) { return profile.vip === true; }), "VIP profile missing");
     });
 %}
 
@@ -71,7 +91,10 @@ Content-Type: application/json
   "phoneNumber": "+380991234567",
   "email": "http.profile@sirius.com",
   "gender": "MALE",
-  "address": "Updated address, Kyiv"
+  "address": "Updated address, Kyiv",
+  "comment": "Updated profile comment",
+  "vip": true,
+  "inBlackList": false
 }
 
 > {%

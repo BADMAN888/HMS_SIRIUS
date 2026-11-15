@@ -32,16 +32,20 @@ public record ProfileRequest(
 
         LocalDate dateOfBirth,
 
-        @Size(max = 150)
-        String placeOfBirth,
-
         Nationality nationality,
 
         @Size(max = 250)
         String address,
 
         @Size(max = 250)
-        String registrationAddress
+        String registrationAddress,
+
+        @Size(max = 1000)
+        String comment,
+
+        boolean vip,
+
+        boolean inBlackList
 
 ) {
 }

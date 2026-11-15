@@ -33,6 +33,11 @@ public class ProfileController {
         return ResponseEntity.ok(profileService.getAll());
     }
 
+    @GetMapping("/vip-or-blacklisted")
+    public ResponseEntity<List<ProfileResponse>> getAllBlacklistedOrVip() {
+        return ResponseEntity.ok(profileService.getAllBlacklistedOrVip());
+    }
+
     @PostMapping
     public ResponseEntity<ProfileResponse> create(
             @Valid @RequestBody ProfileRequest request

@@ -37,6 +37,13 @@ public class ProfileService {
                 .toList();
     }
 
+    public List<ProfileResponse> getAllBlacklistedOrVip() {
+        return profileRepository.findAllBlacklistedOrVip()
+                .stream()
+                .map(profileMapper::toResponse)
+                .toList();
+    }
+
     @Transactional
     public ProfileResponse create(ProfileRequest request) {
         ProfileEntity profile = profileMapper.toEntity(request);
