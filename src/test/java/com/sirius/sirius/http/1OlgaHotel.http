@@ -1072,7 +1072,7 @@ Authorization: Bearer {{token}}
 
 ### CREATE STANDALONE GUEST DOCUMENT
 
-POST {{guestDocumentUrl}}
+POST {{guestDocumentUrl}}/profile/{{profile1Id}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -1639,7 +1639,7 @@ Authorization: Bearer {{token}}
 
 ### GET RESERVATIONS BY STATUS
 
-GET {{reservationUrl}}/status/RESERVED
+GET {{reservationUrl}}/status/CONFIRMED
 Authorization: Bearer {{token}}
 
 > {%
