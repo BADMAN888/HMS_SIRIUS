@@ -58,6 +58,11 @@ public class ReservationLifecycleService {
 
         LocalDateTime now = LocalDateTime.now(clock);
 
+        if (reservation.getCheckIn().toLocalDate().equals(now.toLocalDate())
+                && reservation.getCheckIn().isAfter(now)) {
+            reservation.setCheckIn(now);
+        }
+
         if (now.isBefore(reservation.getCheckIn())) {
             throw new ConflictException(
                     "Reservation check-in time has not arrived yet"
