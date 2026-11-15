@@ -4,6 +4,7 @@ package com.sirius.sirius.service.reservation;
 import com.sirius.sirius.dto.ReservationCheckInResponse;
 import com.sirius.sirius.dto.ReservationCheckOutResponse;
 import com.sirius.sirius.dto.ReservationRequest;
+import com.sirius.sirius.dto.ReservationGuestsRequest;
 import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.ReservationMapper;
@@ -198,6 +199,25 @@ public class ReservationService {
         includedBreakfastService.synchronize(reservation);
 
         return reservationMapper.toResponse(reservation);
+    }
+
+    public ReservationResponse updateGuests(
+            Long id,
+            ReservationGuestsRequest request
+    ) {
+        ReservationEntity reservation = findByIdForUpdate(id);
+        Set<ProfileEntity> guests = guestService.findGuests(request.guestIds());
+        ProfileEntity primaryGuest = guestService.findPrimaryGuest(
+                request.primaryGuestId(),
+                guests
+        );
+
+        reservation.setGuests(guests);
+        reservation.setPrimaryGuest(primaryGuest);
+
+        return reservationMapper.toResponse(
+                reservationRepository.saveAndFlush(reservation)
+        );
     }
 
     private boolean hasFinancialChanges(

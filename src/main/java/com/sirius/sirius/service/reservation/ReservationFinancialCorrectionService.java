@@ -352,9 +352,10 @@ public class ReservationFinancialCorrectionService {
                 ));
 
         BalanceAccountEntity account = balanceAccountRepository
-                .findByProfileIdAndHotelIdForUpdate(
+                .findFirstByCustomerIdAndHotelIdAndStatusOrderByCreatedAtDesc(
                         lockedProfile.getId(),
-                        folio.getHotel().getId()
+                        folio.getHotel().getId(),
+                        BalanceAccountStatus.ACTIVE
                 )
                 .orElseGet(() -> {
                     BalanceAccountEntity created =

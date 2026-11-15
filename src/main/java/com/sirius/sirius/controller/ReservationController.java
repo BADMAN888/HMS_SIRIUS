@@ -8,6 +8,7 @@ import com.sirius.sirius.dto.ReservationCommentResponse;
 import com.sirius.sirius.dto.ReservationIncludedBreakfastResponse;
 import com.sirius.sirius.dto.ReservationIncludedBreakfastServedRequest;
 import com.sirius.sirius.dto.ReservationRequest;
+import com.sirius.sirius.dto.ReservationGuestsRequest;
 import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.service.reservation.ReservationCommentService;
 import com.sirius.sirius.service.reservation.ReservationIncludedBreakfastService;
@@ -77,6 +78,16 @@ public class ReservationController {
     ) {
         return ResponseEntity.ok(
                 reservationService.update(id, request)
+        );
+    }
+
+    @PatchMapping("/{id}/guests")
+    public ResponseEntity<ReservationResponse> updateGuests(
+            @PathVariable @Positive Long id,
+            @Valid @RequestBody ReservationGuestsRequest request
+    ) {
+        return ResponseEntity.ok(
+                reservationService.updateGuests(id, request)
         );
     }
 

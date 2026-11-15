@@ -31,6 +31,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -56,13 +57,31 @@ public class BalanceAccountService {
         validateProfileExists(profileId);
 
         BalanceAccountEntity account = balanceAccountRepository
-                .findByCustomerIdAndHotelId(profileId, hotelId)
+                .findFirstByCustomerIdAndHotelIdOrderByCreatedAtDesc(profileId, hotelId)
                 .orElseThrow(() -> new NotFoundException(
                         "Balance account not found for profile "
                                 + profileId + " and hotel " + hotelId
                 ));
 
         return balanceAccountMapper.toResponse(account);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BalanceAccountResponse> getAllByProfileAndHotel(
+            Long profileId,
+            Long hotelId
+    ) {
+        validateProfileExists(profileId);
+        findHotel(hotelId);
+
+        return balanceAccountRepository
+                .findAllByCustomerIdAndHotelIdOrderByCreatedAtDesc(
+                        profileId,
+                        hotelId
+                )
+                .stream()
+                .map(balanceAccountMapper::toResponse)
+                .toList();
     }
 
     @Transactional
@@ -79,10 +98,26 @@ public class BalanceAccountService {
         HotelEntity hotel = findHotel(hotelId);
 
         BalanceAccountEntity account = balanceAccountRepository
-                .findByCustomerIdAndHotelId(profileId, hotelId)
+                .findFirstByCustomerIdAndHotelIdOrderByCreatedAtDesc(profileId, hotelId)
                 .orElseGet(() -> createAccount(profile, hotel));
 
         return balanceAccountMapper.toResponse(account);
+    }
+
+    @Transactional
+    public BalanceAccountResponse createNew(
+            Long profileId,
+            Long hotelId
+    ) {
+        ProfileEntity profile = profileRepository
+                .findByIdForUpdate(profileId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Profile not found with id: " + profileId
+                ));
+
+        return balanceAccountMapper.toResponse(
+                createAccount(profile, findHotel(hotelId))
+        );
     }
 
     @Transactional
@@ -102,8 +137,11 @@ public class BalanceAccountService {
 
         HotelEntity hotel = findHotel(hotelId);
 
-        BalanceAccountEntity account = balanceAccountRepository
-                .findByProfileIdAndHotelIdForUpdate(profileId, hotelId)
+        List<BalanceAccountEntity> accounts = balanceAccountRepository
+                .findAllByProfileIdAndHotelIdForUpdate(profileId, hotelId);
+        BalanceAccountEntity account = accounts.stream()
+                .filter(item -> item.getStatus() == BalanceAccountStatus.ACTIVE)
+                .max(Comparator.comparing(BalanceAccountEntity::getCreatedAt))
                 .orElseGet(() -> createAccount(profile, hotel));
 
         validateActive(account);
@@ -121,6 +159,46 @@ public class BalanceAccountService {
         );
 
         return balanceAccountMapper.toResponse(account);
+    }
+
+    @Transactional
+    public BalanceAccountResponse deposit(
+            Long accountId,
+            BigDecimal amount,
+            String description
+    ) {
+        validateAmount(amount);
+
+        BalanceAccountEntity account = getAccountForUpdate(accountId);
+        validateActive(account);
+        account.setBalance(account.getBalance().add(amount));
+        balanceAccountRepository.save(account);
+
+        createTransaction(
+                account,
+                BalanceTransactionType.DEPOSIT,
+                amount,
+                description,
+                null
+        );
+
+        return balanceAccountMapper.toResponse(account);
+    }
+
+    @Transactional
+    public BalanceAccountResponse close(Long accountId) {
+        BalanceAccountEntity account = getAccountForUpdate(accountId);
+
+        if (account.getBalance().compareTo(BigDecimal.ZERO) != 0) {
+            throw new ConflictException(
+                    "Return or spend the remaining balance before closing the account"
+            );
+        }
+
+        account.setStatus(BalanceAccountStatus.CLOSED);
+        return balanceAccountMapper.toResponse(
+                balanceAccountRepository.save(account)
+        );
     }
 
     @Transactional

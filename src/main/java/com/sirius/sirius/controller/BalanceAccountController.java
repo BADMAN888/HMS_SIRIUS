@@ -40,6 +40,29 @@ public class BalanceAccountController {
         );
     }
 
+    @GetMapping("/profile/{profileId}/hotel/{hotelId}/accounts")
+    public ResponseEntity<List<BalanceAccountResponse>> getAllByProfileAndHotel(
+            @PathVariable @Positive Long profileId,
+            @PathVariable @Positive Long hotelId
+    ) {
+        return ResponseEntity.ok(
+                balanceAccountService.getAllByProfileAndHotel(
+                        profileId,
+                        hotelId
+                )
+        );
+    }
+
+    @PostMapping("/profile/{profileId}/hotel/{hotelId}/accounts")
+    public ResponseEntity<BalanceAccountResponse> createNew(
+            @PathVariable @Positive Long profileId,
+            @PathVariable @Positive Long hotelId
+    ) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(balanceAccountService.createNew(profileId, hotelId));
+    }
+
     @PostMapping("/profile/{profileId}/hotel/{hotelId}")
     public ResponseEntity<BalanceAccountResponse> getOrCreate(
             @PathVariable @Positive Long profileId,
@@ -92,6 +115,27 @@ public class BalanceAccountController {
                         request.description()
                 )
         );
+    }
+
+    @PostMapping("/{accountId}/deposit")
+    public ResponseEntity<BalanceAccountResponse> depositToAccount(
+            @PathVariable @Positive Long accountId,
+            @Valid @RequestBody BalanceOperationRequest request
+    ) {
+        return ResponseEntity.ok(
+                balanceAccountService.deposit(
+                        accountId,
+                        request.amount(),
+                        request.description()
+                )
+        );
+    }
+
+    @PatchMapping("/{accountId}/close")
+    public ResponseEntity<BalanceAccountResponse> close(
+            @PathVariable @Positive Long accountId
+    ) {
+        return ResponseEntity.ok(balanceAccountService.close(accountId));
     }
 
     @PostMapping("/{accountId}/debit")

@@ -11,15 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(
-        name = "balance_accounts",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_balance_account_customer_hotel",
-                        columnNames = {"customer_id", "hotel_id"}
-                )
-        }
-)
+@Table(name = "balance_accounts")
 @Getter
 @Setter
 @NoArgsConstructor
