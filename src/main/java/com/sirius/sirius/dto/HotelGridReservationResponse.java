@@ -10,6 +10,7 @@ public record HotelGridReservationResponse(
         LocalDateTime checkIn,
         LocalDateTime checkOut,
         ReservationStatus status,
+        boolean roomLocked,
         String guestFirstName,
         String guestLastName,
         String guestPhone

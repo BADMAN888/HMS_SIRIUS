@@ -65,6 +65,10 @@ public class ReservationEntity {
     @JoinColumn(name = "primary_guest_id")
     ProfileEntity primaryGuest;
 
+    @Builder.Default
+    @Column(name = "room_locked", nullable = false)
+    boolean roomLocked = false;
+
     @ManyToMany
     @JoinTable(
             name = "reservation_guests",

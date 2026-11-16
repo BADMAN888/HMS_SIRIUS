@@ -70,6 +70,30 @@ public class ReservationAvailabilityService {
             LocalDateTime checkOut,
             boolean allowInactiveRate
     ) {
+        validateForUpdate(
+                reservationId,
+                room,
+                rate,
+                adults,
+                children,
+                checkIn,
+                checkOut,
+                allowInactiveRate,
+                false
+        );
+    }
+
+    public void validateForUpdate(
+            Long reservationId,
+            RoomEntity room,
+            RateEntity rate,
+            Integer adults,
+            Integer children,
+            LocalDateTime checkIn,
+            LocalDateTime checkOut,
+            boolean allowInactiveRate,
+            boolean allowUnlockedReservationReassignment
+    ) {
         validateDates(checkIn, checkOut);
         validateRoomCategoryHotel(room);
 
@@ -81,12 +105,14 @@ public class ReservationAvailabilityService {
         validateOccupancy(room, adults, children);
         validateRoomUnavailability(room.getId(), checkIn, checkOut);
 
-        validateRoomAvailabilityExceptCurrent(
-                reservationId,
-                room.getId(),
-                checkIn,
-                checkOut
-        );
+        if (!allowUnlockedReservationReassignment) {
+            validateRoomAvailabilityExceptCurrent(
+                    reservationId,
+                    room.getId(),
+                    checkIn,
+                    checkOut
+            );
+        }
     }
 
     public void validateDates(
@@ -110,6 +136,19 @@ public class ReservationAvailabilityService {
                     "Reservation must contain at least one night"
             );
         }
+    }
+
+    public boolean isRoomReadyAndAvailable(
+            RoomEntity room,
+            LocalDateTime checkIn,
+            LocalDateTime checkOut
+    ) {
+        return !roomUnavailabilityRepository
+                .existsByRoom_IdAndStartAtLessThanAndEndAtGreaterThan(
+                        room.getId(),
+                        checkOut,
+                        checkIn
+                );
     }
 
     private void validateRoomCategoryHotel(RoomEntity room) {

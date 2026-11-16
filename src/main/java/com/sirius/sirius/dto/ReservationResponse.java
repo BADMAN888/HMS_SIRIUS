@@ -15,6 +15,7 @@ public record ReservationResponse(
         Long paymentCategoryId,
         String paymentCategoryName,
         ProfileResponse primaryGuest,
+        boolean roomLocked,
         Set<Long> guestIds,
         LocalDateTime checkIn,
         LocalDateTime checkOut,

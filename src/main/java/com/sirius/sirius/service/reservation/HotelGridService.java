@@ -111,6 +111,7 @@ public class HotelGridService {
                 reservation.getCheckIn(),
                 reservation.getCheckOut(),
                 reservation.getStatus(),
+                reservation.isRoomLocked(),
                 reservation.getPrimaryGuest() != null ? reservation.getPrimaryGuest().getFirstName() : null,
                 reservation.getPrimaryGuest() != null ? reservation.getPrimaryGuest().getLastName() : null,
                 reservation.getPrimaryGuest() != null ? reservation.getPrimaryGuest().getPhoneNumber() : null

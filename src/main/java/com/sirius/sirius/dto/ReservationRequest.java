@@ -29,6 +29,8 @@ public record ReservationRequest(
 
         Long primaryGuestId,
 
+        boolean roomLocked,
+
         Set<@NotNull @Positive Long> guestIds,
 
         @NotNull

@@ -75,6 +75,12 @@ public interface ReservationRepository
             LocalDateTime end,
             LocalDateTime start
     );
+
+    List<ReservationEntity> findAllByRoomIdAndCheckInLessThanAndCheckOutGreaterThan(
+            Long roomId,
+            LocalDateTime end,
+            LocalDateTime start
+    );
     @Query("""
         select distinct r
         from ReservationEntity r

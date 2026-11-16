@@ -7,6 +7,7 @@ import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.dto.ReservationGuestsRequest;
 import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.exeption.NotFoundException;
+import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.mappers.ReservationMapper;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
@@ -14,6 +15,7 @@ import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.ReservationStatus;
+import com.sirius.sirius.store.enums.RoomStatus;
 import com.sirius.sirius.store.repository.ReservationRepository;
 import com.sirius.sirius.store.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +50,9 @@ public class ReservationService {
 
     public ReservationResponse create(ReservationRequest request) {
         RoomEntity room = findRoomForUpdate(request.roomId());
+        if (room.getStatus() != RoomStatus.AVAILABLE) {
+            throw new ConflictException("Room must be clean and available");
+        }
 
         RateEntity rate = validationService.findRate(request.rateId());
 
@@ -127,6 +132,14 @@ public class ReservationService {
 
         validationService.validateUpdateStatus(reservation);
 
+        if (reservation.isRoomLocked()
+                && request.roomLocked()
+                && !reservation.getRoom().getId().equals(request.roomId())) {
+            throw new ConflictException(
+                    "Unlock the reservation room before changing its room"
+            );
+        }
+
         RoomEntity room = lockRooms(
                 reservation.getRoom().getId(),
                 request.roomId()
@@ -156,8 +169,21 @@ public class ReservationService {
                 request.children(),
                 request.checkIn(),
                 request.checkOut(),
-                keepCurrentRate
+                keepCurrentRate,
+                !reservation.getRoom().getId().equals(request.roomId())
         );
+
+        if (!reservation.getRoom().getId().equals(room.getId())) {
+            if (room.getStatus() != RoomStatus.AVAILABLE) {
+                throw new ConflictException("Room must be clean and available");
+            }
+            reassignUnlockedReservations(
+                    reservation,
+                    room,
+                    request.checkIn(),
+                    request.checkOut()
+            );
+        }
 
         var sourceCompany =
                 validationService.findCompany(request.sourceCompanyId());
@@ -189,6 +215,7 @@ public class ReservationService {
         reservation.setOperatorCompany(operatorCompany);
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
+        reservation.setRoomLocked(request.roomLocked());
 
         reservationRepository.saveAndFlush(reservation);
 
@@ -218,6 +245,97 @@ public class ReservationService {
         return reservationMapper.toResponse(
                 reservationRepository.saveAndFlush(reservation)
         );
+    }
+
+    private void reassignUnlockedReservations(
+            ReservationEntity currentReservation,
+            RoomEntity requestedRoom,
+            LocalDateTime checkIn,
+            LocalDateTime checkOut
+    ) {
+        List<ReservationEntity> conflicts =
+                reservationRepository
+                        .findAllByRoomIdAndCheckInLessThanAndCheckOutGreaterThan(
+                                requestedRoom.getId(),
+                                checkOut,
+                                checkIn
+                        )
+                        .stream()
+                        .filter(item -> !item.getId().equals(currentReservation.getId()))
+                        .filter(item -> !List.of(
+                                ReservationStatus.CANCELLED,
+                                ReservationStatus.COMPLETED,
+                                ReservationStatus.NO_SHOW
+                        ).contains(item.getStatus()))
+                        .toList();
+
+        if (conflicts.isEmpty()) {
+            return;
+        }
+
+        Set<Long> conflictingIds = conflicts.stream()
+                .map(ReservationEntity::getId)
+                .collect(java.util.stream.Collectors.toSet());
+        List<java.util.Map.Entry<ReservationEntity, RoomEntity>> assignments =
+                new java.util.ArrayList<>();
+
+        for (ReservationEntity conflict : conflicts) {
+            if (conflict.isRoomLocked()) {
+                throw new ConflictException(
+                        "The selected room is locked by another reservation"
+                );
+            }
+            if (conflict.getStatus() != ReservationStatus.RESERVED
+                    && conflict.getStatus() != ReservationStatus.CONFIRMED) {
+                throw new ConflictException(
+                        "The selected room has a reservation that cannot be moved"
+                );
+            }
+
+            Long categoryId = conflict.getRoom().getCategory().getId();
+            RoomEntity replacement = roomRepository
+                    .findAllByCategoryIdAndStatus(categoryId, RoomStatus.AVAILABLE)
+                    .stream()
+                    .filter(candidate -> !candidate.getId().equals(requestedRoom.getId()))
+                    .filter(candidate -> availabilityService.isRoomReadyAndAvailable(
+                            candidate,
+                            conflict.getCheckIn(),
+                            conflict.getCheckOut()
+                    ))
+                    .filter(candidate -> reservationRepository
+                            .findAllByRoomIdAndCheckInLessThanAndCheckOutGreaterThan(
+                                    candidate.getId(),
+                                    conflict.getCheckOut(),
+                                    conflict.getCheckIn()
+                            )
+                            .stream()
+                            .noneMatch(other ->
+                                    !other.getId().equals(currentReservation.getId())
+                                            && !conflictingIds.contains(other.getId())
+                                            && !List.of(
+                                                    ReservationStatus.CANCELLED,
+                                                    ReservationStatus.COMPLETED,
+                                                    ReservationStatus.NO_SHOW
+                                            ).contains(other.getStatus())
+                            ))
+                    .filter(candidate -> assignments.stream().noneMatch(assignment ->
+                            assignment.getValue().getId().equals(candidate.getId())
+                                    && assignment.getKey().getCheckIn().isBefore(conflict.getCheckOut())
+                                    && assignment.getKey().getCheckOut().isAfter(conflict.getCheckIn())
+                    ))
+                    .findFirst()
+                    .orElseThrow(() -> new ConflictException(
+                            "No clean available room can be assigned to reservation "
+                                    + conflict.getConfirmationNumber()
+                    ));
+
+            assignments.add(java.util.Map.entry(conflict, replacement));
+        }
+
+        assignments.forEach(assignment ->
+                assignment.getKey().setRoom(assignment.getValue())
+        );
+        reservationRepository.saveAll(conflicts);
     }
 
     private boolean hasFinancialChanges(
