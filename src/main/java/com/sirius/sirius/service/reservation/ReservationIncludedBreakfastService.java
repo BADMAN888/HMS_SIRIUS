@@ -39,6 +39,8 @@ public class ReservationIncludedBreakfastService {
                 .isBreakfastIncluded()
                 ? getServiceDates(reservation)
                 : Set.of();
+        int breakfastQuantity = reservation.getAdults()
+                + reservation.getChildren();
 
         for (ReservationIncludedBreakfastEntity breakfast : existing) {
             LocalDate serviceDate = breakfast.getServiceDate();
@@ -52,9 +54,10 @@ public class ReservationIncludedBreakfastService {
                 continue;
             }
 
-            if (breakfast.getServedQuantity() == 0) {
-                breakfast.setQuantity(reservation.getAdults());
-            }
+            breakfast.setQuantity(Math.max(
+                    breakfastQuantity,
+                    breakfast.getServedQuantity()
+            ));
 
             breakfast.setCancelled(false);
         }
@@ -77,7 +80,7 @@ public class ReservationIncludedBreakfastService {
                     ReservationIncludedBreakfastEntity.builder()
                             .reservation(reservation)
                             .serviceDate(serviceDate)
-                            .quantity(reservation.getAdults())
+                            .quantity(breakfastQuantity)
                             .servedQuantity(0)
                             .cancelled(false)
                             .build()

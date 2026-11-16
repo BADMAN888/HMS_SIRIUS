@@ -81,6 +81,9 @@ public class ReservationEntity {
     @Column(nullable = false, name = "check_in")
     LocalDateTime checkIn;
 
+    @Column(name = "actual_check_in")
+    LocalDateTime actualCheckIn;
+
     @Column(nullable = false, name = "check_out")
     LocalDateTime checkOut;
 

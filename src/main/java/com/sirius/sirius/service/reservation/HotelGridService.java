@@ -6,6 +6,7 @@ import com.sirius.sirius.dto.HotelGridRoomResponse;
 import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
+import com.sirius.sirius.store.enums.ReservationStatus;
 import com.sirius.sirius.store.repository.ReservationRepository;
 import com.sirius.sirius.store.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
@@ -52,7 +53,11 @@ public class HotelGridService {
                         .findAllByCheckInLessThanAndCheckOutGreaterThan(
                                 end,
                                 start
-                        );
+                        )
+                        .stream()
+                        .filter(reservation -> reservation.getStatus() != ReservationStatus.CANCELLED
+                                && reservation.getStatus() != ReservationStatus.NO_SHOW)
+                        .toList();
 
         Map<Long, List<ReservationEntity>> reservationsByRoom =
                 reservations.stream()

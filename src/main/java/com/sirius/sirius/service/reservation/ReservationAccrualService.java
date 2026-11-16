@@ -207,9 +207,9 @@ public class ReservationAccrualService {
             return List.of();
         }
 
-        int adults = reservation.getAdults();
+        int peopleCount = reservation.getAdults() + reservation.getChildren();
 
-        if (adults <= 0) {
+        if (peopleCount <= 0) {
             return List.of();
         }
 
@@ -218,7 +218,7 @@ public class ReservationAccrualService {
                 taxStatus
         );
 
-        BigDecimal quantity = BigDecimal.valueOf(adults)
+        BigDecimal quantity = BigDecimal.valueOf(peopleCount)
                 .setScale(3, RoundingMode.UNNECESSARY);
 
         LocalDate checkOut = reservation.getCheckOut().toLocalDate();

@@ -58,17 +58,6 @@ public class ReservationLifecycleService {
 
         LocalDateTime now = LocalDateTime.now(clock);
 
-        if (reservation.getCheckIn().toLocalDate().equals(now.toLocalDate())
-                && reservation.getCheckIn().isAfter(now)) {
-            reservation.setCheckIn(now);
-        }
-
-        if (now.isBefore(reservation.getCheckIn())) {
-            throw new ConflictException(
-                    "Reservation check-in time has not arrived yet"
-            );
-        }
-
         if (!now.isBefore(reservation.getCheckOut())) {
             throw new ConflictException(
                     "Reservation check-out time has already arrived"
@@ -86,6 +75,7 @@ public class ReservationLifecycleService {
         }
 
         room.setStatus(RoomStatus.OCCUPIED);
+        reservation.setActualCheckIn(now);
         reservation.setStatus(ReservationStatus.IN_HOUSE);
     }
 

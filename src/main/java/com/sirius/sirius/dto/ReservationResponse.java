@@ -18,6 +18,7 @@ public record ReservationResponse(
         boolean roomLocked,
         Set<Long> guestIds,
         LocalDateTime checkIn,
+        LocalDateTime actualCheckIn,
         LocalDateTime checkOut,
         Integer adults,
         Integer children,

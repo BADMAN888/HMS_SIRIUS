@@ -365,6 +365,10 @@ public class ReservationService {
                 request.adults()
         )
                 || !Objects.equals(
+                reservation.getChildren(),
+                request.children()
+        )
+                || !Objects.equals(
                 reservation.getTaxStatus(),
                 request.taxStatus()
         );

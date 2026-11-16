@@ -3,7 +3,6 @@ package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.TaxStatus;
 import jakarta.validation.constraints.Future;
-import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -34,7 +33,6 @@ public record ReservationRequest(
         Set<@NotNull @Positive Long> guestIds,
 
         @NotNull
-        @FutureOrPresent
         LocalDateTime checkIn,
 
         @NotNull
