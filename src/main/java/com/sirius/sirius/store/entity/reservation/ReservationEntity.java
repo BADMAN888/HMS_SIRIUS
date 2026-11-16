@@ -61,8 +61,8 @@ public class ReservationEntity {
     @JoinColumn(name = "rate_id", nullable = false)
     RateEntity rate;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "primary_guest_id", nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "primary_guest_id")
     ProfileEntity primaryGuest;
 
     @ManyToMany

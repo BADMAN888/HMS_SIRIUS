@@ -19,9 +19,7 @@ public class ReservationGuestService {
 
     public Set<ProfileEntity> findGuests(Set<Long> guestIds) {
         if (guestIds == null || guestIds.isEmpty()) {
-            throw new ValidationException(
-                    "Reservation must have at least one guest"
-            );
+            return new HashSet<>();
         }
 
         Set<Long> uniqueGuestIds = new HashSet<>(guestIds);
@@ -49,15 +47,7 @@ public class ReservationGuestService {
             Set<ProfileEntity> guests
     ) {
         if (primaryGuestId == null) {
-            throw new ValidationException(
-                    "Primary guest must be specified"
-            );
-        }
-
-        if (guests == null || guests.isEmpty()) {
-            throw new ValidationException(
-                    "Reservation must have at least one guest"
-            );
+            return null;
         }
 
         return guests.stream()

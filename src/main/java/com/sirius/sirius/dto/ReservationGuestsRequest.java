@@ -8,11 +8,8 @@ import java.util.Set;
 
 public record ReservationGuestsRequest(
 
-        @NotNull
-        @Positive
         Long primaryGuestId,
 
-        @NotEmpty
         Set<@NotNull @Positive Long> guestIds
 
 ) {

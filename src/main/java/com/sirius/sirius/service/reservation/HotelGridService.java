@@ -111,9 +111,9 @@ public class HotelGridService {
                 reservation.getCheckIn(),
                 reservation.getCheckOut(),
                 reservation.getStatus(),
-                reservation.getPrimaryGuest().getFirstName(),
-                reservation.getPrimaryGuest().getLastName(),
-                reservation.getPrimaryGuest().getPhoneNumber()
+                reservation.getPrimaryGuest() != null ? reservation.getPrimaryGuest().getFirstName() : null,
+                reservation.getPrimaryGuest() != null ? reservation.getPrimaryGuest().getLastName() : null,
+                reservation.getPrimaryGuest() != null ? reservation.getPrimaryGuest().getPhoneNumber() : null
         );
     }
 }

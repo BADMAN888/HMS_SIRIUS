@@ -27,11 +27,8 @@ public record ReservationRequest(
         @Positive
         Long paymentCategoryId,
 
-        @NotNull
-        @Positive
         Long primaryGuestId,
 
-        @NotEmpty
         Set<@NotNull @Positive Long> guestIds,
 
         @NotNull
