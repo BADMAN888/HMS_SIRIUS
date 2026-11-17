@@ -3,6 +3,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.FolioReopenRequest;
 import com.sirius.sirius.dto.FolioRequest;
+import com.sirius.sirius.dto.FolioPartiesRequest;
 import com.sirius.sirius.dto.FolioResponse;
 import com.sirius.sirius.service.billing.FolioService;
 import jakarta.validation.Valid;
@@ -74,6 +75,14 @@ public class FolioController {
         return ResponseEntity.ok(
                 folioService.attachAccruals(id, accrualIds)
         );
+    }
+
+    @PatchMapping("/{id}/parties")
+    public ResponseEntity<FolioResponse> updateParties(
+            @PathVariable @Positive Long id,
+            @Valid @RequestBody FolioPartiesRequest request
+    ) {
+        return ResponseEntity.ok(folioService.updateParties(id, request));
     }
 
     @PatchMapping("/{id}/close")

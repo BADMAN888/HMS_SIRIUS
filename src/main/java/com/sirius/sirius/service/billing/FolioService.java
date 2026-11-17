@@ -2,6 +2,7 @@
 package com.sirius.sirius.service.billing;
 
 import com.sirius.sirius.dto.FolioRequest;
+import com.sirius.sirius.dto.FolioPartiesRequest;
 import com.sirius.sirius.dto.FolioResponse;
 import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.ForbiddenException;
@@ -75,6 +76,14 @@ public class FolioService {
                 .paidAmount(BigDecimal.ZERO)
                 .build();
 
+        return folioMapper.toResponse(folioRepository.save(folio));
+    }
+
+    public FolioResponse updateParties(Long folioId, FolioPartiesRequest request) {
+        FolioEntity folio = findFolioForUpdate(folioId);
+        ensureFolioIsOpen(folio);
+        folio.setRecipient(findCustomer(request.recipientId()));
+        folio.setPayer(findCustomer(request.payerId()));
         return folioMapper.toResponse(folioRepository.save(folio));
     }
 

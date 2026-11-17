@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Positive;
 public record FolioRequest(
         @NotNull @Positive Long hotelId,
         @Positive Long reservationId,
-        @Positive Long recipientId,
-        @Positive Long payerId
+        @NotNull @Positive Long recipientId,
+        @NotNull @Positive Long payerId
 ) {
 }
