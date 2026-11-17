@@ -58,8 +58,7 @@ public class RoomUnavailabilityService {
             );
         }
 
-        if (room.getStatus() == RoomStatus.OCCUPIED
-                || room.getStatus() == RoomStatus.RESERVED) {
+        if (room.getStatus() == RoomStatus.OCCUPIED) {
             throw new ConflictException(
                     "Cannot schedule repair for an occupied or reserved room"
             );
@@ -74,7 +73,7 @@ public class RoomUnavailabilityService {
 
         if (!request.startAt().isAfter(now)
                 && request.endAt().isAfter(now)) {
-            room.setStatus(RoomStatus.valueOf(request.status().name()));
+            room.setStatus(RoomStatus.CLEANING);
         }
 
         RoomUnavailabilityEntity saved =
@@ -142,9 +141,7 @@ public class RoomUnavailabilityService {
                 repair.getRoom().setStatus(RoomStatus.CLEANING);
                 repair.getRoom().setClean(false);
             } else if (!now.isBefore(repair.getStartAt())) {
-                repair.getRoom().setStatus(
-                        RoomStatus.valueOf(repair.getStatus().name())
-                );
+                repair.getRoom().setStatus(RoomStatus.CLEANING);
             }
         }
     }

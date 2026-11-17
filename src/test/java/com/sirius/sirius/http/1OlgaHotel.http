@@ -1713,7 +1713,7 @@ Authorization: Bearer {{token}}
 
 ### GET RESERVATIONS BY STATUS
 
-GET {{reservationUrl}}/status/CONFIRMED
+GET {{reservationUrl}}/status/RESERVED
 Authorization: Bearer {{token}}
 
 > {%

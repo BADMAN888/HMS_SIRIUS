@@ -92,8 +92,7 @@ public class ReservationValidationService {
             );
         }
 
-        if (reservation.getStatus() != ReservationStatus.RESERVED
-                && reservation.getStatus() != ReservationStatus.CONFIRMED) {
+        if (reservation.getStatus() != ReservationStatus.RESERVED) {
             throw new ConflictException(
                     "Reservation cannot be updated in status: "
                             + reservation.getStatus()

@@ -32,8 +32,7 @@ public class ReservationLifecycleService {
     public void cancel(Long id) {
         ReservationEntity reservation = findByIdForUpdate(id);
 
-        if (reservation.getStatus() != ReservationStatus.RESERVED
-                && reservation.getStatus() != ReservationStatus.CONFIRMED) {
+        if (reservation.getStatus() != ReservationStatus.RESERVED) {
             throw new ConflictException(
                     "Reservation cannot be cancelled in status: "
                             + reservation.getStatus()
@@ -48,8 +47,7 @@ public class ReservationLifecycleService {
     public void checkIn(Long id) {
         ReservationEntity reservation = findByIdForUpdate(id);
 
-        if (reservation.getStatus() != ReservationStatus.RESERVED
-                && reservation.getStatus() != ReservationStatus.CONFIRMED) {
+        if (reservation.getStatus() != ReservationStatus.RESERVED) {
             throw new ConflictException(
                     "Reservation cannot be checked in from status: "
                             + reservation.getStatus()
@@ -66,8 +64,7 @@ public class ReservationLifecycleService {
 
         RoomEntity room = reservation.getRoom();
 
-        if (room.getStatus() != RoomStatus.AVAILABLE
-                && room.getStatus() != RoomStatus.RESERVED) {
+        if (room.getStatus() != RoomStatus.AVAILABLE) {
             throw new ConflictException(
                     "Room cannot be checked in. Current status: "
                             + room.getStatus()
@@ -103,8 +100,7 @@ public class ReservationLifecycleService {
     public void noShow(Long id) {
         ReservationEntity reservation = findByIdForUpdate(id);
 
-        if (reservation.getStatus() != ReservationStatus.RESERVED
-                && reservation.getStatus() != ReservationStatus.CONFIRMED) {
+        if (reservation.getStatus() != ReservationStatus.RESERVED) {
             throw new ConflictException(
                     "Reservation cannot be marked as no-show from status: "
                             + reservation.getStatus()

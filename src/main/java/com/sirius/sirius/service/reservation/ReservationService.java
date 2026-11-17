@@ -99,7 +99,7 @@ public class ReservationService {
         reservation.setPrimaryGuest(primaryGuest);
         reservation.setGuests(guests);
         reservation.setConfirmationNumber(generateConfirmationNumber());
-        reservation.setStatus(ReservationStatus.CONFIRMED);
+        reservation.setStatus(ReservationStatus.RESERVED);
         reservation.setCreatedAt(LocalDateTime.now(clock));
 
         ReservationEntity saved =
@@ -285,8 +285,7 @@ public class ReservationService {
                         "The selected room is locked by another reservation"
                 );
             }
-            if (conflict.getStatus() != ReservationStatus.RESERVED
-                    && conflict.getStatus() != ReservationStatus.CONFIRMED) {
+            if (conflict.getStatus() != ReservationStatus.RESERVED) {
                 throw new ConflictException(
                         "The selected room has a reservation that cannot be moved"
                 );
@@ -387,6 +386,7 @@ public class ReservationService {
                         end
                 )
                 .stream()
+                .filter(reservation -> reservation.getStatus() == ReservationStatus.RESERVED)
                 .map(reservationMapper::toCheckInResponse)
                 .toList();
     }
