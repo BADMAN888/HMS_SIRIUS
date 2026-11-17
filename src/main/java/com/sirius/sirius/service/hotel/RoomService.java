@@ -2,6 +2,7 @@ package com.sirius.sirius.service.hotel;
 
 import com.sirius.sirius.dto.RoomRequest;
 import com.sirius.sirius.dto.RoomResponse;
+import com.sirius.sirius.dto.RoomCleanlinessRequest;
 import com.sirius.sirius.dto.RoomStatusRequest;
 import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
@@ -122,6 +123,7 @@ public class RoomService {
         RoomEntity room = roomMapper.toEntity(request);
         room.setHotel(hotel);
         room.setCategory(category);
+        setCleanlinessFromStatus(room, request.status());
 
         RoomEntity savedRoom = roomRepository.save(room);
 
@@ -170,6 +172,7 @@ public class RoomService {
         roomMapper.updateEntity(request, room);
         room.setHotel(hotel);
         room.setCategory(category);
+        setCleanlinessFromStatus(room, request.status());
 
         RoomEntity updatedRoom = roomRepository.save(room);
 
@@ -201,10 +204,27 @@ public class RoomService {
                 );
 
         room.setStatus(request.status());
+        setCleanlinessFromStatus(room, request.status());
 
         RoomEntity updatedRoom = roomRepository.save(room);
 
         return roomMapper.toResponse(updatedRoom);
+    }
+
+    @Transactional
+    public RoomResponse updateCleanliness(Long id, RoomCleanlinessRequest request) {
+        RoomEntity room = roomRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Room with id: " + id + " not found"));
+        room.setClean(request.clean());
+        return roomMapper.toResponse(roomRepository.save(room));
+    }
+
+    private void setCleanlinessFromStatus(RoomEntity room, RoomStatus status) {
+        if (status == RoomStatus.DIRTY || status == RoomStatus.CLEANING) {
+            room.setClean(false);
+        } else if (status == RoomStatus.AVAILABLE) {
+            room.setClean(true);
+        }
     }
 
     public RoomResponse getAvailableRooms(Long id, RoomStatus status) {

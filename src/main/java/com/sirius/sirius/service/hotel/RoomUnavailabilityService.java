@@ -123,6 +123,7 @@ public class RoomUnavailabilityService {
 
         repair.setCompletedAt(now);
         repair.getRoom().setStatus(RoomStatus.CLEANING);
+        repair.getRoom().setClean(false);
 
         return toResponse(repair);
     }
@@ -139,6 +140,7 @@ public class RoomUnavailabilityService {
             if (!now.isBefore(repair.getEndAt())) {
                 repair.setCompletedAt(repair.getEndAt());
                 repair.getRoom().setStatus(RoomStatus.CLEANING);
+                repair.getRoom().setClean(false);
             } else if (!now.isBefore(repair.getStartAt())) {
                 repair.getRoom().setStatus(
                         RoomStatus.valueOf(repair.getStatus().name())

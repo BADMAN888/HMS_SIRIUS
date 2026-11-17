@@ -98,6 +98,7 @@ public class HotelGridService {
                 room.getRoomNumber(),
                 room.getFloor(),
                 room.getStatus(),
+                room.isClean(),
                 room.getRoomView(),
                 room.getHotel().getId(),
                 room.getHotel().getHotelName(),

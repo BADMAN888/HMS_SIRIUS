@@ -10,6 +10,7 @@ public record HotelGridRoomResponse(
         String roomNumber,
         Integer floor,
         RoomStatus status,
+        boolean clean,
         RoomView roomView,
         Long hotelId,
         String hotelName,

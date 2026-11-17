@@ -91,6 +91,7 @@ public class ReservationLifecycleService {
 
         RoomEntity room = reservation.getRoom();
         room.setStatus(RoomStatus.CLEANING);
+        room.setClean(false);
 
         reservation.setStatus(ReservationStatus.COMPLETED);
 

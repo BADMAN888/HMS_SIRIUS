@@ -33,6 +33,9 @@ public class RoomEntity {
     @Column(name = "room_view", nullable = false, length = 20)
     RoomView roomView;
 
+    @Column(name = "is_clean", nullable = false)
+    boolean clean = true;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hotel_id", nullable = false)
     HotelEntity hotel;

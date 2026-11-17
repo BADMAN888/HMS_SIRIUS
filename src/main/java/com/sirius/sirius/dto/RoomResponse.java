@@ -15,6 +15,8 @@ public record RoomResponse(
 
         RoomView roomView,
 
+        boolean clean,
+
         Long hotelId,
 
         Long categoryId

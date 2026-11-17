@@ -3,6 +3,7 @@ package com.sirius.sirius.controller;
 
 import com.sirius.sirius.dto.RoomRequest;
 import com.sirius.sirius.dto.RoomResponse;
+import com.sirius.sirius.dto.RoomCleanlinessRequest;
 import com.sirius.sirius.dto.RoomStatusRequest;
 import com.sirius.sirius.service.hotel.RoomService;
 import com.sirius.sirius.store.enums.RoomStatus;
@@ -105,6 +106,14 @@ public class RoomController {
         return ResponseEntity.ok(
                 roomService.updateStatus(id, request)
         );
+    }
+
+    @PatchMapping("/{id}/cleanliness")
+    public ResponseEntity<RoomResponse> updateRoomCleanliness(
+            @PathVariable @Positive Long id,
+            @Valid @RequestBody RoomCleanlinessRequest request
+    ) {
+        return ResponseEntity.ok(roomService.updateCleanliness(id, request));
     }
 
     @GetMapping("/category/{categoryId}/status/{status}")

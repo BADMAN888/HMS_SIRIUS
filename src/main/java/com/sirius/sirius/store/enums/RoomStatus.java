@@ -5,5 +5,7 @@ public enum RoomStatus {
     OCCUPIED,         // кімната зайнята гостем
     RESERVED,         // кімната заброньована, але ще не заселена
     CLEANING,         // кімната на прибиранні
-    DIRTY
+    DIRTY,
+    OUT_OF_SERVICE,
+    OUT_OF_ORDER
 }
