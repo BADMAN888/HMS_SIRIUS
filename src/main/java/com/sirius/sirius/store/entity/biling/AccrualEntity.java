@@ -82,4 +82,8 @@ public class AccrualEntity {
             accruedAt = LocalDateTime.now();
         }
     }
+
+    public boolean isActive() {
+        return !reversed && reversalOf == null;
+    }
 }

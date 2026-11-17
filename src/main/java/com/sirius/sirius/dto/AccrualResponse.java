@@ -17,7 +17,6 @@ public record AccrualResponse(
         BigDecimal amount,
         LocalDate serviceDate,
         LocalDateTime accruedAt,
-        boolean reversed,
-        Long reversalOfId
+        boolean active
 ) {
 }

@@ -128,19 +128,14 @@ public class ReservationFinancialCorrectionService {
             );
         }
 
-        boolean fullyReversed = isFullyReversed(accrual, amount);
+        boolean fullyCancelled = isFullyCancelled(accrual, amount);
 
-        AccrualEntity accrualReversal = reverseAccrual(
-                accrual,
-                amount,
-                request.reason()
-        );
-
-        accrualRepository.save(accrualReversal);
-
-        accrual.setReversed(fullyReversed);
-
-        folio.getAccruals().add(accrualReversal);
+        if (fullyCancelled) {
+            accrual.setReversed(true);
+        } else {
+            accrual.setAmount(accrual.getAmount().subtract(amount));
+        }
+        accrualRepository.save(accrual);
         folio.recalculateTotalAmount();
 
         List<Long> paymentReversalIds = new ArrayList<>();
@@ -190,40 +185,11 @@ public class ReservationFinancialCorrectionService {
         return new ReservationFinancialCorrectionResponse(
                 folio.getId(),
                 accrual.getId(),
-                accrualReversal.getId(),
                 paymentReversalIds,
                 request.type(),
                 amount,
                 advanceAccount == null ? null : advanceAccount.getId()
         );
-    }
-
-    private AccrualEntity reverseAccrual(
-            AccrualEntity original,
-            BigDecimal amount,
-            String reason
-    ) {
-        String reversalName = limitLength(
-                "Сторно: " + reason,
-                MAX_DESCRIPTION_LENGTH
-        );
-
-        return AccrualEntity.builder()
-                .hotel(original.getHotel())
-                .reservation(original.getReservation())
-                .recipient(original.getRecipient())
-                .folio(original.getFolio())
-                .facility(original.getFacility())
-                .reversalOf(original)
-                .reversed(false)
-                .name(reversalName)
-                .unitPrice(amount.negate())
-                .quantity(BigDecimal.ONE)
-                .amount(amount.negate())
-                .serviceDate(original.getServiceDate())
-                .accruedAt(LocalDateTime.now(clock))
-                .source(original.getSource())
-                .build();
     }
 
     private PaymentEntity createPaymentReversal(
@@ -490,16 +456,13 @@ public class ReservationFinancialCorrectionService {
             );
         }
 
-        if (accrual.getReversalOf() != null
-                || accrual.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new ConflictException(
-                    "Only original positive accruals can be corrected"
-            );
+        if (accrual.getReversalOf() != null || accrual.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ConflictException("Only active positive accruals can be corrected");
         }
 
         if (accrual.isReversed()) {
             throw new ConflictException(
-                    "Accrual has already been fully reversed"
+                    "Accrual is already inactive"
             );
         }
     }
@@ -508,37 +471,19 @@ public class ReservationFinancialCorrectionService {
             AccrualEntity accrual,
             BigDecimal amount
     ) {
-        BigDecimal alreadyReversed = accrualRepository
-                .findAllByReversalOfId(accrual.getId())
-                .stream()
-                .map(AccrualEntity::getAmount)
-                .map(BigDecimal::abs)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        BigDecimal remaining = accrual.getAmount()
-                .subtract(alreadyReversed);
-
-        if (amount.compareTo(remaining) > 0) {
+        if (amount.compareTo(accrual.getAmount()) > 0) {
             throw new ConflictException(
-                    "Correction amount exceeds the remaining accrual amount. "
-                            + "Remaining: " + remaining
+                    "Correction amount exceeds the accrual amount. Remaining: "
+                            + accrual.getAmount()
             );
         }
     }
 
-    private boolean isFullyReversed(
+    private boolean isFullyCancelled(
             AccrualEntity accrual,
             BigDecimal currentReversal
     ) {
-        BigDecimal alreadyReversed = accrualRepository
-                .findAllByReversalOfId(accrual.getId())
-                .stream()
-                .map(AccrualEntity::getAmount)
-                .map(BigDecimal::abs)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-        return alreadyReversed.add(currentReversal)
-                .compareTo(accrual.getAmount()) >= 0;
+        return currentReversal.compareTo(accrual.getAmount()) >= 0;
     }
 
     private AccrualEntity findAccrual(Long id) {

@@ -11,8 +11,6 @@ public record ReservationFinancialCorrectionResponse(
 
         Long accrualId,
 
-        Long accrualReversalId,
-
         List<Long> paymentReversalIds,
 
         ReservationFinancialCorrectionType type,

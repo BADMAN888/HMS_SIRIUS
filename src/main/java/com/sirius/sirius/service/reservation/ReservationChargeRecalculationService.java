@@ -20,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -33,8 +31,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Transactional
 public class ReservationChargeRecalculationService {
-
-    private static final String REVERSAL_PREFIX = "Сторно: ";
 
     private final ReservationRepository reservationRepository;
     private final AccrualRepository accrualRepository;
@@ -78,26 +74,11 @@ public class ReservationChargeRecalculationService {
 
         validateNoOverpayment(currentAccruals, affectedFolios);
 
-        LocalDateTime accruedAt = LocalDateTime.now(clock);
-
-        List<AccrualEntity> reversals = new ArrayList<>();
-
         for (AccrualEntity original : currentAccruals) {
-            FolioEntity reversalFolio = original.getFolio() == null
-                    ? null
-                    : affectedFolios.get(original.getFolio().getId());
-
             original.setReversed(true);
-
-            reversals.add(createReversal(
-                    original,
-                    reversalFolio,
-                    accruedAt
-            ));
         }
 
         accrualRepository.saveAllAndFlush(currentAccruals);
-        accrualRepository.saveAllAndFlush(reversals);
 
         recalculateAffectedFolios(affectedFolios);
 
@@ -147,7 +128,7 @@ public class ReservationChargeRecalculationService {
             List<AccrualEntity> accruals,
             Map<Long, FolioEntity> affectedFolios
     ) {
-        Map<Long, BigDecimal> reversalAmounts = new LinkedHashMap<>();
+        Map<Long, BigDecimal> reductionsByFolio = new LinkedHashMap<>();
 
         for (AccrualEntity accrual : accruals) {
             if (accrual.getFolio() == null) {
@@ -156,7 +137,7 @@ public class ReservationChargeRecalculationService {
 
             Long folioId = accrual.getFolio().getId();
 
-            reversalAmounts.merge(
+            reductionsByFolio.merge(
                     folioId,
                     accrual.getAmount().negate(),
                     BigDecimal::add
@@ -164,7 +145,7 @@ public class ReservationChargeRecalculationService {
         }
 
         for (Map.Entry<Long, BigDecimal> entry
-                : reversalAmounts.entrySet()) {
+                : reductionsByFolio.entrySet()) {
 
             Long folioId = entry.getKey();
             FolioEntity folio = affectedFolios.get(folioId);
@@ -190,28 +171,6 @@ public class ReservationChargeRecalculationService {
                 );
             }
         }
-    }
-
-    private AccrualEntity createReversal(
-            AccrualEntity original,
-            FolioEntity reversalFolio,
-            LocalDateTime accruedAt
-    ) {
-        return AccrualEntity.builder()
-                .hotel(original.getHotel())
-                .reservation(original.getReservation())
-                .recipient(original.getRecipient())
-                .folio(reversalFolio)
-                .facility(original.getFacility())
-                .source(AccrualSource.AUTOMATIC)
-                .reversalOf(original)
-                .name(REVERSAL_PREFIX + original.getName())
-                .unitPrice(original.getUnitPrice())
-                .quantity(original.getQuantity().negate())
-                .amount(original.getAmount().negate())
-                .serviceDate(original.getServiceDate())
-                .accruedAt(accruedAt)
-                .build();
     }
 
     private void recalculateAffectedFolios(

@@ -93,6 +93,8 @@ public class FolioEntity {
 
     public void recalculateTotalAmount() {
         totalAmount = accruals.stream()
+                .filter(accrual -> !accrual.isReversed()
+                        && accrual.getReversalOf() == null)
                 .map(AccrualEntity::getAmount)
                 .filter(amount -> amount != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);

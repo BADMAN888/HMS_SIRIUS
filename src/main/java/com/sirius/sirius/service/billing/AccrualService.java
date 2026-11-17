@@ -152,6 +152,62 @@ public class AccrualService {
         accrualRepository.delete(accrual);
     }
 
+    @Transactional
+    public void cancel(Long id) {
+        AccrualEntity original = accrualRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "Нарахування з ID " + id + " не знайдено"
+                ));
+        if (original.isReversed() || original.getReversalOf() != null) {
+            throw new ConflictException("Нарахування вже анульоване");
+        }
+
+        FolioEntity folio = null;
+        if (original.getFolio() != null) {
+            folio = folioRepository.findByIdForUpdate(original.getFolio().getId())
+                    .orElseThrow(() -> new NotFoundException(
+                            "Рахунок не знайдено"
+                    ));
+            ensureFolioIsOpen(folio);
+            BigDecimal projectedTotal = folio.getTotalAmount().subtract(original.getAmount());
+            if (projectedTotal.compareTo(folio.getPaidAmount()) < 0) {
+                throw new ConflictException(
+                        "Неможливо анулювати нарахування: сума рахунку стане меншою за сплачену"
+                );
+            }
+        }
+
+        original.setReversed(true);
+        accrualRepository.save(original);
+        if (folio != null) {
+            folio.recalculateTotalAmount();
+            folioRepository.save(folio);
+        }
+    }
+
+    @Transactional
+    public void reactivate(Long id) {
+        AccrualEntity accrual = accrualRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new NotFoundException(
+                        "Нарахування з ID " + id + " не знайдено"
+                ));
+        if (!accrual.isReversed() || accrual.getReversalOf() != null) {
+            throw new ConflictException("Нарахування не є анульованим");
+        }
+        if (accrual.getFolio() != null) {
+            FolioEntity folio = folioRepository.findByIdForUpdate(accrual.getFolio().getId())
+                    .orElseThrow(() -> new NotFoundException("Рахунок не знайдено"));
+            ensureFolioIsOpen(folio);
+            accrual.setReversed(false);
+            accrualRepository.save(accrual);
+            folio.recalculateTotalAmount();
+            folioRepository.save(folio);
+        } else {
+            accrual.setReversed(false);
+            accrualRepository.save(accrual);
+        }
+    }
+
     private void validateCreateRequest(AccrualRequest request) {
         if (request == null) {
             throw new ValidationException(

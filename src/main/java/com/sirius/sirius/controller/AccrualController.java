@@ -77,4 +77,20 @@ public class AccrualController {
         accrualService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<Void> cancel(
+            @PathVariable @Positive Long id
+    ) {
+        accrualService.cancel(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/reactivate")
+    public ResponseEntity<Void> reactivate(
+            @PathVariable @Positive Long id
+    ) {
+        accrualService.reactivate(id);
+        return ResponseEntity.noContent().build();
+    }
 }
