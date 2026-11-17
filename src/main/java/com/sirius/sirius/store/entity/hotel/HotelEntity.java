@@ -1,11 +1,16 @@
 package com.sirius.sirius.store.entity.hotel;
 
+import com.sirius.sirius.store.entity.biling.LegalEntityEntity;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Size;
 import lombok.AccessLevel;
@@ -18,6 +23,8 @@ import lombok.experimental.FieldDefaults;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "hotels")
@@ -60,4 +67,12 @@ public class HotelEntity {
 
     @OneToMany(mappedBy = "hotel")
     List<RoomCategoryEntity> categories = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+            name = "hotels_legal_entities",
+            joinColumns = @JoinColumn(name = "hotel_id"),
+            inverseJoinColumns = @JoinColumn(name = "legal_entity_id")
+    )
+    Set<LegalEntityEntity> legalEntities = new HashSet<>();
 }

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Positive;
 
 public record FolioPartiesRequest(
         @NotNull @Positive Long recipientId,
-        @NotNull @Positive Long payerId
+        @NotNull @Positive Long payerId,
+        @Positive Long serviceProviderId
 ) {
 }

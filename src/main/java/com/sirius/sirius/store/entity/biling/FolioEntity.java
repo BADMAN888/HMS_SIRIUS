@@ -42,6 +42,10 @@ public class FolioEntity {
     @JoinColumn(name = "payer_id")
     CustomerEntity payer;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "service_provider_id")
+    LegalEntityEntity serviceProvider;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     FolioStatus status;

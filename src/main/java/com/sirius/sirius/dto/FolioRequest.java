@@ -8,6 +8,7 @@ public record FolioRequest(
         @NotNull @Positive Long hotelId,
         @Positive Long reservationId,
         @NotNull @Positive Long recipientId,
-        @NotNull @Positive Long payerId
+        @NotNull @Positive Long payerId,
+        @Positive Long serviceProviderId
 ) {
 }

@@ -12,6 +12,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/hotels")
 @RequiredArgsConstructor
@@ -57,6 +59,14 @@ public class HotelController {
         return ResponseEntity.ok(
                 hotelService.updateHotel(id, request)
         );
+    }
+
+    @PutMapping("/{id}/legal-entities")
+    public ResponseEntity<HotelResponse> setLegalEntities(
+            @PathVariable @Positive Long id,
+            @RequestBody List<@Positive Long> legalEntityIds
+    ) {
+        return ResponseEntity.ok(hotelService.setLegalEntities(id, legalEntityIds));
     }
 
     @DeleteMapping("/{id}")

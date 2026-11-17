@@ -19,6 +19,10 @@ public record FolioResponse(
 
         Long payerId,
 
+        Long serviceProviderId,
+
+        String serviceProviderName,
+
         FolioStatus status,
 
         BigDecimal totalAmount,

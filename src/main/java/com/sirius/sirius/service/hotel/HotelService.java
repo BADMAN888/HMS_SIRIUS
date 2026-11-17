@@ -6,18 +6,25 @@ import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.mappers.HotelMapper;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
+import com.sirius.sirius.store.entity.biling.LegalEntityEntity;
 import com.sirius.sirius.store.repository.HotelRepository;
+import com.sirius.sirius.store.repository.LegalEntityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashSet;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
 public class HotelService {
 
     private final HotelRepository hotelRepository;
+    private final LegalEntityRepository legalEntityRepository;
     private final HotelMapper hotelMapper;
 
+    @Transactional(readOnly = true)
     public HotelResponse getHotelByName(String name) {
         HotelEntity hotel = hotelRepository.findByHotelName(name)
                 .orElseThrow(() ->
@@ -29,6 +36,7 @@ public class HotelService {
         return hotelMapper.toResponse(hotel);
     }
 
+    @Transactional(readOnly = true)
     public HotelResponse getHotelById(Long id) {
         HotelEntity hotel = hotelRepository.findById(id)
                 .orElseThrow(() ->
@@ -38,6 +46,21 @@ public class HotelService {
                 );
 
         return hotelMapper.toResponse(hotel);
+    }
+
+    @Transactional
+    public HotelResponse setLegalEntities(Long hotelId, List<Long> legalEntityIds) {
+        HotelEntity hotel = hotelRepository.findById(hotelId)
+                .orElseThrow(() -> new NotFoundException("Hotel not found with id: " + hotelId));
+        List<Long> uniqueIds = legalEntityIds == null
+                ? List.of()
+                : legalEntityIds.stream().distinct().toList();
+        List<LegalEntityEntity> legalEntities = legalEntityRepository.findAllById(uniqueIds);
+        if (legalEntities.size() != uniqueIds.size()) {
+            throw new NotFoundException("One or more legal entities were not found");
+        }
+        hotel.setLegalEntities(new HashSet<>(legalEntities));
+        return hotelMapper.toResponse(hotelRepository.save(hotel));
     }
 
     @Transactional

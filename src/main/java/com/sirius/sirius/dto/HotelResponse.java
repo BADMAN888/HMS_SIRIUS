@@ -1,6 +1,7 @@
 package com.sirius.sirius.dto;
 
 import java.time.LocalTime;
+import java.util.List;
 
 public record HotelResponse(
         Long id,
@@ -9,6 +10,7 @@ public record HotelResponse(
         String email,
         String phone,
         LocalTime checkInTime,
-        LocalTime checkOutTime
+        LocalTime checkOutTime,
+        List<LegalEntityResponse> legalEntities
 ) {
 }

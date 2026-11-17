@@ -9,6 +9,7 @@
 @profileUrl = {{baseUrl}}/api/profiles
 @guestDocumentUrl = {{baseUrl}}/api/guest-documents
 @companyUrl = {{baseUrl}}/api/companies
+@legalEntityUrl = {{baseUrl}}/api/legal-entities
 @facilityUrl = {{baseUrl}}/api/facilities
 @facilityPriceUrl = {{baseUrl}}/api/facility-prices
 @reservationUrl = {{baseUrl}}/api/reservations
@@ -162,6 +163,48 @@ Authorization: Bearer {{token}}
 %}
 
 ### ==================================================
+### LEGAL ENTITIES
+### ==================================================
+
+### CREATE LEGAL ENTITY
+
+POST {{legalEntityUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Sirius Test Company {{runCode}} LLC",
+  "shortName": "Sirius Test {{runCode}}",
+  "edrpou": "{{runCode}}",
+  "registrationDate": "2020-01-15",
+  "organizationalLegalForm": "LLC"
+}
+
+> {%
+    client.test("Legal entity created", function () {
+        client.assert(response.status === 201);
+    });
+
+    client.global.set("legalEntityId", response.body.id);
+%}
+
+###
+
+### ASSOCIATE LEGAL ENTITY WITH HOTEL
+
+PUT {{hotelUrl}}/{{hotelId}}/legal-entities
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+[{{legalEntityId}}]
+
+> {%
+    client.test("Legal entity associated with hotel", function () {
+        client.assert(response.status === 200);
+    });
+%}
+
+### ==================================================
 ### COMPANY
 ### ==================================================
 
@@ -172,11 +215,7 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "fullName": "Sirius Test Company {{runCode}} LLC",
-  "shortName": "Sirius Test {{runCode}}",
-  "edrpou": "{{runCode}}",
-  "registrationDate": "2020-01-15",
-  "organizationalLegalForm": "LLC"
+  "legalEntityId": {{legalEntityId}}
 }
 
 > {%
@@ -1342,6 +1381,7 @@ Content-Type: application/json
   "rateId": {{standardRateId}},
   "paymentCategoryId": {{standardCategoryId}},
   "primaryGuestId": {{profile1Id}},
+  "roomLocked": false,
   "guestIds": [{{profile1Id}}, {{profile2Id}}],
   "checkIn": "{{reservation1CheckInDate}}T14:00:00",
   "checkOut": "{{reservation1CheckOutDate}}T12:00:00",
@@ -1374,6 +1414,7 @@ Content-Type: application/json
   "rateId": {{standardRateId}},
   "paymentCategoryId": {{standardCategoryId}},
   "primaryGuestId": {{profile2Id}},
+  "roomLocked": false,
   "guestIds": [{{profile2Id}}, {{profile3Id}}],
   "checkIn": "{{reservation2CheckInDate}}T14:00:00",
   "checkOut": "{{reservation2CheckOutDate}}T12:00:00",
@@ -1406,6 +1447,7 @@ Content-Type: application/json
   "rateId": {{superiorRateId}},
   "paymentCategoryId": {{superiorCategoryId}},
   "primaryGuestId": {{profile3Id}},
+  "roomLocked": false,
   "guestIds": [{{profile3Id}}],
   "checkIn": "{{reservation3CheckInDate}}T14:00:00",
   "checkOut": "{{reservation3CheckOutDate}}T12:00:00",
@@ -1438,6 +1480,7 @@ Content-Type: application/json
   "rateId": {{rate3Id}},
   "paymentCategoryId": {{standardCategoryId}},
   "primaryGuestId": {{profile1Id}},
+  "roomLocked": false,
   "guestIds": [{{profile1Id}}, {{profile2Id}}],
   "checkIn": "{{reservation4CheckInDate}}T14:00:00",
   "checkOut": "{{reservation4CheckOutDate}}T12:00:00",
@@ -1468,6 +1511,7 @@ Content-Type: application/json
   "rateId": {{rate4Id}},
   "paymentCategoryId": {{superiorCategoryId}},
   "primaryGuestId": {{profile2Id}},
+  "roomLocked": false,
   "guestIds": [{{profile2Id}}, {{profile3Id}}],
   "checkIn": "{{reservation5CheckInDate}}T14:00:00",
   "checkOut": "{{reservation5CheckOutDate}}T12:00:00",
@@ -1498,6 +1542,7 @@ Content-Type: application/json
   "rateId": {{rate5Id}},
   "paymentCategoryId": {{standardCategoryId}},
   "primaryGuestId": {{profile3Id}},
+  "roomLocked": false,
   "guestIds": [{{profile3Id}}, {{profile1Id}}],
   "checkIn": "{{reservation6CheckInDate}}T14:00:00",
   "checkOut": "{{reservation6CheckOutDate}}T12:00:00",
@@ -1528,6 +1573,7 @@ Content-Type: application/json
   "rateId": {{rate6Id}},
   "paymentCategoryId": {{superiorCategoryId}},
   "primaryGuestId": {{profile1Id}},
+  "roomLocked": false,
   "guestIds": [{{profile1Id}}, {{profile3Id}}],
   "checkIn": "{{reservation7CheckInDate}}T14:00:00",
   "checkOut": "{{reservation7CheckOutDate}}T12:00:00",
@@ -1558,6 +1604,7 @@ Content-Type: application/json
   "rateId": {{standardRateId}},
   "paymentCategoryId": {{standardCategoryId}},
   "primaryGuestId": {{profile2Id}},
+  "roomLocked": false,
   "guestIds": [{{profile2Id}}, {{profile1Id}}],
   "checkIn": "{{reservation8CheckInDate}}T14:00:00",
   "checkOut": "{{reservation8CheckOutDate}}T12:00:00",
@@ -1588,6 +1635,7 @@ Content-Type: application/json
   "rateId": {{superiorRateId}},
   "paymentCategoryId": {{superiorCategoryId}},
   "primaryGuestId": {{profile3Id}},
+  "roomLocked": false,
   "guestIds": [{{profile3Id}}, {{profile2Id}}],
   "checkIn": "{{reservation9CheckInDate}}T14:00:00",
   "checkOut": "{{reservation9CheckOutDate}}T12:00:00",
@@ -1618,6 +1666,7 @@ Content-Type: application/json
   "rateId": {{rate3Id}},
   "paymentCategoryId": {{standardCategoryId}},
   "primaryGuestId": {{profile1Id}},
+  "roomLocked": false,
   "guestIds": [{{profile1Id}}, {{profile3Id}}],
   "checkIn": "{{reservation10CheckInDate}}T14:00:00",
   "checkOut": "{{reservation10CheckOutDate}}T12:00:00",
@@ -1827,7 +1876,8 @@ Content-Type: application/json
   "hotelId": {{hotelId}},
   "reservationId": {{reservation1Id}},
   "recipientId": {{profile1Id}},
-  "payerId": {{profile1Id}}
+  "payerId": {{profile1Id}},
+  "serviceProviderId": {{legalEntityId}}
 }
 
 > {%
@@ -1850,7 +1900,8 @@ Content-Type: application/json
   "hotelId": {{hotelId}},
   "reservationId": {{reservation2Id}},
   "recipientId": {{profile2Id}},
-  "payerId": {{profile2Id}}
+  "payerId": {{profile2Id}},
+  "serviceProviderId": {{legalEntityId}}
 }
 
 > {%
@@ -1873,7 +1924,8 @@ Content-Type: application/json
   "hotelId": {{hotelId}},
   "reservationId": {{reservation3Id}},
   "recipientId": {{profile3Id}},
-  "payerId": {{profile3Id}}
+  "payerId": {{profile3Id}},
+  "serviceProviderId": {{legalEntityId}}
 }
 
 > {%

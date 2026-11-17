@@ -10,7 +10,8 @@ import org.mapstruct.Mapping;
         componentModel = "spring",
         uses = {
                 AccrualMapper.class,
-                PaymentMapper.class
+                PaymentMapper.class,
+                LegalEntityMapper.class
         }
 )
 public interface FolioMapper {
@@ -19,6 +20,8 @@ public interface FolioMapper {
     @Mapping(target = "reservationId", source = "reservation.id")
     @Mapping(target = "recipientId", source = "recipient.id")
     @Mapping(target = "payerId", source = "payer.id")
+    @Mapping(target = "serviceProviderId", source = "serviceProvider.id")
+    @Mapping(target = "serviceProviderName", source = "serviceProvider.shortName")
     @Mapping(target = "balance", expression = "java(entity.getBalance())")
     FolioResponse toResponse(FolioEntity entity);
 }

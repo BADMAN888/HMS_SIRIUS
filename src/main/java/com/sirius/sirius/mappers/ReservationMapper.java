@@ -17,7 +17,7 @@ import java.util.Set;
 
 @Mapper(
         componentModel = "spring",
-        uses = RoomMapper.class
+        uses = {RoomMapper.class, CompanyMapper.class}
 )
 public interface ReservationMapper {
 

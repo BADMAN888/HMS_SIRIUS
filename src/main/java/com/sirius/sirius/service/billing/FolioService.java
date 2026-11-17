@@ -15,6 +15,7 @@ import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.CustomerEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.FolioStatusHistoryEntity;
+import com.sirius.sirius.store.entity.biling.LegalEntityEntity;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.FolioStatus;
@@ -25,6 +26,7 @@ import com.sirius.sirius.store.repository.FolioRepository;
 import com.sirius.sirius.store.repository.FolioStatusHistoryRepository;
 import com.sirius.sirius.store.repository.HotelRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
+import com.sirius.sirius.store.repository.LegalEntityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -48,6 +50,7 @@ public class FolioService {
     private final AccrualRepository accrualRepository;
     private final FolioStatusHistoryRepository folioStatusHistoryRepository;
     private final FolioMapper folioMapper;
+    private final LegalEntityRepository legalEntityRepository;
 
     public FolioResponse create(FolioRequest request) {
         HotelEntity hotel = findHotel(request.hotelId());
@@ -71,6 +74,9 @@ public class FolioService {
                 .reservation(reservation)
                 .recipient(recipient)
                 .payer(payer)
+                .serviceProvider(request.serviceProviderId() == null
+                        ? null
+                        : findServiceProvider(hotel, request.serviceProviderId()))
                 .status(FolioStatus.OPEN)
                 .totalAmount(BigDecimal.ZERO)
                 .paidAmount(BigDecimal.ZERO)
@@ -84,7 +90,22 @@ public class FolioService {
         ensureFolioIsOpen(folio);
         folio.setRecipient(findCustomer(request.recipientId()));
         folio.setPayer(findCustomer(request.payerId()));
+        folio.setServiceProvider(request.serviceProviderId() == null
+                ? null
+                : findServiceProvider(folio.getHotel(), request.serviceProviderId()));
         return folioMapper.toResponse(folioRepository.save(folio));
+    }
+
+    private LegalEntityEntity findServiceProvider(HotelEntity hotel, Long legalEntityId) {
+        if (!legalEntityRepository.existsByIdAndHotels_Id(legalEntityId, hotel.getId())) {
+            throw new ConflictException("Постачальник послуг не належить цьому готелю");
+        }
+        LegalEntityEntity legalEntity = legalEntityRepository.findById(legalEntityId)
+                .orElseThrow(() -> new NotFoundException("Юридичну особу не знайдено"));
+        if (!legalEntity.isActive()) {
+            throw new ConflictException("Постачальник послуг неактивний");
+        }
+        return legalEntity;
     }
 
     @Transactional(readOnly = true)
