@@ -1,0 +1,6 @@
+ALTER TABLE rooms
+    ADD COLUMN is_clean BOOLEAN NOT NULL DEFAULT TRUE;
+
+UPDATE rooms
+SET is_clean = FALSE
+WHERE status IN ('DIRTY', 'CLEANING');
