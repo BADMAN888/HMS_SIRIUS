@@ -88,6 +88,9 @@ public class FolioService {
     public FolioResponse updateParties(Long folioId, FolioPartiesRequest request) {
         FolioEntity folio = findFolioForUpdate(folioId);
         ensureFolioIsOpen(folio);
+        ReservationEntity reservation = findReservation(request.reservationId());
+        validateReservationHotel(reservation, folio.getHotel());
+        folio.setReservation(reservation);
         folio.setRecipient(findCustomer(request.recipientId()));
         folio.setPayer(findCustomer(request.payerId()));
         folio.setServiceProvider(request.serviceProviderId() == null
@@ -192,16 +195,6 @@ public class FolioService {
                 throw new ConflictException(
                         "Accrual " + accrual.getId()
                                 + " belongs to another hotel"
-                );
-            }
-
-            if (accrual.getReservation() != null
-                    && folio.getReservation() != null
-                    && !accrual.getReservation().getId()
-                    .equals(folio.getReservation().getId())) {
-                throw new ConflictException(
-                        "Accrual " + accrual.getId()
-                                + " belongs to another reservation"
                 );
             }
 

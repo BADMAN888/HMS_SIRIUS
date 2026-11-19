@@ -10,6 +10,9 @@ import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.enums.ReservationStatus;
 import com.sirius.sirius.store.enums.RoomStatus;
 import com.sirius.sirius.store.repository.ReservationRepository;
+import com.sirius.sirius.store.repository.FolioRepository;
+import com.sirius.sirius.store.repository.AccrualRepository;
+import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +28,8 @@ import java.util.List;
 public class ReservationLifecycleService {
 
     private final ReservationRepository reservationRepository;
+    private final FolioRepository folioRepository;
+    private final AccrualRepository accrualRepository;
     private final FolioService folioService;
     private final ReservationIncludedBreakfastService includedBreakfastService;
     private final Clock clock;
@@ -83,6 +88,26 @@ public class ReservationLifecycleService {
             throw new ConflictException(
                     "Reservation cannot be checked out from status: "
                             + reservation.getStatus()
+            );
+        }
+
+        BigDecimal outstandingAmount = folioRepository
+                .findAllByReservationId(reservation.getId())
+                .stream()
+                .filter(folio -> folio.getStatus() == FolioStatus.OPEN)
+                .map(FolioEntity::getBalance)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal unassignedAccruals = accrualRepository
+                .findAllByReservationIdAndFolioIsNull(reservation.getId())
+                .stream()
+                .filter(AccrualEntity::isActive)
+                .map(AccrualEntity::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        if (outstandingAmount.add(unassignedAccruals).compareTo(BigDecimal.ZERO) != 0) {
+            throw new ConflictException(
+                    "Reservation cannot be checked out while it has an outstanding balance"
             );
         }
 
