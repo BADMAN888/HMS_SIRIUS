@@ -131,11 +131,6 @@ public class ReservationAvailabilityService {
             );
         }
 
-        if (!checkOut.toLocalDate().isAfter(checkIn.toLocalDate())) {
-            throw new ValidationException(
-                    "Reservation must contain at least one night"
-            );
-        }
     }
 
     public boolean isRoomReadyAndAvailable(
