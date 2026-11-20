@@ -168,6 +168,24 @@ public class BalanceAccountController {
         );
     }
 
+    @PostMapping("/profile/{profileId}/hotel/{hotelId}/pay-folio/{folioId}")
+    public ResponseEntity<List<BalanceAccountResponse>> payFolioFromProfileBalance(
+            @PathVariable @Positive Long profileId,
+            @PathVariable @Positive Long hotelId,
+            @PathVariable @Positive Long folioId,
+            @Valid @RequestBody BalanceOperationRequest request
+    ) {
+        return ResponseEntity.ok(
+                balanceAccountService.payFolioFromProfileBalance(
+                        profileId,
+                        hotelId,
+                        folioId,
+                        request.amount(),
+                        request.description()
+                )
+        );
+    }
+
     public record BalanceOperationRequest(
 
             @NotNull

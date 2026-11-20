@@ -307,6 +307,87 @@ public class BalanceAccountService {
         return balanceAccountMapper.toResponse(account);
     }
 
+    @Transactional
+    public List<BalanceAccountResponse> payFolioFromProfileBalance(
+            Long profileId,
+            Long hotelId,
+            Long folioId,
+            BigDecimal amount,
+            String description
+    ) {
+        validateAmount(amount);
+
+        FolioEntity folio = folioRepository.findByIdForUpdate(folioId)
+                .orElseThrow(() -> new NotFoundException(
+                        "Folio not found with id: " + folioId
+                ));
+        validateOpenFolio(folio);
+
+        if (folio.getPayer() == null
+                || !(folio.getPayer() instanceof ProfileEntity)
+                || !folio.getPayer().getId().equals(profileId)) {
+            throw new ConflictException(
+                    "Balance account does not belong to the folio payer"
+            );
+        }
+        if (!folio.getHotel().getId().equals(hotelId)) {
+            throw new ValidationException(
+                    "Balance account and folio belong to different hotels"
+            );
+        }
+
+        List<BalanceAccountEntity> accounts = balanceAccountRepository
+                .findAllByProfileIdAndHotelIdForUpdate(profileId, hotelId)
+                .stream()
+                .filter(account -> account.getStatus() == BalanceAccountStatus.ACTIVE)
+                .sorted(Comparator.comparing(BalanceAccountEntity::getCreatedAt).reversed())
+                .toList();
+
+        BigDecimal available = accounts.stream()
+                .map(BalanceAccountEntity::getBalance)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (available.compareTo(amount) < 0) {
+            throw new ConflictException("Insufficient balance");
+        }
+        validateFolioBalance(folio, amount);
+
+        BigDecimal remaining = amount;
+        for (BalanceAccountEntity account : accounts) {
+            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
+                break;
+            }
+
+            BigDecimal paymentAmount = account.getBalance().min(remaining);
+            if (paymentAmount.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+
+            account.setBalance(account.getBalance().subtract(paymentAmount));
+            PaymentEntity payment = PaymentEntity.builder()
+                    .folio(folio)
+                    .method(PaymentMethod.BALANCE)
+                    .balanceAccount(account)
+                    .amount(paymentAmount)
+                    .description(description)
+                    .paidAt(LocalDateTime.now(clock))
+                    .build();
+            PaymentEntity savedPayment = paymentRepository.save(payment);
+            folio.addPayment(savedPayment);
+            balanceAccountRepository.save(account);
+            createTransaction(
+                    account,
+                    BalanceTransactionType.FOLIO_PAYMENT,
+                    paymentAmount,
+                    description,
+                    folio
+            );
+            remaining = remaining.subtract(paymentAmount);
+        }
+
+        folioRepository.save(folio);
+        return accounts.stream().map(balanceAccountMapper::toResponse).toList();
+    }
+
     @Transactional(readOnly = true)
     public List<BalanceTransactionResponse> getTransactions(
             Long accountId
