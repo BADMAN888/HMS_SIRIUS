@@ -77,6 +77,7 @@ public class ProfileService {
         return reservationRepository.findAllByGuestProfileId(profileId)
                 .stream()
                 .map(reservation -> new ProfileReservationResponse(
+                        reservation.getId(),
                         reservation.getConfirmationNumber(),
                         reservation.getCheckIn(),
                         reservation.getCheckOut(),
