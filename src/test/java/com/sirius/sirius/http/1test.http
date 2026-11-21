@@ -1,86 +1,203 @@
-POST http://localhost:8080/auth/login
+# Folio advance payment and parties verification
+# Run the requests in order with IntelliJ HTTP Client.
+# This scenario does not debit the advance or change the folio amounts.
+
+@baseUrl = http://localhost:8080
+@folioId = 16
+@advanceProfileId = 7
+@otherProfileId = 5
+@serviceProviderId = 1
+
+### 1. Login
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
   "email": "user@gmail.com",
   "password": "123456"
 }
-###
-POST http://localhost:8080/api/hotels
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "hotelName": "Olga Grand Hotel",
-  "description": "Four-star hotel in Kozyn with comfortable rooms, modern facilities and professional service.",
-  "phone": "+380441234567",
-  "email": "info@sirius-hotel.com",
-  "address": "Malyshka Street 8",
-  "checkInTime": "14:00",
-  "checkOutTime": "12:00"
-}
-###
-POST {{roomUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomNumber": "102",
-  "floor": 1,
-  "status": "AVAILABLE",
-  "roomView": "CITY",
-  "hotelId": {{hotelId}},
-  "categoryId": {{standardCategoryId}}
-}
-### RESERVATION
-
-POST {{reservationUrl}}
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "roomId": {{room101Id}},
-  "rateId": {{barRateId}},
-  "primaryGuestId": {{profileId}},
-  "guestIds": [
-    {{profileId}},
-    {{profileId2}}
-  ],
-  "checkInDate": "2026-09-25",
-  "checkOutDate": "2026-09-28",
-  "adults": 2,
-  "children": 0
-}
 
 > {%
-    client.test("Reservation created", function () {
-        client.assert(response.status === 201);
+    client.test("Login succeeds", function () {
+        client.assert(response.status === 200, "Expected HTTP 200, got " + response.status);
+        client.assert(!!response.body.token, "Login response has no token");
     });
-
-    client.assert(response.body.id !== null);
-    client.assert(response.body.folioId !== null);
-
-    client.global.set("reservationId", response.body.id);
-    client.global.set("folioId", response.body.folioId);
+    client.global.set("token", response.body.token);
 %}
 
-### FOLIO BY ID
-
-GET {{folioUrl}}/{{folioId}}
+### 2. Read folio and capture original state
+GET {{baseUrl}}/api/folios/{{folioId}}
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Folio found", function () {
-        client.assert(response.status === 200);
+    client.test("Folio exists and is open", function () {
+        client.assert(response.status === 200, "Expected HTTP 200, got " + response.status);
+        client.assert(Number(response.body.id) === 16, "Unexpected folio ID");
+        client.assert(response.body.status === "OPEN", "Folio must be open for this scenario");
     });
-
-    client.assert(response.body.id == client.global.get("folioId"));
+    client.test("Folio has required parties", function () {
+        client.assert(response.body.recipientId != null, "Folio recipient is missing");
+        client.assert(response.body.payerId != null, "Folio payer is missing");
+        client.assert(response.body.reservationId != null, "Folio reservation is missing");
+    });
+    client.global.set("originalRecipientId", response.body.recipientId);
+    client.global.set("originalPayerId", response.body.payerId);
+    client.global.set("originalReservationId", response.body.reservationId);
+    client.global.set("originalTotalAmount", Number(response.body.totalAmount));
+    client.global.set("originalPaidAmount", Number(response.body.paidAmount));
+    client.global.set("originalBalance", Number(response.body.balance));
+    client.global.set("originalPaymentCount", (response.body.payments || []).length);
+    client.global.set("folioHotelId", response.body.hotelId);
 %}
-###
-GET http://localhost:8080/api/rooms/category/1/status/AVAILABLE
-Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyQGdtYWlsLmNvbSIsImlhdCI6MTc5Mjk0MTc2NiwiZXhwIjoxNzkyOTQyNjY2fQ.naMjPuObDtmxZHvUVGhXiq7Z_uU4geYYJa9twalLO1k
 
-
-###
-GET {{folioUrl}}/{{folioId}}/reservations
+### 3. Verify the advance account belongs to profile 7
+GET {{baseUrl}}/api/balance-accounts/profile/{{advanceProfileId}}/hotel/{{folioHotelId}}
 Authorization: Bearer {{token}}
+
+> {%
+    client.test("Advance account is profile 7's active account", function () {
+        client.assert(response.status === 200, "Expected HTTP 200, got " + response.status);
+        client.assert(Number(response.body.profileId) === 7, "Balance account belongs to another profile");
+        client.assert(Number(response.body.hotelId) === Number(client.global.get("folioHotelId")), "Balance account belongs to another hotel");
+        client.assert(response.body.status === "ACTIVE", "Balance account is not active");
+    });
+    client.global.set("originalAdvanceBalance", Number(response.body.balance));
+%}
+
+### 4. Set profile 7 as payer and validate the current recipient against the reservation
+PATCH {{baseUrl}}/api/folios/{{folioId}}/parties
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipientId": {{originalRecipientId}},
+  "payerId": {{advanceProfileId}},
+  "reservationId": {{originalReservationId}},
+  "serviceProviderId": {{serviceProviderId}}
+}
+
+> {%
+    client.test("Recipient and payer can be saved for this reservation", function () {
+        client.assert(response.status === 200, "Expected HTTP 200, got " + response.status + "; " + (response.body.message || ""));
+        client.assert(Number(response.body.recipientId) === Number(client.global.get("originalRecipientId")), "Recipient changed unexpectedly");
+        client.assert(Number(response.body.payerId) === 7, "Payer was not set to profile 7");
+        client.assert(Number(response.body.reservationId) === Number(client.global.get("originalReservationId")), "Reservation changed unexpectedly");
+    });
+%}
+
+### 5. Verify the payer change persisted
+GET {{baseUrl}}/api/folios/{{folioId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Folio now uses advance profile 7", function () {
+        client.assert(response.status === 200, "Expected HTTP 200, got " + response.status);
+        client.assert(Number(response.body.payerId) === 7, "Expected payerId 7");
+        client.assert(Number(response.body.recipientId) === Number(client.global.get("originalRecipientId")), "Recipient did not persist");
+        client.assert(Number(response.body.reservationId) === Number(client.global.get("originalReservationId")), "Reservation did not persist");
+    });
+%}
+
+### 6. Correct payer reaches balance and folio validation without charging
+# The amount is intentionally far above the folio balance. A correct payer must
+# pass the payer/account ownership check and then be rejected by the amount check.
+POST {{baseUrl}}/api/balance-accounts/profile/{{advanceProfileId}}/hotel/{{folioHotelId}}/pay-folio/{{folioId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 1000000000.00,
+  "description": "HTTP validation only; must not charge",
+  "idempotencyKey": "folio-{{folioId}}-payer-{{advanceProfileId}}-validation-01"
+}
+
+> {%
+    client.test("Correct payer passes ownership validation and no payment is made", function () {
+        const message = String(response.body.message || "");
+        client.assert(response.status === 409, "Expected HTTP 409, got " + response.status + "; " + message);
+        client.assert(
+            message.includes("Insufficient balance") || message.includes("Payment amount exceeds the outstanding folio balance"),
+            "Expected an amount/balance validation error after payer validation; got: " + message
+        );
+    });
+%}
+
+### 7. A different profile cannot pay this folio
+POST {{baseUrl}}/api/balance-accounts/profile/{{otherProfileId}}/hotel/{{folioHotelId}}/pay-folio/{{folioId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 1.00,
+  "description": "HTTP validation: non-payer must be rejected",
+  "idempotencyKey": "folio-{{folioId}}-wrong-payer-{{otherProfileId}}-validation-01"
+}
+
+> {%
+    client.test("Non-payer is rejected with the payer conflict", function () {
+        client.assert(response.status === 409, "Expected HTTP 409, got " + response.status + "; " + (response.body.message || ""));
+        client.assert(
+            String(response.body.message || "").includes("does not belong to the folio payer"),
+            "Expected the folio payer conflict; got: " + (response.body.message || "")
+        );
+    });
+%}
+
+### 8. Confirm both rejected payments left folio and advance unchanged
+GET {{baseUrl}}/api/folios/{{folioId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Rejected payments did not change the folio", function () {
+        client.assert(response.status === 200, "Expected HTTP 200, got " + response.status);
+        client.assert(Number(response.body.totalAmount) === Number(client.global.get("originalTotalAmount")), "Folio total changed");
+        client.assert(Number(response.body.paidAmount) === Number(client.global.get("originalPaidAmount")), "Paid amount changed");
+        client.assert(Number(response.body.balance) === Number(client.global.get("originalBalance")), "Folio balance changed");
+        client.assert((response.body.payments || []).length === Number(client.global.get("originalPaymentCount")), "Payment list changed");
+    });
+%}
+
+### 9. Confirm the advance was not debited
+GET {{baseUrl}}/api/balance-accounts/profile/{{advanceProfileId}}/hotel/{{folioHotelId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Advance balance is unchanged", function () {
+        client.assert(response.status === 200, "Expected HTTP 200, got " + response.status);
+        client.assert(Number(response.body.balance) === Number(client.global.get("originalAdvanceBalance")), "Advance balance changed");
+    });
+%}
+
+### 10. Restore the original folio parties
+PATCH {{baseUrl}}/api/folios/{{folioId}}/parties
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "recipientId": {{originalRecipientId}},
+  "payerId": {{originalPayerId}},
+  "reservationId": {{originalReservationId}},
+  "serviceProviderId": {{serviceProviderId}}
+}
+
+> {%
+    client.test("Original parties were restored", function () {
+        client.assert(response.status === 200, "Expected HTTP 200, got " + response.status + "; " + (response.body.message || ""));
+        client.assert(Number(response.body.recipientId) === Number(client.global.get("originalRecipientId")), "Original recipient was not restored");
+        client.assert(Number(response.body.payerId) === Number(client.global.get("originalPayerId")), "Original payer was not restored");
+        client.assert(Number(response.body.reservationId) === Number(client.global.get("originalReservationId")), "Original reservation was not restored");
+    });
+%}
+
+### 11. Verify the final folio parties
+GET {{baseUrl}}/api/folios/{{folioId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Final folio state matches the original parties", function () {
+        client.assert(response.status === 200, "Expected HTTP 200, got " + response.status);
+        client.assert(Number(response.body.recipientId) === Number(client.global.get("originalRecipientId")), "Final recipient differs from original");
+        client.assert(Number(response.body.payerId) === Number(client.global.get("originalPayerId")), "Final payer differs from original");
+        client.assert(Number(response.body.reservationId) === Number(client.global.get("originalReservationId")), "Final reservation differs from original");
+    });
+%}

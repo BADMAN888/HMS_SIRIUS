@@ -13,6 +13,8 @@ import java.util.Optional;
 
 public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
 
+    java.util.Optional<PaymentEntity> findByIdempotencyKey(String idempotencyKey);
+
     List<PaymentEntity> findAllByFolioId(Long folioId);
 
     List<PaymentEntity> findAllByReversalOfId(Long paymentId);

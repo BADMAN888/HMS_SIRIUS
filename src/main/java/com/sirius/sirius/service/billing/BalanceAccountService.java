@@ -11,6 +11,7 @@ import com.sirius.sirius.store.entity.biling.BalanceAccountEntity;
 import com.sirius.sirius.store.entity.biling.BalanceTransactionEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.PaymentEntity;
+import com.sirius.sirius.store.entity.UserEntity;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
 import com.sirius.sirius.store.enums.BalanceAccountStatus;
@@ -25,6 +26,8 @@ import com.sirius.sirius.store.repository.PaymentRepository;
 import com.sirius.sirius.store.repository.ProfileRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -258,14 +261,32 @@ public class BalanceAccountService {
             Long accountId,
             Long folioId,
             BigDecimal amount,
-            String description
+            String description,
+            String idempotencyKey
     ) {
         validateAmount(amount);
+        validateIdempotencyKey(idempotencyKey);
 
         FolioEntity folio = folioRepository.findByIdForUpdate(folioId)
                 .orElseThrow(() -> new NotFoundException(
                         "Folio not found with id: " + folioId
                 ));
+
+        PaymentEntity repeatedPayment = findRepeatedBalancePayment(idempotencyKey, folio, amount, description);
+        if (repeatedPayment != null) {
+            if (repeatedPayment.getBalanceAccount() == null) {
+                throw new ConflictException("Repeated balance payment has no linked account");
+            }
+            BalanceAccountEntity repeatedAccount = getAccountForUpdate(repeatedPayment.getBalanceAccount().getId());
+            if (!repeatedAccount.getId().equals(accountId)
+                    || folio.getPayer() == null
+                    || repeatedPayment.getPayer() == null
+                    || !repeatedPayment.getPayer().getId().equals(repeatedAccount.getCustomer().getId())
+                    || !repeatedAccount.getHotel().getId().equals(folio.getHotel().getId())) {
+                throw new ConflictException("Idempotency key was already used for another balance account");
+            }
+            return balanceAccountMapper.toResponse(repeatedAccount);
+        }
 
         BalanceAccountEntity account = getAccountForUpdate(accountId);
 
@@ -282,6 +303,9 @@ public class BalanceAccountService {
                 .folio(folio)
                 .method(PaymentMethod.BALANCE)
                 .balanceAccount(account)
+                .payer(folio.getPayer())
+                .idempotencyKey(idempotencyKey)
+                .performedBy(currentUser())
                 .amount(amount)
                 .description(description)
                 .paidAt(LocalDateTime.now(clock))
@@ -299,7 +323,8 @@ public class BalanceAccountService {
                 BalanceTransactionType.FOLIO_PAYMENT,
                 amount,
                 description,
-                folio
+                folio,
+                savedPayment
         );
 
         return balanceAccountMapper.toResponse(account);
@@ -311,18 +336,38 @@ public class BalanceAccountService {
             Long hotelId,
             Long folioId,
             BigDecimal amount,
-            String description
+            String description,
+            String idempotencyKey
     ) {
         validateAmount(amount);
+        validateIdempotencyKey(idempotencyKey);
 
         FolioEntity folio = folioRepository.findByIdForUpdate(folioId)
                 .orElseThrow(() -> new NotFoundException(
                         "Folio not found with id: " + folioId
                 ));
+
+        PaymentEntity repeatedPayment = findRepeatedBalancePayment(idempotencyKey, folio, amount, description);
+        if (repeatedPayment != null) {
+            if (folio.getPayer() == null
+                    || repeatedPayment.getPayer() == null
+                    || !repeatedPayment.getPayer().getId().equals(profileId)
+                    || !folio.getHotel().getId().equals(hotelId)) {
+                throw new ConflictException("Idempotency key does not match the folio payer or hotel");
+            }
+            if (repeatedPayment.getBalanceAccount() == null) {
+                throw new ConflictException("Repeated balance payment has no linked account");
+            }
+            BalanceAccountEntity repeatedAccount = getAccountForUpdate(repeatedPayment.getBalanceAccount().getId());
+            if (!repeatedAccount.getCustomer().getId().equals(profileId)
+                    || !repeatedAccount.getHotel().getId().equals(hotelId)) {
+                throw new ConflictException("Idempotency key was already used for another payer or hotel");
+            }
+            return List.of(balanceAccountMapper.toResponse(repeatedAccount));
+        }
         validateOpenFolio(folio);
 
         if (folio.getPayer() == null
-                || !(folio.getPayer() instanceof ProfileEntity)
                 || !folio.getPayer().getId().equals(profileId)) {
             throw new ConflictException(
                     "Balance account does not belong to the folio payer"
@@ -348,11 +393,14 @@ public class BalanceAccountService {
         account.setBalance(account.getBalance().subtract(amount));
         PaymentEntity payment = PaymentEntity.builder()
                 .folio(folio).method(PaymentMethod.BALANCE).balanceAccount(account)
+                .payer(folio.getPayer()).idempotencyKey(idempotencyKey)
+                .performedBy(currentUser())
                 .amount(amount).description(description).paidAt(LocalDateTime.now(clock)).build();
-        folio.addPayment(paymentRepository.save(payment));
+        PaymentEntity savedPayment = paymentRepository.save(payment);
+        folio.addPayment(savedPayment);
         balanceAccountRepository.save(account);
         folioRepository.save(folio);
-        createTransaction(account, BalanceTransactionType.FOLIO_PAYMENT, amount, description, folio);
+        createTransaction(account, BalanceTransactionType.FOLIO_PAYMENT, amount, description, folio, savedPayment);
         return List.of(balanceAccountMapper.toResponse(account));
     }
 
@@ -454,6 +502,17 @@ public class BalanceAccountService {
             String description,
             FolioEntity folio
     ) {
+        createTransaction(account, type, amount, description, folio, null);
+    }
+
+    private void createTransaction(
+            BalanceAccountEntity account,
+            BalanceTransactionType type,
+            BigDecimal amount,
+            String description,
+            FolioEntity folio,
+            PaymentEntity payment
+    ) {
         BalanceTransactionEntity transaction =
                 new BalanceTransactionEntity();
 
@@ -463,6 +522,8 @@ public class BalanceAccountService {
         transaction.setBalanceAfter(account.getBalance());
         transaction.setDescription(description);
         transaction.setCreatedAt(LocalDateTime.now(clock));
+        transaction.setPayment(payment);
+        transaction.setPerformedBy(currentUser());
 
         if (folio != null) {
             transaction.setFolio(folio);
@@ -470,6 +531,38 @@ public class BalanceAccountService {
         }
 
         balanceTransactionRepository.save(transaction);
+    }
+
+    private PaymentEntity findRepeatedBalancePayment(
+            String idempotencyKey,
+            FolioEntity folio,
+            BigDecimal amount,
+            String description
+    ) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) return null;
+        PaymentEntity existing = paymentRepository.findByIdempotencyKey(idempotencyKey).orElse(null);
+        if (existing == null) return null;
+        if (existing.getFolio() == null
+                || !existing.getFolio().getId().equals(folio.getId())
+                || existing.getMethod() != PaymentMethod.BALANCE
+                || existing.getAmount().compareTo(amount) != 0
+                || !java.util.Objects.equals(existing.getDescription(), description)) {
+            throw new ConflictException("Idempotency key was already used for a different payment");
+        }
+        return existing;
+    }
+
+    private void validateIdempotencyKey(String idempotencyKey) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            throw new ValidationException("Idempotency key is required for balance payments");
+        }
+    }
+
+    private UserEntity currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getPrincipal() instanceof UserEntity user
+                ? user
+                : null;
     }
 
     private void validateAmount(BigDecimal amount) {
@@ -523,12 +616,6 @@ public class BalanceAccountService {
         if (folio.getPayer() == null) {
             throw new ValidationException(
                     "Folio payer is not specified"
-            );
-        }
-
-        if (!(folio.getPayer() instanceof ProfileEntity)) {
-            throw new ConflictException(
-                    "Only a profile can pay a folio using profile advance"
             );
         }
 

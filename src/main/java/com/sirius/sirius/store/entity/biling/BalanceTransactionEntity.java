@@ -1,6 +1,7 @@
 package com.sirius.sirius.store.entity.biling;
 
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
+import com.sirius.sirius.store.entity.UserEntity;
 import com.sirius.sirius.store.enums.BalanceTransactionType;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -45,6 +46,14 @@ public class BalanceTransactionEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "folio_id")
     private FolioEntity folio;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "performed_by_user_id")
+    private UserEntity performedBy;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id", unique = true)
+    private PaymentEntity payment;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;

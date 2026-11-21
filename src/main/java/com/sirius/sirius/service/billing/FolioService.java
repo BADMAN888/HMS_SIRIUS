@@ -64,6 +64,7 @@ public class FolioService {
         CustomerEntity recipient = request.recipientId() == null
                 ? null
                 : findCustomer(request.recipientId());
+        validateRecipientInReservation(recipient, reservation);
 
         CustomerEntity payer = request.payerId() == null
                 ? null
@@ -90,8 +91,10 @@ public class FolioService {
         ensureFolioIsOpen(folio);
         ReservationEntity reservation = findReservation(request.reservationId());
         validateReservationHotel(reservation, folio.getHotel());
+        CustomerEntity recipient = findCustomer(request.recipientId());
+        validateRecipientInReservation(recipient, reservation);
         folio.setReservation(reservation);
-        folio.setRecipient(findCustomer(request.recipientId()));
+        folio.setRecipient(recipient);
         folio.setPayer(findCustomer(request.payerId()));
         folio.setServiceProvider(request.serviceProviderId() == null
                 ? null
@@ -371,6 +374,21 @@ public class FolioService {
         if (!reservation.getRoom().getHotel().getId().equals(hotel.getId())) {
             throw new ValidationException(
                     "Reservation belongs to another hotel"
+            );
+        }
+    }
+
+    private void validateRecipientInReservation(
+            CustomerEntity recipient,
+            ReservationEntity reservation
+    ) {
+        if (reservation == null || recipient == null) {
+            return;
+        }
+        if (reservation.getGuests().stream()
+                .noneMatch(guest -> guest.getId().equals(recipient.getId()))) {
+            throw new ValidationException(
+                    "Service recipient must be a profile staying in the selected reservation"
             );
         }
     }

@@ -12,6 +12,7 @@ import com.sirius.sirius.store.entity.biling.BalanceAccountEntity;
 import com.sirius.sirius.store.entity.biling.BalanceTransactionEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.PaymentEntity;
+import com.sirius.sirius.store.entity.UserEntity;
 import com.sirius.sirius.store.enums.BalanceTransactionType;
 import com.sirius.sirius.store.enums.BalanceAccountStatus;
 import com.sirius.sirius.store.enums.FolioStatus;
@@ -22,6 +23,8 @@ import com.sirius.sirius.store.repository.FolioRepository;
 import com.sirius.sirius.store.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -56,6 +59,8 @@ public class PaymentService {
 
         PaymentEntity payment = PaymentEntity.builder()
                 .folio(folio)
+                .payer(folio.getPayer())
+                .performedBy(currentUser())
                 .method(request.method())
                 .amount(request.amount())
                 .description(request.description())
@@ -152,6 +157,10 @@ public class PaymentService {
 
         PaymentEntity refund = PaymentEntity.builder()
                 .folio(folio)
+                .payer(originalPayment.getPayer() != null
+                        ? originalPayment.getPayer()
+                        : folio.getPayer())
+                .performedBy(currentUser())
                 .method(originalPayment.getMethod())
                 .balanceAccount(balanceAccount)
                 .amount(refundAmount.negate())
@@ -172,7 +181,8 @@ public class PaymentService {
                     balanceAccount,
                     originalPayment,
                     refundAmount,
-                    request.reason()
+                    request.reason(),
+                    saved
             );
         }
 
@@ -243,7 +253,8 @@ public class PaymentService {
             BalanceAccountEntity account,
             PaymentEntity originalPayment,
             BigDecimal refundAmount,
-            String reason
+            String reason,
+            PaymentEntity refundPayment
     ) {
         if (account.getStatus() != BalanceAccountStatus.ACTIVE) {
             throw new ConflictException("Balance account is not active");
@@ -271,8 +282,17 @@ public class PaymentService {
                 originalPayment.getFolio().getReservation()
         );
         transaction.setCreatedAt(LocalDateTime.now(clock));
+        transaction.setPayment(refundPayment);
+        transaction.setPerformedBy(currentUser());
 
         balanceTransactionRepository.save(transaction);
+    }
+
+    private UserEntity currentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getPrincipal() instanceof UserEntity user
+                ? user
+                : null;
     }
 
     private void validatePayment(PaymentRequest request) {

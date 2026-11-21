@@ -163,7 +163,8 @@ public class BalanceAccountController {
                         accountId,
                         folioId,
                         request.amount(),
-                        request.description()
+                        request.description(),
+                        request.idempotencyKey()
                 )
         );
     }
@@ -181,7 +182,8 @@ public class BalanceAccountController {
                         hotelId,
                         folioId,
                         request.amount(),
-                        request.description()
+                        request.description(),
+                        request.idempotencyKey()
                 )
         );
     }
@@ -194,7 +196,10 @@ public class BalanceAccountController {
             BigDecimal amount,
 
             @Size(max = 255)
-            String description
+            String description,
+
+            @Size(max = 64)
+            String idempotencyKey
 
     ) {
     }

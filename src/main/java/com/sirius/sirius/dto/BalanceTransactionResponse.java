@@ -23,7 +23,15 @@ public record BalanceTransactionResponse(
 
         Long folioId,
 
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+
+        Long paymentId,
+
+        Long payerId,
+
+        Long hotelId,
+
+        Long performedByUserId
 
 ) {
 }

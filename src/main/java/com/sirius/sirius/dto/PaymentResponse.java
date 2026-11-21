@@ -20,7 +20,13 @@ public record PaymentResponse(
 
         LocalDateTime paidAt,
 
-        Long reversalOfPaymentId
+        Long reversalOfPaymentId,
+
+        Long payerId,
+
+        Long balanceAccountId,
+
+        Long performedByUserId
 
 ) {
 }

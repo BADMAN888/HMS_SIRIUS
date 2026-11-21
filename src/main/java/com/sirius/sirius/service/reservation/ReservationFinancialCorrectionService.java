@@ -164,7 +164,8 @@ public class ReservationFinancialCorrectionService {
                         advanceAccount,
                         folio,
                         allocationAmount,
-                        request.reason()
+                        request.reason(),
+                        savedReversal
                 );
 
             } else if (originalPayment.getMethod()
@@ -173,7 +174,8 @@ public class ReservationFinancialCorrectionService {
                 restoreOriginalBalance(
                         originalPayment,
                         allocationAmount,
-                        request.reason()
+                        request.reason(),
+                        savedReversal
                 );
             }
 
@@ -222,6 +224,12 @@ public class ReservationFinancialCorrectionService {
 
         return PaymentEntity.builder()
                 .folio(original.getFolio())
+                .payer(transferToAdvance
+                        ? advanceAccount.getCustomer()
+                        : original.getPayer() != null
+                        ? original.getPayer()
+                        : original.getFolio().getPayer())
+                .performedBy(getCurrentUser())
                 .method(method)
                 .balanceAccount(account)
                 .amount(amount.negate())
@@ -235,7 +243,8 @@ public class ReservationFinancialCorrectionService {
             BalanceAccountEntity account,
             FolioEntity folio,
             BigDecimal amount,
-            String reason
+            String reason,
+            PaymentEntity payment
     ) {
         ensureBalanceAccountCanReceiveFunds(account, amount);
         account.setBalance(account.getBalance().add(amount));
@@ -247,14 +256,16 @@ public class ReservationFinancialCorrectionService {
                 BalanceTransactionType.ADJUSTMENT_CREDIT,
                 amount,
                 "Перенесення коштів з Folio #" + folio.getId()
-                        + ": " + reason
+                        + ": " + reason,
+                payment
         );
     }
 
     private void restoreOriginalBalance(
             PaymentEntity original,
             BigDecimal amount,
-            String reason
+            String reason,
+            PaymentEntity payment
     ) {
         BalanceAccountEntity account = original.getBalanceAccount();
 
@@ -284,7 +295,8 @@ public class ReservationFinancialCorrectionService {
                 BalanceTransactionType.REFUND,
                 amount,
                 "Повернення платежу #" + original.getId()
-                        + ": " + reason
+                        + ": " + reason,
+                payment
         );
     }
 
@@ -293,7 +305,8 @@ public class ReservationFinancialCorrectionService {
             FolioEntity folio,
             BalanceTransactionType type,
             BigDecimal amount,
-            String description
+            String description,
+            PaymentEntity payment
     ) {
         BalanceTransactionEntity transaction =
                 new BalanceTransactionEntity();
@@ -306,6 +319,8 @@ public class ReservationFinancialCorrectionService {
         transaction.setFolio(folio);
         transaction.setReservation(folio.getReservation());
         transaction.setCreatedAt(LocalDateTime.now(clock));
+        transaction.setPayment(payment);
+        transaction.setPerformedBy(getCurrentUser());
 
         balanceTransactionRepository.save(transaction);
     }
@@ -573,6 +588,15 @@ public class ReservationFinancialCorrectionService {
     }
 
     private void requireAdmin() {
+        UserEntity user = getCurrentUser();
+        if (user.getRole() != Role.ADMIN) {
+            throw new ForbiddenException(
+                    "Only administrators can perform financial corrections"
+            );
+        }
+    }
+
+    private UserEntity getCurrentUser() {
         Authentication authentication =
                 SecurityContextHolder.getContext().getAuthentication();
 
@@ -584,10 +608,6 @@ public class ReservationFinancialCorrectionService {
             );
         }
 
-        if (user.getRole() != Role.ADMIN) {
-            throw new ForbiddenException(
-                    "Only administrators can perform financial corrections"
-            );
-        }
+        return user;
     }
 }
