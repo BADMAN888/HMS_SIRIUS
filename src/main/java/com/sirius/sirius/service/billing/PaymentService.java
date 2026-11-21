@@ -13,6 +13,7 @@ import com.sirius.sirius.store.entity.biling.BalanceTransactionEntity;
 import com.sirius.sirius.store.entity.biling.FolioEntity;
 import com.sirius.sirius.store.entity.biling.PaymentEntity;
 import com.sirius.sirius.store.enums.BalanceTransactionType;
+import com.sirius.sirius.store.enums.BalanceAccountStatus;
 import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.enums.PaymentMethod;
 import com.sirius.sirius.store.repository.BalanceAccountRepository;
@@ -144,6 +145,9 @@ public class PaymentService {
                     .orElseThrow(() -> new NotFoundException(
                             "Balance account not found"
                     ));
+            if (balanceAccount.getStatus() != BalanceAccountStatus.ACTIVE) {
+                throw new ConflictException("Balance account is not active");
+            }
         }
 
         PaymentEntity refund = PaymentEntity.builder()
@@ -241,6 +245,13 @@ public class PaymentService {
             BigDecimal refundAmount,
             String reason
     ) {
+        if (account.getStatus() != BalanceAccountStatus.ACTIVE) {
+            throw new ConflictException("Balance account is not active");
+        }
+        if (account.getBalance().add(refundAmount)
+                .compareTo(new BigDecimal("9999999999.99")) > 0) {
+            throw new ValidationException("Balance exceeds the maximum supported amount");
+        }
         account.setBalance(account.getBalance().add(refundAmount));
         balanceAccountRepository.save(account);
 

@@ -25,6 +25,12 @@ public interface BalanceAccountRepository
             Long hotelId
     );
 
+    List<BalanceAccountEntity> findAllByCustomerIdAndHotelIdAndStatusOrderByCreatedAtDescIdDesc(
+            Long customerId,
+            Long hotelId,
+            BalanceAccountStatus status
+    );
+
     Optional<BalanceAccountEntity> findFirstByCustomerIdAndHotelIdOrderByCreatedAtDesc(
             Long customerId,
             Long hotelId
@@ -32,6 +38,12 @@ public interface BalanceAccountRepository
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<BalanceAccountEntity> findFirstByCustomerIdAndHotelIdAndStatusOrderByCreatedAtDesc(
+            Long customerId,
+            Long hotelId,
+            BalanceAccountStatus status
+    );
+
+    Optional<BalanceAccountEntity> findFirstByCustomerIdAndHotelIdAndStatusOrderByCreatedAtDescIdDesc(
             Long customerId,
             Long hotelId,
             BalanceAccountStatus status
@@ -53,6 +65,7 @@ public interface BalanceAccountRepository
             FROM BalanceAccountEntity account
             WHERE account.customer.id = :profileId
               AND account.hotel.id = :hotelId
+            ORDER BY account.createdAt DESC, account.id DESC
             """)
     List<BalanceAccountEntity> findAllByProfileIdAndHotelIdForUpdate(
             @Param("profileId") Long profileId,

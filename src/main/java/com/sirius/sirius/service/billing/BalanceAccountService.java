@@ -31,7 +31,6 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Comparator;
 
 @Service
 @RequiredArgsConstructor
@@ -55,9 +54,9 @@ public class BalanceAccountService {
             Long hotelId
     ) {
         validateProfileExists(profileId);
+        findHotel(hotelId);
 
-        BalanceAccountEntity account = balanceAccountRepository
-                .findFirstByCustomerIdAndHotelIdOrderByCreatedAtDesc(profileId, hotelId)
+        BalanceAccountEntity account = findActiveAccount(profileId, hotelId)
                 .orElseThrow(() -> new NotFoundException(
                         "Balance account not found for profile "
                                 + profileId + " and hotel " + hotelId
@@ -97,8 +96,7 @@ public class BalanceAccountService {
 
         HotelEntity hotel = findHotel(hotelId);
 
-        BalanceAccountEntity account = balanceAccountRepository
-                .findFirstByCustomerIdAndHotelIdOrderByCreatedAtDesc(profileId, hotelId)
+        BalanceAccountEntity account = findActiveAccountForUpdate(profileId, hotelId)
                 .orElseGet(() -> createAccount(profile, hotel));
 
         return balanceAccountMapper.toResponse(account);
@@ -115,9 +113,10 @@ public class BalanceAccountService {
                         "Profile not found with id: " + profileId
                 ));
 
-        return balanceAccountMapper.toResponse(
-                createAccount(profile, findHotel(hotelId))
-        );
+        HotelEntity hotel = findHotel(hotelId);
+        BalanceAccountEntity account = findActiveAccountForUpdate(profileId, hotelId)
+                .orElseGet(() -> createAccount(profile, hotel));
+        return balanceAccountMapper.toResponse(account);
     }
 
     @Transactional
@@ -137,14 +136,11 @@ public class BalanceAccountService {
 
         HotelEntity hotel = findHotel(hotelId);
 
-        List<BalanceAccountEntity> accounts = balanceAccountRepository
-                .findAllByProfileIdAndHotelIdForUpdate(profileId, hotelId);
-        BalanceAccountEntity account = accounts.stream()
-                .filter(item -> item.getStatus() == BalanceAccountStatus.ACTIVE)
-                .max(Comparator.comparing(BalanceAccountEntity::getCreatedAt))
+        BalanceAccountEntity account = findActiveAccountForUpdate(profileId, hotelId)
                 .orElseGet(() -> createAccount(profile, hotel));
 
         validateActive(account);
+        validateCreditCapacity(account, amount);
 
         account.setBalance(account.getBalance().add(amount));
 
@@ -171,6 +167,7 @@ public class BalanceAccountService {
 
         BalanceAccountEntity account = getAccountForUpdate(accountId);
         validateActive(account);
+        validateCreditCapacity(account, amount);
         account.setBalance(account.getBalance().add(amount));
         balanceAccountRepository.save(account);
 
@@ -211,6 +208,7 @@ public class BalanceAccountService {
 
         BalanceAccountEntity account = getAccountForUpdate(accountId);
         validateActive(account);
+        validateCreditCapacity(account, amount);
 
         account.setBalance(account.getBalance().add(amount));
 
@@ -336,56 +334,26 @@ public class BalanceAccountService {
             );
         }
 
-        List<BalanceAccountEntity> accounts = balanceAccountRepository
-                .findAllByProfileIdAndHotelIdForUpdate(profileId, hotelId)
-                .stream()
-                .filter(account -> account.getStatus() == BalanceAccountStatus.ACTIVE)
-                .sorted(Comparator.comparing(BalanceAccountEntity::getCreatedAt).reversed())
-                .toList();
-
-        BigDecimal available = accounts.stream()
-                .map(BalanceAccountEntity::getBalance)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        if (available.compareTo(amount) < 0) {
-            throw new ConflictException("Insufficient balance");
+        ProfileEntity profile = profileRepository.findByIdForUpdate(profileId)
+                .orElseThrow(() -> new NotFoundException("Profile not found with id: " + profileId));
+        if (!profile.getId().equals(folio.getPayer().getId())) {
+            throw new ConflictException("Balance account does not belong to the folio payer");
         }
+        BalanceAccountEntity account = findActiveAccountForUpdate(profileId, hotelId)
+                .orElseThrow(() -> new ConflictException("No active balance account found"));
+        validateActive(account);
+        validateSufficientBalance(account, amount);
         validateFolioBalance(folio, amount);
 
-        BigDecimal remaining = amount;
-        for (BalanceAccountEntity account : accounts) {
-            if (remaining.compareTo(BigDecimal.ZERO) <= 0) {
-                break;
-            }
-
-            BigDecimal paymentAmount = account.getBalance().min(remaining);
-            if (paymentAmount.compareTo(BigDecimal.ZERO) <= 0) {
-                continue;
-            }
-
-            account.setBalance(account.getBalance().subtract(paymentAmount));
-            PaymentEntity payment = PaymentEntity.builder()
-                    .folio(folio)
-                    .method(PaymentMethod.BALANCE)
-                    .balanceAccount(account)
-                    .amount(paymentAmount)
-                    .description(description)
-                    .paidAt(LocalDateTime.now(clock))
-                    .build();
-            PaymentEntity savedPayment = paymentRepository.save(payment);
-            folio.addPayment(savedPayment);
-            balanceAccountRepository.save(account);
-            createTransaction(
-                    account,
-                    BalanceTransactionType.FOLIO_PAYMENT,
-                    paymentAmount,
-                    description,
-                    folio
-            );
-            remaining = remaining.subtract(paymentAmount);
-        }
-
+        account.setBalance(account.getBalance().subtract(amount));
+        PaymentEntity payment = PaymentEntity.builder()
+                .folio(folio).method(PaymentMethod.BALANCE).balanceAccount(account)
+                .amount(amount).description(description).paidAt(LocalDateTime.now(clock)).build();
+        folio.addPayment(paymentRepository.save(payment));
+        balanceAccountRepository.save(account);
         folioRepository.save(folio);
-        return accounts.stream().map(balanceAccountMapper::toResponse).toList();
+        createTransaction(account, BalanceTransactionType.FOLIO_PAYMENT, amount, description, folio);
+        return List.of(balanceAccountMapper.toResponse(account));
     }
 
     @Transactional(readOnly = true)
@@ -418,6 +386,36 @@ public class BalanceAccountService {
         account.setStatus(BalanceAccountStatus.ACTIVE);
 
         return balanceAccountRepository.save(account);
+    }
+
+    private java.util.Optional<BalanceAccountEntity> findActiveAccount(Long profileId, Long hotelId) {
+        List<BalanceAccountEntity> active = balanceAccountRepository
+                .findAllByCustomerIdAndHotelIdAndStatusOrderByCreatedAtDescIdDesc(
+                        profileId, hotelId, BalanceAccountStatus.ACTIVE);
+        ensureAtMostOneActiveAccount(active);
+        return active.stream().findFirst();
+    }
+
+    private java.util.Optional<BalanceAccountEntity> findActiveAccountForUpdate(Long profileId, Long hotelId) {
+        List<BalanceAccountEntity> active = balanceAccountRepository.findAllByProfileIdAndHotelIdForUpdate(profileId, hotelId).stream()
+                .filter(account -> account.getStatus() == BalanceAccountStatus.ACTIVE)
+                .toList();
+        ensureAtMostOneActiveAccount(active);
+        return active.stream().findFirst();
+    }
+
+    private void ensureAtMostOneActiveAccount(List<BalanceAccountEntity> activeAccounts) {
+        if (activeAccounts.size() > 1) {
+            throw new ConflictException(
+                    "Multiple active balance accounts exist for this profile and hotel; manual reconciliation is required"
+            );
+        }
+    }
+
+    private void validateCreditCapacity(BalanceAccountEntity account, BigDecimal amount) {
+        if (account.getBalance().add(amount).compareTo(new BigDecimal("9999999999.99")) > 0) {
+            throw new ValidationException("Balance exceeds the maximum supported amount");
+        }
     }
 
     private ProfileEntity findProfile(Long profileId) {
@@ -485,6 +483,9 @@ public class BalanceAccountService {
             throw new ValidationException(
                     "Amount cannot have more than 2 decimal places"
             );
+        }
+        if (amount.compareTo(new BigDecimal("9999999999.99")) > 0) {
+            throw new ValidationException("Amount exceeds the maximum supported amount");
         }
     }
 

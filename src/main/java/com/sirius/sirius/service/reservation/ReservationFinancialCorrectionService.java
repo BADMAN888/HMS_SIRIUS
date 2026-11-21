@@ -237,6 +237,7 @@ public class ReservationFinancialCorrectionService {
             BigDecimal amount,
             String reason
     ) {
+        ensureBalanceAccountCanReceiveFunds(account, amount);
         account.setBalance(account.getBalance().add(amount));
         balanceAccountRepository.save(account);
 
@@ -268,6 +269,8 @@ public class ReservationFinancialCorrectionService {
                         .orElseThrow(() -> new NotFoundException(
                                 "Balance account not found"
                         ));
+
+        ensureBalanceAccountCanReceiveFunds(lockedAccount, amount);
 
         lockedAccount.setBalance(
                 lockedAccount.getBalance().add(amount)
@@ -317,12 +320,18 @@ public class ReservationFinancialCorrectionService {
                         "Profile not found"
                 ));
 
-        BalanceAccountEntity account = balanceAccountRepository
-                .findFirstByCustomerIdAndHotelIdAndStatusOrderByCreatedAtDesc(
-                        lockedProfile.getId(),
-                        folio.getHotel().getId(),
-                        BalanceAccountStatus.ACTIVE
-                )
+        List<BalanceAccountEntity> activeAccounts = balanceAccountRepository
+                .findAllByProfileIdAndHotelIdForUpdate(
+                        lockedProfile.getId(), folio.getHotel().getId())
+                .stream()
+                .filter(candidate -> candidate.getStatus() == BalanceAccountStatus.ACTIVE)
+                .toList();
+        if (activeAccounts.size() > 1) {
+            throw new ConflictException(
+                    "Multiple active balance accounts exist for this profile and hotel; manual reconciliation is required"
+            );
+        }
+        BalanceAccountEntity account = activeAccounts.stream().findFirst()
                 .orElseGet(() -> {
                     BalanceAccountEntity created =
                             new BalanceAccountEntity();
@@ -343,6 +352,19 @@ public class ReservationFinancialCorrectionService {
         }
 
         return account;
+    }
+
+    private void ensureBalanceAccountCanReceiveFunds(
+            BalanceAccountEntity account,
+            BigDecimal amount
+    ) {
+        if (account.getStatus() != BalanceAccountStatus.ACTIVE) {
+            throw new ConflictException("Balance account is not active");
+        }
+        if (account.getBalance().add(amount)
+                .compareTo(new BigDecimal("9999999999.99")) > 0) {
+            throw new ValidationException("Balance exceeds the maximum supported amount");
+        }
     }
 
     private List<LockedPayment> lockAndValidatePayments(
@@ -519,7 +541,8 @@ public class ReservationFinancialCorrectionService {
         }
 
         if (request.amount().compareTo(BigDecimal.ZERO) <= 0
-                || request.amount().stripTrailingZeros().scale() > 2) {
+                || request.amount().stripTrailingZeros().scale() > 2
+                || request.amount().compareTo(new BigDecimal("9999999999.99")) > 0) {
             throw new ValidationException(
                     "Correction amount must be positive "
                             + "and have no more than 2 decimal places"
@@ -531,7 +554,8 @@ public class ReservationFinancialCorrectionService {
                     || payment.paymentId() == null
                     || payment.amount() == null
                     || payment.amount().compareTo(BigDecimal.ZERO) <= 0
-                    || payment.amount().stripTrailingZeros().scale() > 2) {
+                    || payment.amount().stripTrailingZeros().scale() > 2
+                    || payment.amount().compareTo(new BigDecimal("9999999999.99")) > 0) {
                 throw new ValidationException(
                         "Each payment allocation must have a valid "
                                 + "payment ID and positive amount"
