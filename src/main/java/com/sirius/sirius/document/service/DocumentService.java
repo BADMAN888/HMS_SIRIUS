@@ -25,6 +25,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -33,10 +35,14 @@ public class DocumentService {
     private static final String DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final int DOCUMENT_CACHE_LIMIT = 24;
+    private static final int PREVIEW_CACHE_LIMIT = 8;
     private final ReservationService reservationService;
     private final HotelService hotelService;
     private final RoomCategoryService roomCategoryService;
     private final Map<DocumentFormat, DocumentGenerator> generators;
+    private final Map<DocumentCacheKey, GeneratedDocument> documentCache = new ConcurrentHashMap<>();
+    private final Map<PreviewCacheKey, GeneratedDocument> previewCache = new ConcurrentHashMap<>();
 
     public DocumentService(ReservationService reservationService, HotelService hotelService,
                            RoomCategoryService roomCategoryService,
@@ -66,6 +72,27 @@ public class DocumentService {
 
     private GeneratedDocument generateReservationDocument(Long reservationId, DocumentFormat format,
                                                             DocumentType type, String filePrefix) {
+        DocumentData data = loadDocumentData(reservationId);
+        DocumentCacheKey key = new DocumentCacheKey(reservationId, type, format, data);
+        return cached(documentCache, key, DOCUMENT_CACHE_LIMIT,
+                () -> createDocument(reservationId, format, type, filePrefix, data));
+    }
+
+    private GeneratedDocument createDocument(Long reservationId, DocumentFormat format,
+                                              DocumentType type, String filePrefix, DocumentData data) {
+        DocumentGenerator generator = generators.get(format);
+        if (generator == null) throw new ValidationException("Формат документа не підтримується: " + format);
+        String extension = format.name().toLowerCase();
+        String contentType = switch (format) {
+            case PDF -> "application/pdf";
+            case DOCX -> DOCX_MIME;
+            case XLSX -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        };
+        return new GeneratedDocument(generator.generate(type, data), contentType,
+                filePrefix + "-" + reservationId + "." + extension);
+    }
+
+    private DocumentData loadDocumentData(Long reservationId) {
         ReservationResponse reservation = reservationService.getById(reservationId);
         ProfileResponse guest = reservation.primaryGuest();
         if (guest == null) {
@@ -82,7 +109,7 @@ public class DocumentService {
                 ? null : hotelService.getHotelById(reservation.room().hotelId());
         RoomCategoryResponse category = reservation.room() == null || reservation.room().categoryId() == null
                 ? null : roomCategoryService.getById(reservation.room().categoryId());
-        DocumentData data = new DocumentData(
+        return new DocumentData(
                 hotel == null ? null : hotel.hotelName(),
                 hotel == null ? null : hotel.address(),
                 hotel == null ? null : hotel.phone(),
@@ -103,16 +130,6 @@ public class DocumentService {
                 reservation.rate() == null ? null : reservation.rate().name(),
                 guestCount(reservation.adults(), reservation.children()),
                 reservation.status() == null ? null : statusLabel(reservation.status().name()));
-        DocumentGenerator generator = generators.get(format);
-        if (generator == null) throw new ValidationException("Формат документа не підтримується: " + format);
-        String extension = format.name().toLowerCase();
-        String contentType = switch (format) {
-            case PDF -> "application/pdf";
-            case DOCX -> "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-            case XLSX -> "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-        };
-        return new GeneratedDocument(generator.generate(type, data),
-                contentType, filePrefix + "-" + reservationId + "." + extension);
     }
 
     private String guestCount(Integer adults, Integer children) {
@@ -153,18 +170,41 @@ public class DocumentService {
     }
 
     private GeneratedDocument generatePreview(Long reservationId, DocumentType type) {
-        GeneratedDocument pdf = type == DocumentType.REGISTRATION_CARD
-                ? generateRegistrationCard(reservationId, DocumentFormat.PDF)
-                : generateBookingConfirmation(reservationId, DocumentFormat.PDF);
+        String filePrefix = type == DocumentType.REGISTRATION_CARD ? "registration-card" : "booking-confirmation";
+        DocumentData data = loadDocumentData(reservationId);
+        DocumentCacheKey pdfKey = new DocumentCacheKey(reservationId, type, DocumentFormat.PDF, data);
+        GeneratedDocument pdf = cached(documentCache, pdfKey, DOCUMENT_CACHE_LIMIT,
+                () -> createDocument(reservationId, DocumentFormat.PDF, type, filePrefix, data));
+        PreviewCacheKey previewKey = new PreviewCacheKey(reservationId, type, data);
+        return cached(previewCache, previewKey, PREVIEW_CACHE_LIMIT,
+                () -> renderPreview(pdf, filePrefix, reservationId));
+    }
+
+    private GeneratedDocument renderPreview(GeneratedDocument pdf, String filePrefix, Long reservationId) {
         try (var document = Loader.loadPDF(pdf.content());
              ByteArrayOutputStream image = new ByteArrayOutputStream()) {
-            var page = new PDFRenderer(document).renderImageWithDPI(0, 180, ImageType.RGB);
+            var page = new PDFRenderer(document).renderImageWithDPI(0, 144, ImageType.RGB);
             ImageIO.write(page, "png", image);
-            String filePrefix = type == DocumentType.REGISTRATION_CARD ? "registration-card" : "booking-confirmation";
             return new GeneratedDocument(image.toByteArray(), "image/png",
                     filePrefix + "-" + reservationId + "-preview.png");
         } catch (Exception exception) {
-            throw new IllegalStateException("Could not render registration card preview", exception);
+            throw new IllegalStateException("Could not render reservation document preview", exception);
         }
     }
+
+    private <K> GeneratedDocument cached(Map<K, GeneratedDocument> cache, K key, int limit,
+                                          Supplier<GeneratedDocument> factory) {
+        GeneratedDocument result = cache.computeIfAbsent(key, ignored -> factory.get());
+        if (cache.size() > limit) {
+            for (K staleKey : cache.keySet()) {
+                if (!staleKey.equals(key) && cache.remove(staleKey) != null) break;
+            }
+        }
+        return result;
+    }
+
+    private record DocumentCacheKey(Long reservationId, DocumentType type,
+                                    DocumentFormat format, DocumentData data) {}
+
+    private record PreviewCacheKey(Long reservationId, DocumentType type, DocumentData data) {}
 }
