@@ -22,6 +22,11 @@ public class HotelController {
 
     private final HotelService hotelService;
 
+    @GetMapping
+    public ResponseEntity<List<HotelResponse>> getAllHotels() {
+        return ResponseEntity.ok(hotelService.getAllHotels());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<HotelResponse> getHotelById(
             @PathVariable @Positive Long id

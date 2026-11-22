@@ -1,2 +1,0 @@
-ALTER TABLE reservations
-    ADD COLUMN room_locked BOOLEAN NOT NULL DEFAULT FALSE;

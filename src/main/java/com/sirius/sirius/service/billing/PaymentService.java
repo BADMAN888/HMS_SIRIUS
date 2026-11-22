@@ -38,6 +38,7 @@ import java.util.List;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final CashRegisterService cashRegisterService;
     private final FolioRepository folioRepository;
     private final BalanceAccountRepository balanceAccountRepository;
     private final BalanceTransactionRepository balanceTransactionRepository;
@@ -46,6 +47,10 @@ public class PaymentService {
     private final Clock clock;
 
     public PaymentResponse create(PaymentRequest request) {
+        if (request != null && request.idempotencyKey() != null) {
+            PaymentEntity existing = paymentRepository.findByIdempotencyKey(request.idempotencyKey()).orElse(null);
+            if (existing != null) return paymentMapper.toResponse(existing);
+        }
         validatePayment(request);
 
         FolioEntity folio = folioRepository
@@ -63,11 +68,13 @@ public class PaymentService {
                 .performedBy(currentUser())
                 .method(request.method())
                 .amount(request.amount())
+                .idempotencyKey(request.idempotencyKey())
                 .description(request.description())
                 .paidAt(LocalDateTime.now(clock))
                 .build();
 
         PaymentEntity saved = paymentRepository.save(payment);
+        cashRegisterService.recordPayment(saved);
 
         folio.addPayment(saved);
         folioRepository.save(folio);
@@ -79,6 +86,10 @@ public class PaymentService {
             Long paymentId,
             PaymentRefundRequest request
     ) {
+        if (request != null && request.idempotencyKey() != null) {
+            PaymentEntity existing = paymentRepository.findByIdempotencyKey(request.idempotencyKey()).orElse(null);
+            if (existing != null) return paymentMapper.toResponse(existing);
+        }
         validateRefundRequest(request);
 
         PaymentEntity paymentReference = paymentRepository
@@ -164,6 +175,7 @@ public class PaymentService {
                 .method(originalPayment.getMethod())
                 .balanceAccount(balanceAccount)
                 .amount(refundAmount.negate())
+                .idempotencyKey(request.idempotencyKey())
                 .description(
                         "Refund of payment #" + originalPayment.getId()
                                 + ": " + request.reason()
@@ -173,6 +185,7 @@ public class PaymentService {
                 .build();
 
         PaymentEntity saved = paymentRepository.save(refund);
+        cashRegisterService.recordPayment(saved);
 
         folio.addPayment(saved);
 

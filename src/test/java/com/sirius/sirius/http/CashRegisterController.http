@@ -1,0 +1,163 @@
+### CashRegisterController integration requests
+### Prerequisite: run 1OlgaHotel.http first to register auth + hotel + cash register globals.
+
+@baseUrl = http://localhost:8080
+@cashRegisterUrl = {{baseUrl}}/api/cash-registers
+
+### List hotel cash registers
+GET {{cashRegisterUrl}}?hotelId={{hotelId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Cash registers listed", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.length >= 2);
+    });
+%}
+
+### Read a register
+GET {{cashRegisterUrl}}/{{cashRegisterId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Cash register details returned", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.id === Number(client.global.get("cashRegisterId")));
+    });
+%}
+
+### Open a fresh shift after the main suite has closed its shift
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/open
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "openingBalance": 50.00
+}
+
+> {%
+    client.test("New cash shift opened", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.status === "OPEN");
+    });
+    client.global.set("controllerCashShiftId", response.body.id);
+%}
+
+### Read current shift
+GET {{cashRegisterUrl}}/{{cashRegisterId}}/current-shift
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Current shift loaded", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.status === "OPEN");
+    });
+%}
+
+### X report works with zero operations
+GET {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{controllerCashShiftId}}/x-report
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Empty shift X report returned", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.reportType === "X");
+        client.assert(response.body.operations.length === 0);
+    });
+%}
+
+### Optional-comment service-in
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{controllerCashShiftId}}/service-in
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 10.00
+}
+
+> {%
+    client.test("Service-in accepts no description", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.operationType === "SERVICE_IN");
+    });
+%}
+
+### Optional-comment service-out
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{controllerCashShiftId}}/service-out
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 5.00
+}
+
+> {%
+    client.test("Service-out accepts no description", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.operationType === "SERVICE_OUT");
+    });
+%}
+
+### Cannot overdraw the cash register
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{controllerCashShiftId}}/service-out
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 10000.00
+}
+
+> {%
+    client.test("Cash overdraft rejected", function () {
+        client.assert(response.status === 409);
+    });
+%}
+
+### List shift operations
+GET {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{controllerCashShiftId}}/operations
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Shift operation history loaded", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.length === 2);
+    });
+%}
+
+### X report preserves open shift
+GET {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{controllerCashShiftId}}/x-report
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("X report does not close shift", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.shift.status === "OPEN");
+        client.assert(response.body.operations.length === 2);
+    });
+%}
+
+### Read expected close balance
+GET {{cashRegisterUrl}}/{{cashRegisterId}}/current-shift
+Authorization: Bearer {{token}}
+
+> {%
+    client.global.set("controllerCashActual", Number(response.body.currentCash).toFixed(2));
+%}
+
+### Z report closes shift
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{controllerCashShiftId}}/z-report
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "actualBalance": {{controllerCashActual}}
+}
+
+> {%
+    client.test("Z report closes shift with zero difference", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.reportType === "Z");
+        client.assert(response.body.shift.status === "CLOSED");
+        client.assert(Number(response.body.shift.difference) === 0);
+    });
+%}

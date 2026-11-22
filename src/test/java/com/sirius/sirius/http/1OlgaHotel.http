@@ -19,43 +19,47 @@
 @balanceAccountUrl = {{baseUrl}}/api/balance-accounts
 @correctionUrl = {{baseUrl}}/api/reservation-financial-corrections
 @hotelGridUrl = {{baseUrl}}/api/hotel-grid
+@cashRegisterUrl = {{baseUrl}}/api/cash-registers
+@cashOperationsUrl = {{baseUrl}}/api/cash-operations
+@cashOperationsReportUrl = {{baseUrl}}/api/cash-reports/operations
 
 ### ==================================================
 ### TEST CONFIGURATION
 ### ==================================================
 
 @runCode = 61110001
+@testCashierId = 1
 
 ### Бронювання 1
-@reservation1CheckInDate = 2026-11-20
-@reservation1CheckOutDate = 2026-11-23
+@reservation1CheckInDate = 2026-12-20
+@reservation1CheckOutDate = 2026-12-23
 
 ### Бронювання 2
-@reservation2CheckInDate = 2026-11-22
-@reservation2CheckOutDate = 2026-11-24
+@reservation2CheckInDate = 2026-12-22
+@reservation2CheckOutDate = 2026-12-24
 
 ### Бронювання 3
-@reservation3CheckInDate = 2026-11-25
-@reservation3CheckOutDate = 2026-11-27
+@reservation3CheckInDate = 2026-12-25
+@reservation3CheckOutDate = 2026-12-27
 
 ### Додаткові бронювання для Hotel Grid
-@reservation4CheckInDate = 2026-11-15
-@reservation4CheckOutDate = 2026-11-18
-@reservation5CheckInDate = 2026-11-17
-@reservation5CheckOutDate = 2026-11-21
-@reservation6CheckInDate = 2026-11-19
-@reservation6CheckOutDate = 2026-11-22
-@reservation7CheckInDate = 2026-11-23
-@reservation7CheckOutDate = 2026-11-28
-@reservation8CheckInDate = 2026-11-29
-@reservation8CheckOutDate = 2026-12-03
-@reservation9CheckInDate = 2026-12-02
-@reservation9CheckOutDate = 2026-12-07
-@reservation10CheckInDate = 2026-12-08
-@reservation10CheckOutDate = 2026-12-12
+@reservation4CheckInDate = 2026-12-15
+@reservation4CheckOutDate = 2026-12-18
+@reservation5CheckInDate = 2026-12-17
+@reservation5CheckOutDate = 2026-12-21
+@reservation6CheckInDate = 2026-12-19
+@reservation6CheckOutDate = 2026-12-22
+@reservation7CheckInDate = 2026-12-23
+@reservation7CheckOutDate = 2026-12-28
+@reservation8CheckInDate = 2026-12-29
+@reservation8CheckOutDate = 2027-01-03
+@reservation9CheckInDate = 2027-01-02
+@reservation9CheckOutDate = 2027-01-07
+@reservation10CheckInDate = 2027-01-08
+@reservation10CheckOutDate = 2027-01-12
 
-@gridStartDate = 2026-11-15
-@gridEndDate = 2026-12-15
+@gridStartDate = 2026-12-15
+@gridEndDate = 2027-01-15
 
 ### Період дії тарифів
 @priceValidFrom = 2026-01-01
@@ -162,6 +166,21 @@ Authorization: Bearer {{token}}
     });
 %}
 
+###
+
+### GET ALL HOTELS
+
+GET {{hotelUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Hotels loaded", function () {
+        client.assert(response.status === 200);
+        client.assert(Array.isArray(response.body));
+        client.assert(response.body.some(function (hotel) { return hotel.id === Number(client.global.get("hotelId")); }));
+    });
+%}
+
 ### ==================================================
 ### LEGAL ENTITIES
 ### ==================================================
@@ -190,17 +209,332 @@ Content-Type: application/json
 
 ###
 
+### CREATE SECOND LEGAL ENTITY FOR ISOLATION CHECK
+
+POST {{legalEntityUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "fullName": "Sirius Second Test Company {{runCode}} LLC",
+  "shortName": "Sirius Second {{runCode}}",
+  "edrpou": "61110002",
+  "registrationDate": "2021-02-15",
+  "organizationalLegalForm": "LLC"
+}
+
+> {%
+    client.test("Second legal entity created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("legalEntity2Id", response.body.id);
+%}
+
+###
+
+### GET ALL LEGAL ENTITIES
+
+GET {{legalEntityUrl}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Legal entities listed", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.some(function (entity) { return entity.id === Number(client.global.get("legalEntityId")); }));
+        client.assert(response.body.some(function (entity) { return entity.id === Number(client.global.get("legalEntity2Id")); }));
+    });
+%}
+
+###
+
+### GET LEGAL ENTITY BY ID
+
+GET {{legalEntityUrl}}/{{legalEntityId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Legal entity loaded by id", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.id === Number(client.global.get("legalEntityId")));
+    });
+%}
+
+###
+
 ### ASSOCIATE LEGAL ENTITY WITH HOTEL
 
 PUT {{hotelUrl}}/{{hotelId}}/legal-entities
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
-[{{legalEntityId}}]
+[{{legalEntityId}}, {{legalEntity2Id}}]
 
 > {%
     client.test("Legal entity associated with hotel", function () {
         client.assert(response.status === 200);
+    });
+%}
+
+###
+
+### GET LEGAL ENTITIES BY HOTEL
+
+GET {{legalEntityUrl}}/hotel/{{hotelId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Both hotel legal entities loaded", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.length === 2);
+    });
+%}
+
+### ==================================================
+### CASH REGISTER SETUP
+### ==================================================
+
+### CREATE CASH REGISTER FOR LEGAL ENTITY 1
+
+POST {{cashRegisterUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "legalEntityId": {{legalEntityId}},
+  "name": "Основна каса {{runCode}}",
+  "currency": "UAH"
+}
+
+> {%
+    client.test("Cash register 1 created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("cashRegisterId", response.body.id);
+%}
+
+###
+
+### CREATE CASH REGISTER FOR LEGAL ENTITY 2
+
+POST {{cashRegisterUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "legalEntityId": {{legalEntity2Id}},
+  "name": "Друга каса {{runCode}}",
+  "currency": "UAH"
+}
+
+> {%
+    client.test("Cash register 2 created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("cashRegister2Id", response.body.id);
+%}
+
+###
+
+### DUPLICATE LEGAL ENTITY CASH REGISTER MUST FAIL
+
+POST {{cashRegisterUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "legalEntityId": {{legalEntityId}},
+  "name": "Duplicate cash register {{runCode}}",
+  "currency": "UAH"
+}
+
+> {%
+    client.test("Only one register can exist per hotel and legal entity", function () {
+        client.assert(response.status === 409);
+    });
+%}
+
+###
+
+### GET CASH REGISTERS FOR HOTEL
+
+GET {{cashRegisterUrl}}?hotelId={{hotelId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Hotel cash registers loaded", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.length === 2);
+    });
+%}
+
+###
+
+### GET CASH REGISTER DETAILS
+
+GET {{cashRegisterUrl}}/{{cashRegisterId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Cash register details loaded", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.legalEntityId === Number(client.global.get("legalEntityId")));
+    });
+%}
+
+###
+
+### OPEN SHIFT 1
+
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/open
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "openingBalance": 500.00
+}
+
+> {%
+    client.test("Cash shift 1 opened", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.status === "OPEN");
+    });
+    client.global.set("cashShiftId", response.body.id);
+%}
+
+###
+
+### OPEN SHIFT 2
+
+POST {{cashRegisterUrl}}/{{cashRegister2Id}}/shifts/open
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "openingBalance": 100.00
+}
+
+> {%
+    client.test("Cash shift 2 opened", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.status === "OPEN");
+    });
+    client.global.set("cashShift2Id", response.body.id);
+%}
+
+###
+
+### SECOND OPEN SHIFT FOR SAME REGISTER MUST FAIL
+
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/open
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "openingBalance": 0.00
+}
+
+> {%
+    client.test("Cannot open two shifts for one register", function () {
+        client.assert(response.status === 409);
+    });
+%}
+
+###
+
+### X REPORT FOR EMPTY SHIFT
+
+GET {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{cashShiftId}}/x-report
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("X report works for an empty open shift", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.reportType === "X");
+        client.assert(response.body.shift.status === "OPEN");
+        client.assert(response.body.operations.length === 0);
+        client.assert(Number(response.body.shift.currentCash) === 500);
+    });
+    client.global.set("emptyXReportId", response.body.id);
+%}
+
+###
+
+### SERVICE IN WITHOUT A COMMENT
+
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{cashShiftId}}/service-in
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 250.00
+}
+
+> {%
+    client.test("Service-in does not require a comment", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.operationType === "SERVICE_IN");
+    });
+    client.global.set("cashServiceInId", response.body.id);
+%}
+
+###
+
+### SERVICE OUT WITHOUT A COMMENT
+
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{cashShiftId}}/service-out
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 100.00
+}
+
+> {%
+    client.test("Service-out does not require a comment", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.operationType === "SERVICE_OUT");
+    });
+    client.global.set("cashServiceOutId", response.body.id);
+%}
+
+###
+
+### SERVICE OUT CANNOT OVERDRAW THE REGISTER
+
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{cashShiftId}}/service-out
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 100000.00
+}
+
+> {%
+    client.test("Cash register cannot be overdrawn", function () {
+        client.assert(response.status === 409);
+    });
+%}
+
+###
+
+### SERVICE IN TO SECOND LEGAL ENTITY
+
+POST {{cashRegisterUrl}}/{{cashRegister2Id}}/shifts/{{cashShift2Id}}/service-in
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 50.00,
+  "description": "Second legal entity opening movement"
+}
+
+> {%
+    client.test("Second legal entity has separate cash movements", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.legalEntityId === Number(client.global.get("legalEntity2Id")));
     });
 %}
 
@@ -619,6 +953,187 @@ Authorization: Bearer {{token}}
 > {%
     client.test("Category rooms loaded", function () {
         client.assert(response.status === 200);
+    });
+%}
+
+###
+
+### GET ROOM 101 BY ID
+
+GET {{roomUrl}}/{{room1Id}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Room 101 loaded by id", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.roomNumber === "101");
+    });
+%}
+
+###
+
+### MARK ROOM 101 DIRTY
+
+PATCH {{roomUrl}}/{{room1Id}}/cleanliness
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "clean": false
+}
+
+> {%
+    client.test("Room cleanliness can be changed to dirty", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.clean === false);
+    });
+%}
+
+###
+
+### MARK ROOM 101 CLEAN
+
+PATCH {{roomUrl}}/{{room1Id}}/cleanliness
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "clean": true
+}
+
+> {%
+    client.test("Room cleanliness can be changed to clean", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.clean === true);
+    });
+%}
+
+###
+
+### SCHEDULE ROOM 101 OUT OF SERVICE
+
+POST {{baseUrl}}/api/room-unavailabilities
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomId": {{room1Id}},
+  "status": "OUT_OF_SERVICE",
+  "startAt": "2026-01-01T00:00:00",
+  "endAt": "2026-01-10T00:00:00",
+  "reason": "HTTP integration out of service scenario"
+}
+
+> {%
+    client.test("Room can be scheduled out of service", function () {
+        client.assert(response.status === 201);
+        client.assert(response.body.status === "OUT_OF_SERVICE");
+    });
+    client.global.set("roomOutOfServiceId", response.body.id);
+%}
+
+###
+
+### FINISH ROOM 101 OUT OF SERVICE
+
+PATCH {{baseUrl}}/api/room-unavailabilities/{{roomOutOfServiceId}}/finish
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Room out of service can be completed", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.status === "OUT_OF_SERVICE");
+        client.assert(response.body.completedAt !== null);
+    });
+%}
+
+###
+
+### RESTORE ROOM 101 STATUS
+
+PATCH {{roomUrl}}/{{room1Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "AVAILABLE"
+}
+
+> {%
+    client.test("Room status restored before reservations", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.status === "AVAILABLE");
+    });
+%}
+
+###
+
+### SCHEDULE ROOM 401 UNAVAILABILITY
+
+POST {{baseUrl}}/api/room-unavailabilities
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomId": {{room10Id}},
+  "status": "OUT_OF_ORDER",
+  "startAt": "2026-01-01T00:00:00",
+  "endAt": "2026-01-10T00:00:00",
+  "reason": "HTTP integration repair scenario"
+}
+
+> {%
+    client.test("Room unavailability scheduled", function () {
+        client.assert(response.status === 201);
+        client.assert(response.body.status === "OUT_OF_ORDER");
+    });
+    client.global.set("roomRepairId", response.body.id);
+%}
+
+###
+
+### GET ROOM 401 UNAVAILABILITY HISTORY
+
+GET {{baseUrl}}/api/room-unavailabilities/room/{{room10Id}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Room repair history loaded", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.length === 1);
+    });
+%}
+
+###
+
+### FINISH ROOM REPAIR EARLY
+
+PATCH {{baseUrl}}/api/room-unavailabilities/{{roomRepairId}}/finish
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Room repair can be completed", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.completedAt !== null);
+    });
+%}
+
+###
+
+### RESTORE ROOM 401 AFTER REPAIR TEST
+
+PATCH {{roomUrl}}/{{room10Id}}/status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "AVAILABLE"
+}
+
+> {%
+    client.test("Room 401 available before booking tests", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.status === "AVAILABLE");
     });
 %}
 
@@ -2137,6 +2652,60 @@ Authorization: Bearer {{token}}
 
 ###
 
+### CANCEL MANUAL ACCRUAL WITHOUT CREATING STORNO
+
+PATCH {{accrualUrl}}/{{manualBreakfastAccrualId}}/cancel
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Accrual cancelled without a reversal entry", function () {
+        client.assert(response.status === 204);
+    });
+%}
+
+###
+
+### VERIFY ACCRUAL IS INACTIVE
+
+GET {{accrualUrl}}/{{manualBreakfastAccrualId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Cancelled accrual is inactive", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.active === false);
+    });
+%}
+
+###
+
+### REACTIVATE MANUAL ACCRUAL
+
+PATCH {{accrualUrl}}/{{manualBreakfastAccrualId}}/reactivate
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Cancelled accrual can be reactivated", function () {
+        client.assert(response.status === 204);
+    });
+%}
+
+###
+
+### VERIFY ACCRUAL IS ACTIVE AGAIN
+
+GET {{accrualUrl}}/{{manualBreakfastAccrualId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Reactivated accrual is active", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.active === true);
+    });
+%}
+
+###
+
 ### GET ALL ACCRUALS
 
 GET {{accrualUrl}}
@@ -2152,6 +2721,131 @@ Authorization: Bearer {{token}}
 ### ==================================================
 ### PAYMENTS
 ### ==================================================
+
+### FOLIO 2 TOTAL FOR CASH PAYMENT TEST
+
+GET {{folioUrl}}/{{folio2Id}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Folio 2 has a positive balance", function () {
+        client.assert(response.status === 200);
+        client.assert(Number(response.body.balance) > 1);
+    });
+%}
+
+###
+
+### CASH PAYMENT WITH IDEMPOTENCY KEY
+
+POST {{paymentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": {{folio2Id}},
+  "method": "CASH",
+  "amount": 1.00,
+  "description": "Cash journal integration test",
+  "idempotencyKey": "cash-payment-{{runCode}}"
+}
+
+> {%
+    client.test("Cash payment created and journaled", function () {
+        client.assert(response.status === 201);
+        client.assert(response.body.amount === 1 || response.body.amount === 1.0);
+    });
+    client.global.set("cashPaymentId", response.body.id);
+%}
+
+###
+
+### REPEAT CASH PAYMENT REQUEST MUST NOT DUPLICATE
+
+POST {{paymentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": {{folio2Id}},
+  "method": "CASH",
+  "amount": 1.00,
+  "description": "Cash journal integration test",
+  "idempotencyKey": "cash-payment-{{runCode}}"
+}
+
+> {%
+    client.test("Repeated payment returns the original payment", function () {
+        client.assert(response.status === 201);
+        client.assert(response.body.id === Number(client.global.get("cashPaymentId")));
+    });
+%}
+
+###
+
+### CASH REFUND WITH IDEMPOTENCY KEY
+
+POST {{paymentUrl}}/{{cashPaymentId}}/refund
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 1.00,
+  "reason": "Cash refund integration test",
+  "idempotencyKey": "cash-refund-{{runCode}}"
+}
+
+> {%
+    client.test("Cash refund created and journaled", function () {
+        client.assert(response.status === 200);
+        client.global.set("cashRefundId", response.body.id);
+    });
+%}
+
+###
+
+### REPEAT CASH REFUND REQUEST MUST NOT DUPLICATE
+
+POST {{paymentUrl}}/{{cashPaymentId}}/refund
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 1.00,
+  "reason": "Cash refund integration test",
+  "idempotencyKey": "cash-refund-{{runCode}}"
+}
+
+> {%
+    client.test("Repeated refund returns the original refund", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.id === Number(client.global.get("cashRefundId")));
+    });
+%}
+
+###
+
+### BANK TRANSFER PAYMENT
+
+POST {{paymentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "folioId": {{folio3Id}},
+  "method": "BANK_TRANSFER",
+  "amount": 1.00,
+  "description": "Bank transfer journal integration test",
+  "idempotencyKey": "transfer-payment-{{runCode}}"
+}
+
+> {%
+    client.test("Bank transfer is journaled", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+###
 
 ### GET FOLIO 1 TOTAL
 
@@ -2325,6 +3019,168 @@ Authorization: Bearer {{token}}
 > {%
     client.test("Folio closed", function () {
         client.assert(response.status === 200);
+    });
+%}
+
+###
+
+### LIST OPERATIONS FOR CASH SHIFT 1
+
+GET {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{cashShiftId}}/operations
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Cash shift operations loaded", function () {
+        client.assert(response.status === 200);
+        client.assert(Array.isArray(response.body));
+        client.assert(response.body.length >= 6);
+    });
+%}
+
+###
+
+### X REPORT INCLUDES TRANSACTIONS AND LEAVES SHIFT OPEN
+
+GET {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{cashShiftId}}/x-report
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("X report has current totals and does not close shift", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.reportType === "X");
+        client.assert(response.body.operations.length >= 6);
+        client.assert(response.body.shift.status === "OPEN");
+    });
+%}
+
+###
+
+### GET CURRENT CASH SHIFT 1
+
+GET {{cashRegisterUrl}}/{{cashRegisterId}}/current-shift
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Current cash shift loaded", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.status === "OPEN");
+    });
+    client.global.set("cashExpectedBalance", Number(response.body.currentCash).toFixed(2));
+%}
+
+###
+
+### FILTER CASH OPERATIONS BY REGISTER
+
+GET {{cashOperationsUrl}}?hotelId={{hotelId}}&registerId={{cashRegisterId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Cash operations can be filtered by register", function () {
+        client.assert(response.status === 200);
+        client.assert(Array.isArray(response.body));
+        client.assert(response.body.every(function (item) { return item.cashRegisterId === Number(client.global.get("cashRegisterId")); }));
+    });
+%}
+
+###
+
+### OPERATIONS REPORT GROUPED BY LEGAL ENTITY
+
+GET {{cashOperationsReportUrl}}?hotelId={{hotelId}}&from=2026-01-01T00:00:00&to=2035-01-01T00:00:00
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Cash report preserves separate legal entity totals", function () {
+        client.assert(response.status === 200);
+        client.assert(Array.isArray(response.body.operations));
+        client.assert(Array.isArray(response.body.totalsByLegalEntity));
+        client.assert(response.body.totalsByLegalEntity.length === 2);
+    });
+%}
+
+###
+
+### Z REPORT CLOSES CASH SHIFT 1
+
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{cashShiftId}}/z-report
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "actualBalance": {{cashExpectedBalance}}
+}
+
+> {%
+    client.test("Z report stores actual balance and closes shift", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.reportType === "Z");
+        client.assert(response.body.shift.status === "CLOSED");
+        client.assert(Number(response.body.shift.difference) === 0);
+    });
+%}
+
+###
+
+### OPERATIONS REMAIN READABLE AFTER Z REPORT
+
+GET {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{cashShiftId}}/operations
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Closed shift history remains available", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.length >= 6);
+    });
+%}
+
+###
+
+### CLOSED SHIFT REJECTS SERVICE OPERATIONS
+
+POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{cashShiftId}}/service-in
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 1.00
+}
+
+> {%
+    client.test("Cannot post operations to a closed shift", function () {
+        client.assert(response.status === 409);
+    });
+%}
+
+###
+
+### CLOSE SECOND LEGAL ENTITY SHIFT
+
+GET {{cashRegisterUrl}}/{{cashRegister2Id}}/current-shift
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Second legal entity shift is isolated", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.status === "OPEN");
+    });
+    client.global.set("cashExpectedBalance2", Number(response.body.currentCash).toFixed(2));
+%}
+
+###
+
+POST {{cashRegisterUrl}}/{{cashRegister2Id}}/shifts/{{cashShift2Id}}/z-report
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "actualBalance": {{cashExpectedBalance2}}
+}
+
+> {%
+    client.test("Second legal entity shift closes independently", function () {
+        client.assert(response.status === 200);
+        client.assert(Number(response.body.shift.difference) === 0);
     });
 %}
 

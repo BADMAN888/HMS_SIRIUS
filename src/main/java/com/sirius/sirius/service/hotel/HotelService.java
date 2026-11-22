@@ -25,6 +25,11 @@ public class HotelService {
     private final HotelMapper hotelMapper;
 
     @Transactional(readOnly = true)
+    public List<HotelResponse> getAllHotels() {
+        return hotelRepository.findAll().stream().map(hotelMapper::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
     public HotelResponse getHotelByName(String name) {
         HotelEntity hotel = hotelRepository.findByHotelName(name)
                 .orElseThrow(() ->

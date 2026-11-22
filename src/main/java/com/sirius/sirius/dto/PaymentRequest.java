@@ -25,7 +25,13 @@ public record PaymentRequest(
         BigDecimal amount,
 
         @Size(max = 255)
-        String description
+        String description,
+
+        @Size(max = 64)
+        String idempotencyKey
 
 ) {
+    public PaymentRequest(Long folioId, PaymentMethod method, BigDecimal amount, String description) {
+        this(folioId, method, amount, description, null);
+    }
 }

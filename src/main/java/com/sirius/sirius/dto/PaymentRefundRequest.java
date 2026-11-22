@@ -18,7 +18,13 @@ public record PaymentRefundRequest(
 
         @NotBlank
         @Size(max = 255)
-        String reason
+        String reason,
+
+        @Size(max = 64)
+        String idempotencyKey
 
 ) {
+    public PaymentRefundRequest(BigDecimal amount, String reason) {
+        this(amount, reason, null);
+    }
 }

@@ -1,0 +1,70 @@
+### CashOperationsController report requests
+### Prerequisite: run 1OlgaHotel.http first; it creates two legal entities and journal operations.
+
+@baseUrl = http://localhost:8080
+@cashOperationsUrl = {{baseUrl}}/api/cash-operations
+@cashOperationsReportUrl = {{baseUrl}}/api/cash-reports/operations
+@testCashierId = 1
+
+### List cash operations by hotel
+GET {{cashOperationsUrl}}?hotelId={{hotelId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Cash operations listed for hotel", function () {
+        client.assert(response.status === 200);
+        client.assert(Array.isArray(response.body));
+        client.assert(response.body.length > 0);
+    });
+%}
+
+### Filter journal by legal entity
+GET {{cashOperationsUrl}}?hotelId={{hotelId}}&legalEntityId={{legalEntityId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Operations are isolated by legal entity", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.every(function (op) { return op.legalEntityId === Number(client.global.get("legalEntityId")); }));
+    });
+%}
+
+### Filter journal by register, type, method and shift
+GET {{cashOperationsUrl}}?hotelId={{hotelId}}&registerId={{cashRegisterId}}&type=PAYMENT&method=CARD&shiftId={{cashShiftId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Combined journal filters work", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.every(function (op) {
+            return op.cashRegisterId === Number(client.global.get("cashRegisterId"))
+                && op.operationType === "PAYMENT"
+                && op.paymentMethod === "CARD"
+                && op.shiftId === Number(client.global.get("cashShiftId"));
+        }));
+    });
+%}
+
+### Filter report by cashier and inclusive date range
+GET {{cashOperationsReportUrl}}?hotelId={{hotelId}}&cashierId={{testCashierId}}&from=2026-01-01T00:00:00&to=2035-01-01T00:00:00
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Date and cashier report returned", function () {
+        client.assert(response.status === 200);
+        client.assert(Array.isArray(response.body.operations));
+        client.assert(Array.isArray(response.body.totalsByLegalEntity));
+    });
+%}
+
+### Whole-hotel period report keeps totals separate per legal entity
+GET {{cashOperationsReportUrl}}?hotelId={{hotelId}}&from=2026-01-01T00:00:00&to=2035-01-01T00:00:00
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Period report breaks totals down by legal entity", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.totalsByLegalEntity.length === 2);
+        client.assert(response.body.totalsByLegalEntity[0].legalEntityId !== response.body.totalsByLegalEntity[1].legalEntityId);
+    });
+%}
