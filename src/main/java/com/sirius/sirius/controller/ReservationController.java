@@ -15,6 +15,8 @@ import com.sirius.sirius.service.reservation.ReservationIncludedBreakfastService
 import com.sirius.sirius.service.reservation.ReservationLifecycleService;
 import com.sirius.sirius.service.reservation.ReservationService;
 import com.sirius.sirius.document.service.DocumentService;
+import com.sirius.sirius.document.service.BookingConfirmationEmailService;
+import com.sirius.sirius.dto.BookingConfirmationEmailRequest;
 import com.sirius.sirius.document.model.DocumentFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -41,6 +43,7 @@ public class ReservationController {
     private final ReservationCommentService commentService;
     private final ReservationIncludedBreakfastService includedBreakfastService;
     private final DocumentService documentService;
+    private final BookingConfirmationEmailService bookingConfirmationEmailService;
 
     @PostMapping
     public ResponseEntity<ReservationResponse> create(
@@ -108,6 +111,15 @@ public class ReservationController {
                 .header(HttpHeaders.CONTENT_DISPOSITION,
                         "inline; filename=\"" + preview.fileName() + "\"")
                 .body(preview.content());
+    }
+
+    @PostMapping("/{id}/confirmation/email")
+    public ResponseEntity<Void> sendBookingConfirmationEmail(
+            @PathVariable @Positive Long id,
+            @Valid @RequestBody BookingConfirmationEmailRequest request
+    ) {
+        bookingConfirmationEmailService.send(id, request.email(), request.subject());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping
