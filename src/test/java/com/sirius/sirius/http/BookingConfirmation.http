@@ -1,0 +1,52 @@
+@baseUrl = http://localhost:8080
+@reservationId = 1
+@token = {{token}}
+
+### Preview booking confirmation
+GET {{baseUrl}}/api/reservations/{{reservationId}}/confirmation/preview
+Authorization: Bearer {{token}}
+Accept: image/png
+
+> {%
+    client.test("Returns booking confirmation preview", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.headers.valueOf("Content-Type").includes("image/png"), "Expected PNG preview");
+    });
+%}
+
+### Download booking confirmation (PDF by default)
+GET {{baseUrl}}/api/reservations/{{reservationId}}/confirmation
+Authorization: Bearer {{token}}
+Accept: application/pdf
+
+> {%
+    client.test("Returns PDF confirmation by default", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.headers.valueOf("Content-Type").includes("application/pdf"), "Expected PDF");
+        client.assert(response.headers.valueOf("Content-Disposition").includes("booking-confirmation-"), "Expected confirmation filename");
+    });
+%}
+
+### Download Word confirmation
+GET {{baseUrl}}/api/reservations/{{reservationId}}/confirmation?format=DOCX
+Authorization: Bearer {{token}}
+Accept: application/vnd.openxmlformats-officedocument.wordprocessingml.document
+
+> {%
+    client.test("Returns DOCX confirmation", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.headers.valueOf("Content-Type").includes("application/vnd.openxmlformats-officedocument.wordprocessingml.document"), "Expected DOCX");
+    });
+%}
+
+### Download Excel confirmation
+GET {{baseUrl}}/api/reservations/{{reservationId}}/confirmation?format=XLSX
+Authorization: Bearer {{token}}
+Accept: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+> {%
+    client.test("Returns XLSX confirmation", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.headers.valueOf("Content-Type").includes("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"), "Expected XLSX");
+    });
+%}

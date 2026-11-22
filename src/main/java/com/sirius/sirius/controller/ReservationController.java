@@ -85,6 +85,31 @@ public class ReservationController {
                 .body(preview.content());
     }
 
+    @GetMapping("/{id}/confirmation")
+    public ResponseEntity<byte[]> getBookingConfirmation(
+            @PathVariable @Positive Long id,
+            @RequestParam(defaultValue = "PDF") DocumentFormat format
+    ) {
+        var document = documentService.generateBookingConfirmation(id, format);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(document.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + document.fileName() + "\"")
+                .body(document.content());
+    }
+
+    @GetMapping("/{id}/confirmation/preview")
+    public ResponseEntity<byte[]> getBookingConfirmationPreview(
+            @PathVariable @Positive Long id
+    ) {
+        var preview = documentService.generateBookingConfirmationPreview(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"" + preview.fileName() + "\"")
+                .body(preview.content());
+    }
+
     @GetMapping
     public ResponseEntity<List<ReservationResponse>> getAll() {
         return ResponseEntity.ok(
