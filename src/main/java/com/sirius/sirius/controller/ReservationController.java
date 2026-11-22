@@ -14,6 +14,10 @@ import com.sirius.sirius.service.reservation.ReservationCommentService;
 import com.sirius.sirius.service.reservation.ReservationIncludedBreakfastService;
 import com.sirius.sirius.service.reservation.ReservationLifecycleService;
 import com.sirius.sirius.service.reservation.ReservationService;
+import com.sirius.sirius.document.service.DocumentService;
+import com.sirius.sirius.document.model.DocumentFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import com.sirius.sirius.store.enums.ReservationStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -36,6 +40,7 @@ public class ReservationController {
     private final ReservationLifecycleService lifecycleService;
     private final ReservationCommentService commentService;
     private final ReservationIncludedBreakfastService includedBreakfastService;
+    private final DocumentService documentService;
 
     @PostMapping
     public ResponseEntity<ReservationResponse> create(
@@ -53,6 +58,31 @@ public class ReservationController {
         return ResponseEntity.ok(
                 reservationService.getById(id)
         );
+    }
+
+    @GetMapping("/{id}/registration-card")
+    public ResponseEntity<byte[]> getRegistrationCard(
+            @PathVariable @Positive Long id,
+            @RequestParam(defaultValue = "PDF") DocumentFormat format
+    ) {
+        var document = documentService.generateRegistrationCard(id, format);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(document.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"" + document.fileName() + "\"")
+                .body(document.content());
+    }
+
+    @GetMapping("/{id}/registration-card/preview")
+    public ResponseEntity<byte[]> getRegistrationCardPreview(
+            @PathVariable @Positive Long id
+    ) {
+        var preview = documentService.generateRegistrationCardPreview(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.IMAGE_PNG)
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"" + preview.fileName() + "\"")
+                .body(preview.content());
     }
 
     @GetMapping

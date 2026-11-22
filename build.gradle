@@ -55,6 +55,9 @@ dependencies {
 
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
+
+    implementation 'com.deepoove:poi-tl:1.12.2'
+    implementation 'org.apache.pdfbox:pdfbox:3.0.6'
 }
 
 tasks.named('test') {
