@@ -8,6 +8,7 @@ import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.FolioStatus;
 import com.sirius.sirius.store.enums.ReservationStatus;
+import com.sirius.sirius.store.enums.ReservationCancellationReason;
 import com.sirius.sirius.store.enums.RoomStatus;
 import com.sirius.sirius.store.repository.ReservationRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
@@ -35,6 +36,10 @@ public class ReservationLifecycleService {
     private final Clock clock;
 
     public void cancel(Long id) {
+        cancel(id, null);
+    }
+
+    public void cancel(Long id, ReservationCancellationReason reason) {
         ReservationEntity reservation = findByIdForUpdate(id);
 
         if (reservation.getStatus() != ReservationStatus.RESERVED) {
@@ -45,6 +50,7 @@ public class ReservationLifecycleService {
         }
 
         reservation.setStatus(ReservationStatus.CANCELLED);
+        reservation.setCancellationReason(reason);
 
         includedBreakfastService.cancelRemaining(reservation.getId());
     }

@@ -8,6 +8,7 @@ import com.sirius.sirius.dto.ReservationGuestsRequest;
 import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.exeption.ConflictException;
+import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.mappers.ReservationMapper;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
@@ -72,6 +73,13 @@ public class ReservationService {
         var operatorCompany =
                 validationService.findCompany(request.operatorCompanyId());
 
+        reassignUnlockedReservations(
+                null,
+                room,
+                request.checkIn(),
+                request.checkOut()
+        );
+
         availabilityService.validate(
                 room,
                 rate,
@@ -91,6 +99,9 @@ public class ReservationService {
 
         ReservationEntity reservation = reservationMapper.toEntity(request);
 
+        reservation.setGuestName(resolveGuestName(request.guestName(), primaryGuest, null));
+        reservation.setGuestPhone(resolveGuestPhone(request.guestPhone(), primaryGuest, null));
+        reservation.setGuestEmail(resolveGuestEmail(request.guestEmail(), primaryGuest, null));
         reservation.setRoom(room);
         reservation.setRate(rate);
         reservation.setPaymentCategory(paymentCategory);
@@ -199,6 +210,22 @@ public class ReservationService {
                 guests
         );
 
+        String guestName = resolveGuestName(
+                request.guestName(),
+                primaryGuest,
+                reservation.getGuestName()
+        );
+        String guestPhone = resolveGuestPhone(
+                request.guestPhone(),
+                primaryGuest,
+                reservation.getGuestPhone()
+        );
+        String guestEmail = resolveGuestEmail(
+                request.guestEmail(),
+                primaryGuest,
+                reservation.getGuestEmail()
+        );
+
         boolean financialChanges = hasFinancialChanges(
                 reservation,
                 request,
@@ -208,6 +235,9 @@ public class ReservationService {
 
         reservationMapper.updateEntity(request, reservation);
 
+        reservation.setGuestName(guestName);
+        reservation.setGuestPhone(guestPhone);
+        reservation.setGuestEmail(guestEmail);
         reservation.setRoom(room);
         reservation.setRate(rate);
         reservation.setPaymentCategory(paymentCategory);
@@ -241,10 +271,77 @@ public class ReservationService {
 
         reservation.setGuests(guests);
         reservation.setPrimaryGuest(primaryGuest);
+        if (primaryGuest != null) {
+            reservation.setGuestName(profileFullName(primaryGuest));
+            reservation.setGuestPhone(primaryGuest.getPhoneNumber());
+            reservation.setGuestEmail(primaryGuest.getEmail());
+        }
 
         return reservationMapper.toResponse(
                 reservationRepository.saveAndFlush(reservation)
         );
+    }
+
+    private String resolveGuestName(
+            String requestedName,
+            ProfileEntity primaryGuest,
+            String existingName
+    ) {
+        if (requestedName != null && !requestedName.isBlank()) {
+            return requestedName.trim();
+        }
+
+        if (primaryGuest != null) {
+            String profileName = profileFullName(primaryGuest);
+            if (!profileName.isBlank()) {
+                return profileName;
+            }
+        }
+
+        if (existingName != null && !existingName.isBlank()) {
+            return existingName.trim();
+        }
+
+        throw new ValidationException("ПІБ гостя є обов’язковим");
+    }
+
+    private String profileFullName(ProfileEntity profile) {
+        return java.util.stream.Stream.of(
+                        profile.getLastName(),
+                        profile.getFirstName(),
+                        profile.getMiddleName()
+                )
+                .filter(part -> part != null && !part.isBlank())
+                .map(String::trim)
+                .collect(java.util.stream.Collectors.joining(" "));
+    }
+
+    private String resolveGuestPhone(
+            String requestedPhone,
+            ProfileEntity primaryGuest,
+            String existingPhone
+    ) {
+        if (requestedPhone != null) {
+            return requestedPhone.isBlank() ? null : requestedPhone.trim();
+        }
+        if (primaryGuest != null) {
+            return primaryGuest.getPhoneNumber();
+        }
+        return existingPhone;
+    }
+
+    private String resolveGuestEmail(
+            String requestedEmail,
+            ProfileEntity primaryGuest,
+            String existingEmail
+    ) {
+        if (requestedEmail != null) {
+            return requestedEmail.isBlank() ? null : requestedEmail.trim();
+        }
+        if (primaryGuest != null) {
+            return primaryGuest.getEmail();
+        }
+        return existingEmail;
     }
 
     private void reassignUnlockedReservations(
@@ -253,6 +350,9 @@ public class ReservationService {
             LocalDateTime checkIn,
             LocalDateTime checkOut
     ) {
+        Long currentReservationId = currentReservation == null
+                ? null
+                : currentReservation.getId();
         List<ReservationEntity> conflicts =
                 reservationRepository
                         .findAllByRoomIdAndCheckInLessThanAndCheckOutGreaterThan(
@@ -261,7 +361,8 @@ public class ReservationService {
                                 checkIn
                         )
                         .stream()
-                        .filter(item -> !item.getId().equals(currentReservation.getId()))
+                        .filter(item -> currentReservationId == null
+                                || !item.getId().equals(currentReservationId))
                         .filter(item -> !List.of(
                                 ReservationStatus.CANCELLED,
                                 ReservationStatus.COMPLETED,
@@ -309,7 +410,8 @@ public class ReservationService {
                             )
                             .stream()
                             .noneMatch(other ->
-                                    !other.getId().equals(currentReservation.getId())
+                                    (currentReservationId == null
+                                            || !other.getId().equals(currentReservationId))
                                             && !conflictingIds.contains(other.getId())
                                             && !List.of(
                                                     ReservationStatus.CANCELLED,

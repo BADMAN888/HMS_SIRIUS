@@ -13,6 +13,7 @@ public record HotelGridReservationResponse(
         boolean roomLocked,
         String guestFirstName,
         String guestLastName,
-        String guestPhone
+        String guestPhone,
+        String guestName
 ) {
 }

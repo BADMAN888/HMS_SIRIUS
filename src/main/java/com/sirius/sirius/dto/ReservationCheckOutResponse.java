@@ -13,6 +13,7 @@ public record ReservationCheckOutResponse(
         String guestFirstName,
         String guestLastName,
         String guestMiddleName,
+        String guestName,
         LocalDateTime checkIn,
         LocalDateTime checkOut,
         ReservationStatus status,

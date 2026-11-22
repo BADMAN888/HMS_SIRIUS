@@ -7,6 +7,7 @@ import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
 import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.enums.ReservationStatus;
+import com.sirius.sirius.store.enums.ReservationCancellationReason;
 import com.sirius.sirius.store.enums.TaxStatus;
 import jakarta.persistence.*;
 import lombok.*;
@@ -65,6 +66,15 @@ public class ReservationEntity {
     @JoinColumn(name = "primary_guest_id")
     ProfileEntity primaryGuest;
 
+    @Column(name = "guest_name", length = 500)
+    String guestName;
+
+    @Column(name = "guest_phone", length = 30)
+    String guestPhone;
+
+    @Column(name = "guest_email", length = 100)
+    String guestEmail;
+
     @Builder.Default
     @Column(name = "room_locked", nullable = false)
     boolean roomLocked = false;
@@ -101,6 +111,10 @@ public class ReservationEntity {
     @Column(name = "tax_status", nullable = false, length = 20)
     @Builder.Default
     private TaxStatus taxStatus = TaxStatus.RESIDENT;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cancellation_reason", length = 40)
+    ReservationCancellationReason cancellationReason;
 
     @OneToMany(
             mappedBy = "reservation",

@@ -1,6 +1,7 @@
 package com.sirius.sirius.dto;
 
 import com.sirius.sirius.store.enums.ReservationStatus;
+import com.sirius.sirius.store.enums.ReservationCancellationReason;
 import com.sirius.sirius.store.enums.TaxStatus;
 
 import java.time.LocalDateTime;
@@ -15,6 +16,9 @@ public record ReservationResponse(
         Long paymentCategoryId,
         String paymentCategoryName,
         ProfileResponse primaryGuest,
+        String guestName,
+        String guestPhone,
+        String guestEmail,
         boolean roomLocked,
         Set<Long> guestIds,
         LocalDateTime checkIn,
@@ -24,6 +28,7 @@ public record ReservationResponse(
         Integer children,
         TaxStatus taxStatus,
         ReservationStatus status,
+        ReservationCancellationReason cancellationReason,
         List<ReservationCommentResponse> comments,
         LocalDateTime createdAt,
         Long folioId,

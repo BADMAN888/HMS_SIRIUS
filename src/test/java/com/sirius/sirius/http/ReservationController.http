@@ -197,6 +197,11 @@ Authorization: Bearer {{token}}
 
 PATCH {{baseUrl}}/api/reservations/{{reservationId}}/cancel
 Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "reason": "GUEST_REQUEST"
+}
 
 ###
 

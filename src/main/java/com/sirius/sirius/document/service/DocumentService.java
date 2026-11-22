@@ -95,14 +95,13 @@ public class DocumentService {
     private DocumentData loadDocumentData(Long reservationId) {
         ReservationResponse reservation = reservationService.getById(reservationId);
         ProfileResponse guest = reservation.primaryGuest();
-        if (guest == null) {
-            throw new ValidationException("Для бронювання не вказано основного гостя");
-        }
-        String fullName = Stream.of(guest.lastName(), guest.firstName(), guest.middleName())
-                .filter(part -> part != null && !part.isBlank())
-                .map(String::trim)
-                .collect(Collectors.joining(" "));
-        if (fullName.isBlank()) {
+        String fullName = guest == null
+                ? reservation.guestName()
+                : Stream.of(guest.lastName(), guest.firstName(), guest.middleName())
+                        .filter(part -> part != null && !part.isBlank())
+                        .map(String::trim)
+                        .collect(Collectors.joining(" "));
+        if (fullName == null || fullName.isBlank()) {
             throw new ValidationException("ПІБ основного гостя не заповнено");
         }
         HotelResponse hotel = reservation.room() == null || reservation.room().hotelId() == null
@@ -115,11 +114,11 @@ public class DocumentService {
                 hotel == null ? null : hotel.phone(),
                 hotel == null ? null : hotel.email(),
                 fullName,
-                guest.dateOfBirth() == null ? null : guest.dateOfBirth().format(DATE_FORMAT),
-                guest.phoneNumber(),
-                guest.email(),
-                guest.nationality() == null ? null : guest.nationality().name().replace('_', ' '),
-                firstNonBlank(guest.registrationAddress(), guest.address()),
+                guest == null || guest.dateOfBirth() == null ? null : guest.dateOfBirth().format(DATE_FORMAT),
+                guest == null ? null : guest.phoneNumber(),
+                guest == null ? null : guest.email(),
+                guest == null || guest.nationality() == null ? null : guest.nationality().name().replace('_', ' '),
+                guest == null ? null : firstNonBlank(guest.registrationAddress(), guest.address()),
                 reservation.confirmationNumber(),
                 reservation.checkIn() == null ? null : reservation.checkIn().toLocalDate().format(DATE_FORMAT),
                 reservation.checkIn() == null ? null : reservation.checkIn().toLocalTime().format(TIME_FORMAT),

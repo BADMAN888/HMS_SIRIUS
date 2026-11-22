@@ -120,7 +120,12 @@ public class HotelGridService {
                 reservation.isRoomLocked(),
                 reservation.getPrimaryGuest() != null ? reservation.getPrimaryGuest().getFirstName() : null,
                 reservation.getPrimaryGuest() != null ? reservation.getPrimaryGuest().getLastName() : null,
-                reservation.getPrimaryGuest() != null ? reservation.getPrimaryGuest().getPhoneNumber() : null
+                reservation.getGuestPhone() != null
+                        ? reservation.getGuestPhone()
+                        : reservation.getPrimaryGuest() != null
+                                ? reservation.getPrimaryGuest().getPhoneNumber()
+                                : null,
+                reservation.getGuestName()
         );
     }
 }

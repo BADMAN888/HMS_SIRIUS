@@ -8,6 +8,7 @@ import com.sirius.sirius.dto.ReservationCommentResponse;
 import com.sirius.sirius.dto.ReservationIncludedBreakfastResponse;
 import com.sirius.sirius.dto.ReservationIncludedBreakfastServedRequest;
 import com.sirius.sirius.dto.ReservationRequest;
+import com.sirius.sirius.dto.ReservationCancelRequest;
 import com.sirius.sirius.dto.ReservationGuestsRequest;
 import com.sirius.sirius.dto.ReservationResponse;
 import com.sirius.sirius.service.reservation.ReservationCommentService;
@@ -168,9 +169,10 @@ public class ReservationController {
 
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<Void> cancel(
-            @PathVariable @Positive Long id
+            @PathVariable @Positive Long id,
+            @Valid @RequestBody ReservationCancelRequest request
     ) {
-        lifecycleService.cancel(id);
+        lifecycleService.cancel(id, request.reason());
         return ResponseEntity.noContent().build();
     }
 
