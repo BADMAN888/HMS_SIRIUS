@@ -1,6 +1,8 @@
 
 @baseUrl = http://localhost:8080
 
+# Select the "local" HTTP Client environment to load credentials from the private env file.
+
 @hotelUrl = {{baseUrl}}/api/hotels
 @roomCategoryUrl = {{baseUrl}}/api/room-category
 @roomUrl = {{baseUrl}}/api/rooms
@@ -68,35 +70,7 @@
 ### AUTH
 ### ==================================================
 
-### LOG IN AS BOOTSTRAP ADMIN
-
-# In the HTTP Client environment, define adminEmail and adminPassword for an ADMIN account.
-
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "{{adminEmail}}",
-  "password": "{{adminPassword}}"
-}
-
-> {%
-    client.test("Admin login succeeds", function () {
-        client.assert(response.status === 200);
-    });
-
-    client.test("Access token exists", function () {
-        client.assert(response.body.token !== null);
-    });
-
-    client.global.set("token", response.body.token);
-    client.global.set("refreshToken", response.body.refreshToken);
-    var runCode = String(10000000 + (Date.now() % 90000000));
-    client.global.set("runCode", runCode);
-    client.global.set("legalEntity2Code", String(10000000 + ((Number(runCode) - 10000000 + 1) % 90000000)));
-%}
-
-###
+# Run the admin login request in AuthController.http first. It sets token and runCode.
 
 ### REFRESH TOKEN
 
@@ -110,6 +84,7 @@ Content-Type: application/json
 > {%
     client.test("Token refreshed", function () {
         client.assert(response.status === 200);
+        client.assert(response.body.token != null);
     });
 
     client.global.set("token", response.body.token);
@@ -517,7 +492,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "amount": 100000.00
+  "amount": 100000.00,
+  "description": "Attempted overdraw test"
 }
 
 > {%
@@ -1808,7 +1784,7 @@ Content-Type: application/json
   "description": "Restaurant breakfast portion",
   "unit": "person",
   "active": true,
-  "type": "STANDARD"
+  "type": "BREAKFAST"
 }
 
 > {%
@@ -2316,6 +2292,17 @@ Content-Type: application/json
 
 ###
 
+### BAR-BB INCLUDED BREAKFAST COMPONENT
+POST {{serviceComponentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"rateId": {{superiorRateId}}, "facilityId": {{breakfastFacilityId}}, "priceSource": "FACILITY_PRICE", "quantityBasis": "PER_GUEST_PER_NIGHT", "multiplier": 1, "included": true, "sortOrder": 1, "active": true}
+
+> {% client.test("BAR-BB included breakfast component created", function () { client.assert(response.status === 201); }); %}
+
+###
+
 ### BAR-RO5 ACCOMMODATION COMPONENT
 POST {{serviceComponentUrl}}
 Authorization: Bearer {{token}}
@@ -2417,7 +2404,11 @@ Content-Type: application/json
   "taxStatus": "RESIDENT",
   "bookingSource": "HTTP_TEST",
   "sourceCompanyId": {{companyId}},
-  "operatorCompanyId": {{companyId}}
+  "operatorCompanyId": {{companyId}},
+  "earlyCheckInAccepted": false,
+  "lateCheckOutAccepted": false,
+  "earlyExtraNightAccepted": false,
+  "lateExtraNightAccepted": false
 }
 
 > {%
@@ -2450,7 +2441,11 @@ Content-Type: application/json
   "taxStatus": "NON_RESIDENT",
   "bookingSource": "HTTP_TEST",
   "sourceCompanyId": {{companyId}},
-  "operatorCompanyId": {{companyId}}
+  "operatorCompanyId": {{companyId}},
+  "earlyCheckInAccepted": false,
+  "lateCheckOutAccepted": false,
+  "earlyExtraNightAccepted": false,
+  "lateExtraNightAccepted": false
 }
 
 > {%
@@ -2481,7 +2476,11 @@ Content-Type: application/json
   "adults": 1,
   "children": 0,
   "taxStatus": "EXEMPT",
-  "bookingSource": "HTTP_TEST"
+  "bookingSource": "HTTP_TEST",
+  "earlyCheckInAccepted": false,
+  "lateCheckOutAccepted": false,
+  "earlyExtraNightAccepted": false,
+  "lateExtraNightAccepted": false
 }
 
 > {%
@@ -2514,7 +2513,11 @@ Content-Type: application/json
   "adults": 2,
   "children": 0,
   "taxStatus": "RESIDENT",
-  "bookingSource": "HTTP_TEST"
+  "bookingSource": "HTTP_TEST",
+  "earlyCheckInAccepted": false,
+  "lateCheckOutAccepted": false,
+  "earlyExtraNightAccepted": false,
+  "lateExtraNightAccepted": false
 }
 
 > {%
@@ -2545,7 +2548,11 @@ Content-Type: application/json
   "adults": 2,
   "children": 0,
   "taxStatus": "NON_RESIDENT",
-  "bookingSource": "HTTP_TEST"
+  "bookingSource": "HTTP_TEST",
+  "earlyCheckInAccepted": false,
+  "lateCheckOutAccepted": false,
+  "earlyExtraNightAccepted": false,
+  "lateExtraNightAccepted": false
 }
 
 > {%
@@ -2576,7 +2583,11 @@ Content-Type: application/json
   "adults": 1,
   "children": 1,
   "taxStatus": "EXEMPT",
-  "bookingSource": "HTTP_TEST"
+  "bookingSource": "HTTP_TEST",
+  "earlyCheckInAccepted": false,
+  "lateCheckOutAccepted": false,
+  "earlyExtraNightAccepted": false,
+  "lateExtraNightAccepted": false
 }
 
 > {%
@@ -2607,7 +2618,11 @@ Content-Type: application/json
   "adults": 2,
   "children": 0,
   "taxStatus": "RESIDENT",
-  "bookingSource": "HTTP_TEST"
+  "bookingSource": "HTTP_TEST",
+  "earlyCheckInAccepted": false,
+  "lateCheckOutAccepted": false,
+  "earlyExtraNightAccepted": false,
+  "lateExtraNightAccepted": false
 }
 
 > {%
@@ -2638,7 +2653,11 @@ Content-Type: application/json
   "adults": 2,
   "children": 0,
   "taxStatus": "NON_RESIDENT",
-  "bookingSource": "HTTP_TEST"
+  "bookingSource": "HTTP_TEST",
+  "earlyCheckInAccepted": false,
+  "lateCheckOutAccepted": false,
+  "earlyExtraNightAccepted": false,
+  "lateExtraNightAccepted": false
 }
 
 > {%
@@ -2669,7 +2688,11 @@ Content-Type: application/json
   "adults": 2,
   "children": 0,
   "taxStatus": "RESIDENT",
-  "bookingSource": "HTTP_TEST"
+  "bookingSource": "HTTP_TEST",
+  "earlyCheckInAccepted": false,
+  "lateCheckOutAccepted": false,
+  "earlyExtraNightAccepted": false,
+  "lateExtraNightAccepted": false
 }
 
 > {%
@@ -2700,7 +2723,11 @@ Content-Type: application/json
   "adults": 2,
   "children": 0,
   "taxStatus": "EXEMPT",
-  "bookingSource": "HTTP_TEST"
+  "bookingSource": "HTTP_TEST",
+  "earlyCheckInAccepted": false,
+  "lateCheckOutAccepted": false,
+  "earlyExtraNightAccepted": false,
+  "lateExtraNightAccepted": false
 }
 
 > {%
@@ -2805,25 +2832,24 @@ Authorization: Bearer {{token}}
 
 ### GET INCLUDED BREAKFASTS
 
-GET {{reservationUrl}}/{{reservation1Id}}/included-breakfasts
+GET {{reservationUrl}}/{{reservation3Id}}/included-breakfasts
 Authorization: Bearer {{token}}
 
 > {%
     client.test("Included breakfasts loaded", function () {
         client.assert(response.status === 200);
         client.assert(Array.isArray(response.body));
+        client.assert(response.body.length > 0);
     });
 
-    if (response.body.length > 0) {
-        client.global.set("includedBreakfastId", response.body[0].id);
-    }
+    client.global.set("includedBreakfastId", response.body[0].id);
 %}
 
 ###
 
 ### UPDATE SERVED INCLUDED BREAKFASTS
 
-PATCH {{reservationUrl}}/{{reservation1Id}}/included-breakfasts/{{includedBreakfastId}}/served
+PATCH {{reservationUrl}}/{{reservation3Id}}/included-breakfasts/{{includedBreakfastId}}/served
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
@@ -3764,7 +3790,8 @@ Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "amount": 1.00
+  "amount": 1.00,
+  "description": "Reject operation after shift close"
 }
 
 > {%

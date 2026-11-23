@@ -17,6 +17,7 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import tools.jackson.core.JacksonException;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -154,6 +155,17 @@ public class GlobalExceptionHandler {
             HttpMessageNotReadableException ex,
             HttpServletRequest request
     ) {
+        Throwable cause = ex.getMostSpecificCause();
+        String jsonPath = cause instanceof JacksonException jacksonException
+                ? jacksonException.getPathReference()
+                : "unavailable";
+        log.warn(
+                "Could not parse JSON request for {} {} ({} at {}).",
+                request.getMethod(),
+                request.getRequestURI(),
+                cause.getClass().getSimpleName(),
+                jsonPath
+        );
         return build(
                 HttpStatus.BAD_REQUEST,
                 "Request body is missing or malformed",
