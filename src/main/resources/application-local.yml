@@ -1,0 +1,17 @@
+spring:
+  docker:
+    compose:
+      enabled: false
+  datasource:
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:HMS_sirius}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:HMS_sirius}}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  flyway:
+    enabled: false
+
+app:
+  bootstrap-rate-components:
+    enabled: true

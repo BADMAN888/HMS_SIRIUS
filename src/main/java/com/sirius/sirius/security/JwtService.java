@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.Clock;
 import java.util.Base64;
 import java.util.Date;
 
@@ -17,10 +18,12 @@ public class JwtService {
 
     private final SecretKey key;
     private final Duration accessTokenTtl;
+    private final Clock clock;
 
     public JwtService(
             @Value("${security.jwt.secret}") String secret,
-            @Value("${security.jwt.access-token-ttl}") Duration accessTokenTtl
+            @Value("${security.jwt.access-token-ttl}") Duration accessTokenTtl,
+            Clock clock
     ) {
         byte[] decodedSecret;
 
@@ -47,10 +50,11 @@ public class JwtService {
 
         this.key = Keys.hmacShaKeyFor(decodedSecret);
         this.accessTokenTtl = accessTokenTtl;
+        this.clock = clock;
     }
 
     public String generateToken(String email) {
-        Instant now = Instant.now();
+        Instant now = clock.instant();
 
         return Jwts.builder()
                 .subject(email)

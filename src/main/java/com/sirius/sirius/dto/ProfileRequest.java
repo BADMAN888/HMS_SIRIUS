@@ -45,7 +45,9 @@ public record ProfileRequest(
 
         boolean vip,
 
-        boolean inBlackList
+        boolean inBlackList,
+
+        Long hotelId
 
 ) {
 }

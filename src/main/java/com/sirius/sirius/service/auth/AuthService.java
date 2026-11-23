@@ -4,6 +4,7 @@ import com.sirius.sirius.dto.auth.AuthRequest;
 import com.sirius.sirius.dto.auth.AuthResponse;
 import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.UnauthorizedException;
+import com.sirius.sirius.exeption.ForbiddenException;
 import com.sirius.sirius.store.entity.RefreshTokenEntity;
 import com.sirius.sirius.store.entity.UserEntity;
 import com.sirius.sirius.store.enums.Role;
@@ -13,6 +14,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Value;
 
 @Service
 @RequiredArgsConstructor
@@ -23,9 +25,16 @@ public class AuthService {
     private final JwtService jwtService;
     private final RefreshTokenService refreshTokenService;
 
+    @Value("${app.auth.self-registration-enabled:false}")
+    private boolean selfRegistrationEnabled;
+
     @Transactional
     public AuthResponse register(AuthRequest request) {
-        if (userRepository.findByEmail(request.email()).isPresent()) {
+        if (!selfRegistrationEnabled) {
+            throw new ForbiddenException("Самостійну реєстрацію вимкнено; обліковий запис створює адміністратор готелю");
+        }
+        String email = normalizeEmail(request.email());
+        if (userRepository.findByEmailIgnoreCase(email).isPresent()) {
             throw new ConflictException(
                     "User with this email already exists"
             );
@@ -33,7 +42,7 @@ public class AuthService {
 
         UserEntity user = new UserEntity();
 
-        user.setEmail(request.email());
+        user.setEmail(email);
         user.setPassword(
                 passwordEncoder.encode(request.password())
         );
@@ -46,7 +55,7 @@ public class AuthService {
 
     @Transactional
     public AuthResponse login(AuthRequest request) {
-        UserEntity user = userRepository.findByEmail(request.email())
+        UserEntity user = userRepository.findByEmailIgnoreCase(normalizeEmail(request.email()))
                 .orElseThrow(() ->
                         new UnauthorizedException("Invalid credentials")
                 );
@@ -61,6 +70,10 @@ public class AuthService {
         }
 
         return createAuthResponse(user);
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     @Transactional

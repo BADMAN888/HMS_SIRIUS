@@ -1,9 +1,12 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.AccrualRequest;
 import com.sirius.sirius.dto.AccrualResponse;
+import com.sirius.sirius.dto.PackageAccrualRequest;
 import com.sirius.sirius.service.billing.AccrualService;
+import com.sirius.sirius.service.billing.FacilityPackageAccrualService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
@@ -18,10 +21,13 @@ import java.util.List;
 @RequestMapping("/api/accruals")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class AccrualController {
 
     private final AccrualService accrualService;
+    private final FacilityPackageAccrualService facilityPackageAccrualService;
 
+    @PreAuthorize("@hotelAccess.canCreateAccrual(#p0)")
     @PostMapping
     public ResponseEntity<AccrualResponse> create(
             @Valid @RequestBody AccrualRequest request
@@ -31,11 +37,22 @@ public class AccrualController {
                 .body(accrualService.create(request));
     }
 
+    @PreAuthorize("@hotelAccess.canCreatePackageAccrual(#p0)")
+    @PostMapping("/package")
+    public ResponseEntity<List<AccrualResponse>> createPackage(
+            @Valid @RequestBody PackageAccrualRequest request
+    ) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(facilityPackageAccrualService.create(request));
+    }
+
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping
     public ResponseEntity<List<AccrualResponse>> getAll() {
         return ResponseEntity.ok(accrualService.getAll());
     }
 
+    @PreAuthorize("@hotelAccess.canAccessAccrual(#p0)")
     @GetMapping("/{id}")
     public ResponseEntity<AccrualResponse> getById(
             @PathVariable @Positive Long id
@@ -43,6 +60,7 @@ public class AccrualController {
         return ResponseEntity.ok(accrualService.getById(id));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessFolio(#p0)")
     @GetMapping("/folio/{folioId}")
     public ResponseEntity<List<AccrualResponse>> getByFolioId(
             @PathVariable @Positive Long folioId
@@ -52,6 +70,7 @@ public class AccrualController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p0)")
     @GetMapping("/hotel/{hotelId}/unassigned")
     public ResponseEntity<List<AccrualResponse>> getUnassignedByHotelId(
             @PathVariable @Positive Long hotelId
@@ -61,6 +80,7 @@ public class AccrualController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @GetMapping("/reservation/{reservationId}/unassigned")
     public ResponseEntity<List<AccrualResponse>> getUnassignedByReservationId(
             @PathVariable @Positive Long reservationId
@@ -70,6 +90,7 @@ public class AccrualController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessAccrual(#p0)")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable @Positive Long id
@@ -78,6 +99,7 @@ public class AccrualController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@hotelAccess.canAccessAccrual(#p0)")
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<Void> cancel(
             @PathVariable @Positive Long id
@@ -86,6 +108,7 @@ public class AccrualController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@hotelAccess.canAccessAccrual(#p0)")
     @PatchMapping("/{id}/reactivate")
     public ResponseEntity<Void> reactivate(
             @PathVariable @Positive Long id

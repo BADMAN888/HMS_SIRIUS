@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.FacilityRequest;
 import com.sirius.sirius.dto.FacilityResponse;
 import com.sirius.sirius.service.billing.FacilityService;
@@ -18,6 +19,7 @@ import java.util.List;
 @RequestMapping("/api/facilities")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class FacilityController {
 
     private final FacilityService facilityService;
@@ -31,6 +33,7 @@ public class FacilityController {
                 .body(facilityService.create(request));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessFacility(#p0)")
     @GetMapping("/{id}")
     public ResponseEntity<FacilityResponse> getById(
             @PathVariable @Positive Long id
@@ -38,6 +41,7 @@ public class FacilityController {
         return ResponseEntity.ok(facilityService.getById(id));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p0)")
     @GetMapping("/hotel/{hotelId}")
     public ResponseEntity<List<FacilityResponse>> getAllByHotelId(
             @PathVariable @Positive Long hotelId
@@ -47,6 +51,7 @@ public class FacilityController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p0)")
     @GetMapping("/hotel/{hotelId}/active")
     public ResponseEntity<List<FacilityResponse>> getActiveByHotelId(
             @PathVariable @Positive Long hotelId

@@ -3,6 +3,8 @@ package com.sirius.sirius.store.entity.biling;
 import com.sirius.sirius.store.entity.hotel.HotelEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.AccrualSource;
+import com.sirius.sirius.store.enums.ComponentPriceSource;
+import com.sirius.sirius.store.enums.ComponentQuantityBasis;
 import jakarta.persistence.*;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -44,6 +46,29 @@ public class AccrualEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "facility_id")
     FacilityEntity facility;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "service_component_id")
+    ServiceComponentEntity serviceComponent;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_rate_component_id")
+    ServiceComponentEntity sourceRateComponent;
+
+    @Column(name = "included_component")
+    @Builder.Default
+    boolean includedComponent = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "component_price_source", length = 30)
+    ComponentPriceSource componentPriceSource;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "component_quantity_basis", length = 40)
+    ComponentQuantityBasis componentQuantityBasis;
+
+    @Column(name = "component_multiplier", precision = 10, scale = 3)
+    BigDecimal componentMultiplier;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "reversal_of_id")

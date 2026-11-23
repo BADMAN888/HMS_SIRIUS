@@ -9,6 +9,7 @@ import com.sirius.sirius.store.entity.hotel.HotelEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
 import com.sirius.sirius.store.repository.HotelRepository;
 import com.sirius.sirius.store.repository.RoomCategoryRepository;
+import com.sirius.sirius.security.HotelAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ public class RoomCategoryService {
     private final RoomCategoryRepository roomCategoryRepository;
     private final HotelRepository hotelRepository;
     private final RoomCategoryMapper roomCategoryMapper;
+    private final HotelAccessService hotelAccess;
 
     public RoomCategoryResponse getById(Long id) {
         RoomCategoryEntity category = roomCategoryRepository.findById(id)
@@ -38,6 +40,7 @@ public class RoomCategoryService {
     public List<RoomCategoryResponse> getAll() {
         return roomCategoryRepository.findAll()
                 .stream()
+                .filter(category -> hotelAccess.canAccessHotel(category.getHotel().getId()))
                 .map(roomCategoryMapper::toResponse)
                 .toList();
     }

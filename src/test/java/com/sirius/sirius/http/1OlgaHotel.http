@@ -5,6 +5,7 @@
 @roomCategoryUrl = {{baseUrl}}/api/room-category
 @roomUrl = {{baseUrl}}/api/rooms
 @rateUrl = {{baseUrl}}/api/rates
+@serviceComponentUrl = {{baseUrl}}/api/service-components
 @priceUrl = {{baseUrl}}/api/prices
 @profileUrl = {{baseUrl}}/api/profiles
 @guestDocumentUrl = {{baseUrl}}/api/guest-documents
@@ -27,8 +28,6 @@
 ### TEST CONFIGURATION
 ### ==================================================
 
-@runCode = 61110001
-@testCashierId = 1
 
 ### Бронювання 1
 @reservation1CheckInDate = 2026-12-20
@@ -69,18 +68,20 @@
 ### AUTH
 ### ==================================================
 
-### REGISTER TEST USER
+### LOG IN AS BOOTSTRAP ADMIN
 
-POST {{baseUrl}}/auth/register
+# In the HTTP Client environment, define adminEmail and adminPassword for an ADMIN account.
+
+POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "olga.{{runCode}}@gmail.com",
-  "password": "123456"
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
 }
 
 > {%
-    client.test("Test user registered", function () {
+    client.test("Admin login succeeds", function () {
         client.assert(response.status === 200);
     });
 
@@ -90,6 +91,9 @@ Content-Type: application/json
 
     client.global.set("token", response.body.token);
     client.global.set("refreshToken", response.body.refreshToken);
+    var runCode = String(10000000 + (Date.now() % 90000000));
+    client.global.set("runCode", runCode);
+    client.global.set("legalEntity2Code", String(10000000 + ((Number(runCode) - 10000000 + 1) % 90000000)));
 %}
 
 ###
@@ -218,7 +222,7 @@ Content-Type: application/json
 {
   "fullName": "Sirius Second Test Company {{runCode}} LLC",
   "shortName": "Sirius Second {{runCode}}",
-  "edrpou": "61110002",
+  "edrpou": "{{legalEntity2Code}}",
   "registrationDate": "2021-02-15",
   "organizationalLegalForm": "LLC"
 }
@@ -462,40 +466,44 @@ Authorization: Bearer {{token}}
 
 ###
 
-### SERVICE IN WITHOUT A COMMENT
+### SERVICE IN WITH REQUIRED COMMENT
 
 POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{cashShiftId}}/service-in
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "amount": 250.00
+  "amount": 250.00,
+  "description": "Cash float replenishment"
 }
 
 > {%
-    client.test("Service-in does not require a comment", function () {
+    client.test("Service-in requires and stores a comment", function () {
         client.assert(response.status === 200);
         client.assert(response.body.operationType === "SERVICE_IN");
+        client.assert(response.body.description === "Cash float replenishment");
     });
     client.global.set("cashServiceInId", response.body.id);
 %}
 
 ###
 
-### SERVICE OUT WITHOUT A COMMENT
+### SERVICE OUT WITH REQUIRED COMMENT
 
 POST {{cashRegisterUrl}}/{{cashRegisterId}}/shifts/{{cashShiftId}}/service-out
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "amount": 100.00
+  "amount": 100.00,
+  "description": "Cash drawer expense"
 }
 
 > {%
-    client.test("Service-out does not require a comment", function () {
+    client.test("Service-out requires and stores a comment", function () {
         client.assert(response.status === 200);
         client.assert(response.body.operationType === "SERVICE_OUT");
+        client.assert(response.body.description === "Cash drawer expense");
     });
     client.global.set("cashServiceOutId", response.body.id);
 %}
@@ -1167,23 +1175,22 @@ Authorization: Bearer {{token}}
 ### RATES
 ### ==================================================
 
-### CREATE STANDARD RATE
+### CREATE BAR-RO RATE WITHOUT BREAKFAST
 
 POST {{rateUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR Standard {{runCode}}",
-  "description": "Best available rate",
+  "name": "BAR-RO {{runCode}}",
+  "description": "Best available rate, room only, no breakfast",
   "currency": "UAH",
   "categoryId": {{standardCategoryId}},
-  "active": true,
-  "breakfastIncluded": true
+  "active": true
 }
 
 > {%
-    client.test("Standard rate created", function () {
+    client.test("BAR-RO rate created", function () {
         client.assert(response.status === 201);
     });
 
@@ -1192,23 +1199,22 @@ Content-Type: application/json
 
 ###
 
-### CREATE SUPERIOR RATE
+### CREATE BAR-BB RATE WITH BREAKFAST
 
 POST {{rateUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR Superior {{runCode}}",
-  "description": "Best available rate",
+  "name": "BAR-BB {{runCode}}",
+  "description": "Best available rate with breakfast included",
   "currency": "UAH",
   "categoryId": {{superiorCategoryId}},
-  "active": true,
-  "breakfastIncluded": false
+  "active": true
 }
 
 > {%
-    client.test("Superior rate created", function () {
+    client.test("BAR-BB rate created", function () {
         client.assert(response.status === 201);
     });
 
@@ -1219,23 +1225,22 @@ Content-Type: application/json
 
 ###
 
-### CREATE BAR10 STANDARD RATE
+### CREATE BAR-RO5 DISCOUNTED RATE
 
 POST {{rateUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BAR10 Standard {{runCode}}",
-  "description": "Discounted standard rate",
+  "name": "BAR-RO5 {{runCode}}",
+  "description": "Room only rate with a 5% discount",
   "currency": "UAH",
   "categoryId": {{standardCategoryId}},
-  "active": true,
-  "breakfastIncluded": true
+  "active": true
 }
 
 > {%
-    client.test("BAR10 Standard rate created", function () {
+    client.test("BAR-RO5 rate created", function () {
         client.assert(response.status === 201);
     });
 
@@ -1244,23 +1249,22 @@ Content-Type: application/json
 
 ###
 
-### CREATE BB SUPERIOR RATE
+### CREATE BAR-BB5 DISCOUNTED RATE
 
 POST {{rateUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "BB Superior {{runCode}}",
-  "description": "Superior rate with breakfast",
+  "name": "BAR-BB5 {{runCode}}",
+  "description": "Breakfast included rate with a 5% discount",
   "currency": "UAH",
   "categoryId": {{superiorCategoryId}},
-  "active": true,
-  "breakfastIncluded": true
+  "active": true
 }
 
 > {%
-    client.test("BB Superior rate created", function () {
+    client.test("BAR-BB5 rate created", function () {
         client.assert(response.status === 201);
     });
 
@@ -1269,23 +1273,22 @@ Content-Type: application/json
 
 ###
 
-### CREATE FLEX STANDARD RATE
+### CREATE BAR-RO10 DISCOUNTED RATE
 
 POST {{rateUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "FLEX Standard {{runCode}}",
-  "description": "Flexible standard rate",
+  "name": "BAR-RO10 {{runCode}}",
+  "description": "Room only rate with a 10% discount",
   "currency": "UAH",
   "categoryId": {{standardCategoryId}},
-  "active": true,
-  "breakfastIncluded": false
+  "active": true
 }
 
 > {%
-    client.test("FLEX Standard rate created", function () {
+    client.test("BAR-RO10 rate created", function () {
         client.assert(response.status === 201);
     });
 
@@ -1294,28 +1297,73 @@ Content-Type: application/json
 
 ###
 
-### CREATE FLEX SUPERIOR RATE
+### CREATE BAR-BB10 DISCOUNTED RATE
 
 POST {{rateUrl}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "name": "FLEX Superior {{runCode}}",
-  "description": "Flexible superior rate",
+  "name": "BAR-BB10 {{runCode}}",
+  "description": "Breakfast included rate with a 10% discount",
   "currency": "UAH",
   "categoryId": {{superiorCategoryId}},
-  "active": true,
-  "breakfastIncluded": false
+  "active": true
 }
 
 > {%
-    client.test("FLEX Superior rate created", function () {
+    client.test("BAR-BB10 rate created", function () {
         client.assert(response.status === 201);
     });
 
     client.global.set("rate6Id", response.body.id);
 %}
+
+### CREATE BAR-RO15 DISCOUNTED RATE
+
+POST {{rateUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "BAR-RO15 {{runCode}}",
+  "description": "Room only rate with a 15% discount",
+  "currency": "UAH",
+  "categoryId": {{standardCategoryId}},
+  "active": true
+}
+
+> {%
+    client.test("BAR-RO15 rate created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("rate7Id", response.body.id);
+%}
+
+###
+
+### CREATE BAR-BB15 DISCOUNTED RATE
+
+POST {{rateUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "name": "BAR-BB15 {{runCode}}",
+  "description": "Breakfast included rate with a 15% discount",
+  "currency": "UAH",
+  "categoryId": {{superiorCategoryId}},
+  "active": true
+}
+
+> {%
+    client.test("BAR-BB15 rate created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("rate8Id", response.body.id);
+%}
+
+###
 
 ### GET ALL RATES
 
@@ -1323,12 +1371,17 @@ GET {{rateUrl}}
 Authorization: Bearer {{token}}
 
 > {%
-    client.test("Rates loaded", function () {
+    client.test("All eight BAR rates loaded", function () {
         client.assert(response.status === 200);
         client.assert(Array.isArray(response.body));
+        var expectedRates = ["BAR-RO ", "BAR-BB ", "BAR-RO5 ", "BAR-BB5 ", "BAR-RO10 ", "BAR-BB10 ", "BAR-RO15 ", "BAR-BB15 "];
+        expectedRates.forEach(function (rateName) {
+            client.assert(response.body.some(function (rate) {
+                return rate.name === rateName + client.global.get("runCode");
+            }), "Missing rate: " + rateName);
+        });
     });
 %}
-
 ###
 
 ### GET STANDARD RATE
@@ -1397,13 +1450,13 @@ Content-Type: application/json
 
 {
   "rateId": {{rate3Id}},
-  "price": 4500.00,
+  "price": 4750.00,
   "validFrom": "{{priceValidFrom}}",
   "validTo": "{{priceValidTo}}"
 }
 
 > {%
-    client.test("BAR10 Standard price created", function () {
+    client.test("BAR-RO5 price created", function () {
         client.assert(response.status === 201);
     });
 %}
@@ -1418,13 +1471,13 @@ Content-Type: application/json
 
 {
   "rateId": {{rate4Id}},
-  "price": 7200.00,
+  "price": 5700.00,
   "validFrom": "{{priceValidFrom}}",
   "validTo": "{{priceValidTo}}"
 }
 
 > {%
-    client.test("BB Superior price created", function () {
+    client.test("BAR-BB5 price created", function () {
         client.assert(response.status === 201);
     });
 %}
@@ -1439,13 +1492,13 @@ Content-Type: application/json
 
 {
   "rateId": {{rate5Id}},
-  "price": 5500.00,
+  "price": 4500.00,
   "validFrom": "{{priceValidFrom}}",
   "validTo": "{{priceValidTo}}"
 }
 
 > {%
-    client.test("FLEX Standard price created", function () {
+    client.test("BAR-RO10 price created", function () {
         client.assert(response.status === 201);
     });
 %}
@@ -1460,16 +1513,58 @@ Content-Type: application/json
 
 {
   "rateId": {{rate6Id}},
-  "price": 6500.00,
+  "price": 5400.00,
   "validFrom": "{{priceValidFrom}}",
   "validTo": "{{priceValidTo}}"
 }
 
 > {%
-    client.test("FLEX Superior price created", function () {
+    client.test("BAR-BB10 price created", function () {
         client.assert(response.status === 201);
     });
 %}
+
+### CREATE BAR-RO15 RATE PRICE
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rateId": {{rate7Id}},
+  "price": 4250.00,
+  "validFrom": "{{priceValidFrom}}",
+  "validTo": "{{priceValidTo}}"
+}
+
+> {%
+    client.test("BAR-RO15 price created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+###
+
+### CREATE BAR-BB15 RATE PRICE
+
+POST {{priceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rateId": {{rate8Id}},
+  "price": 5100.00,
+  "validFrom": "{{priceValidFrom}}",
+  "validTo": "{{priceValidTo}}"
+}
+
+> {%
+    client.test("BAR-BB15 price created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+###
 
 ### GET STANDARD RATE PRICE HISTORY
 
@@ -1701,7 +1796,7 @@ Authorization: Bearer {{token}}
 ### FACILITIES
 ### ==================================================
 
-### CREATE BREAKFAST FACILITY
+### CREATE RESTAURANT BREAKFAST FACILITY
 
 POST {{facilityUrl}}
 Authorization: Bearer {{token}}
@@ -1709,19 +1804,211 @@ Content-Type: application/json
 
 {
   "hotelId": {{hotelId}},
-  "name": "Breakfast {{runCode}}",
-  "description": "Breakfast service",
+  "name": "Ресторан — сніданок {{runCode}}",
+  "description": "Restaurant breakfast portion",
   "unit": "person",
   "active": true,
   "type": "STANDARD"
 }
 
 > {%
-    client.test("Breakfast facility created", function () {
+    client.test("Restaurant breakfast facility created", function () {
         client.assert(response.status === 201);
     });
 
     client.global.set("breakfastFacilityId", response.body.id);
+%}
+
+###
+
+### CREATE RO ACCOMMODATION FACILITY
+
+POST {{facilityUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "name": "Проживання без сніданку {{runCode}}",
+  "description": "Accommodation only, breakfast not included",
+  "unit": "ніч",
+  "active": true,
+  "type": "STANDARD"
+}
+
+> {%
+    client.test("Room-only accommodation facility created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("accommodationRoFacilityId", response.body.id);
+%}
+
+###
+
+### CREATE BB ACCOMMODATION FACILITY
+
+POST {{facilityUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "name": "Проживання зі сніданком {{runCode}}",
+  "description": "Accommodation with breakfast included",
+  "unit": "ніч",
+  "active": true,
+  "type": "STANDARD"
+}
+
+> {%
+    client.test("Breakfast accommodation facility created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("accommodationBbFacilityId", response.body.id);
+%}
+
+###
+
+### CREATE EARLY CHECK-IN WITHOUT BREAKFAST FACILITY
+
+POST {{facilityUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "name": "Ранній заїзд без сніданку {{runCode}}",
+  "description": "Early check-in without breakfast",
+  "unit": "послуга",
+  "active": true,
+  "type": "STANDARD"
+}
+
+> {%
+    client.test("Early check-in room-only facility created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("earlyCheckInRoFacilityId", response.body.id);
+%}
+
+###
+
+### CREATE EARLY CHECK-IN WITH BREAKFAST FACILITY
+
+POST {{facilityUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "name": "Ранній заїзд зі сніданком {{runCode}}",
+  "description": "Early check-in with breakfast",
+  "unit": "послуга",
+  "active": true,
+  "type": "STANDARD"
+}
+
+> {%
+    client.test("Early check-in with breakfast facility created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("earlyCheckInBbFacilityId", response.body.id);
+%}
+
+###
+
+### CREATE RESTAURANT DINNER FACILITY
+
+POST {{facilityUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "name": "Ресторан — вечеря {{runCode}}",
+  "description": "Restaurant dinner portion",
+  "unit": "порція",
+  "active": true,
+  "type": "STANDARD"
+}
+
+> {%
+    client.test("Restaurant dinner facility created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("dinnerFacilityId", response.body.id);
+%}
+
+###
+
+### CREATE MINIBAR WATER FACILITY
+
+POST {{facilityUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "name": "Мінібар — вода 0,5 л {{runCode}}",
+  "description": "Still water bottle",
+  "unit": "пляшка",
+  "active": true,
+  "type": "STANDARD"
+}
+
+> {%
+    client.test("Minibar water facility created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("minibarWaterFacilityId", response.body.id);
+%}
+
+###
+
+### CREATE MINIBAR JUICE FACILITY
+
+POST {{facilityUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "name": "Мінібар — сік 0,2 л {{runCode}}",
+  "description": "Juice bottle",
+  "unit": "пляшка",
+  "active": true,
+  "type": "STANDARD"
+}
+
+> {%
+    client.test("Minibar juice facility created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("minibarJuiceFacilityId", response.body.id);
+%}
+
+###
+
+### CREATE MINIBAR CHOCOLATE FACILITY
+
+POST {{facilityUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "name": "Мінібар — шоколад {{runCode}}",
+  "description": "Chocolate bar",
+  "unit": "шт.",
+  "active": true,
+  "type": "STANDARD"
+}
+
+> {%
+    client.test("Minibar chocolate facility created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("minibarChocolateFacilityId", response.body.id);
 %}
 
 ###
@@ -1827,6 +2114,128 @@ Content-Type: application/json
 
 ###
 
+### CREATE EARLY CHECK-IN ROOM-ONLY PRICE
+
+POST {{facilityPriceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "facilityId": {{earlyCheckInRoFacilityId}},
+  "price": 600.00,
+  "validFrom": "{{priceValidFrom}}",
+  "validTo": "{{priceValidTo}}"
+}
+
+> {%
+    client.test("Room-only early check-in price created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+###
+
+### CREATE EARLY CHECK-IN WITH BREAKFAST PRICE
+
+POST {{facilityPriceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "facilityId": {{earlyCheckInBbFacilityId}},
+  "price": 900.00,
+  "validFrom": "{{priceValidFrom}}",
+  "validTo": "{{priceValidTo}}"
+}
+
+> {%
+    client.test("Breakfast early check-in price created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+###
+
+### CREATE RESTAURANT DINNER PRICE
+
+POST {{facilityPriceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "facilityId": {{dinnerFacilityId}},
+  "price": 950.00,
+  "validFrom": "{{priceValidFrom}}",
+  "validTo": "{{priceValidTo}}"
+}
+
+> {%
+    client.test("Restaurant dinner price created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+###
+
+### CREATE MINIBAR ITEM PRICES
+
+POST {{facilityPriceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "facilityId": {{minibarWaterFacilityId}},
+  "price": 65.00,
+  "validFrom": "{{priceValidFrom}}",
+  "validTo": "{{priceValidTo}}"
+}
+
+> {%
+    client.test("Minibar water price created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+###
+
+POST {{facilityPriceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "facilityId": {{minibarJuiceFacilityId}},
+  "price": 95.00,
+  "validFrom": "{{priceValidFrom}}",
+  "validTo": "{{priceValidTo}}"
+}
+
+> {%
+    client.test("Minibar juice price created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+###
+
+POST {{facilityPriceUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "facilityId": {{minibarChocolateFacilityId}},
+  "price": 120.00,
+  "validFrom": "{{priceValidFrom}}",
+  "validTo": "{{priceValidTo}}"
+}
+
+> {%
+    client.test("Minibar chocolate price created", function () {
+        client.assert(response.status === 201);
+    });
+%}
+
+###
+
 ### CREATE RESIDENT TOURIST TAX PRICE
 
 POST {{facilityPriceUrl}}
@@ -1878,6 +2287,109 @@ Authorization: Bearer {{token}}
     client.test("Breakfast price history loaded", function () {
         client.assert(response.status === 200);
         client.assert(Array.isArray(response.body));
+    });
+%}
+
+### ==================================================
+### RATE ACCRUAL COMPONENTS
+### ==================================================
+
+### BAR-RO ACCOMMODATION COMPONENT
+POST {{serviceComponentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"rateId": {{standardRateId}}, "facilityId": {{accommodationRoFacilityId}}, "priceSource": "RATE_PRICE", "quantityBasis": "PER_NIGHT", "multiplier": 1, "included": false, "sortOrder": 0, "active": true}
+
+> {% client.test("BAR-RO accommodation component created", function () { client.assert(response.status === 201); }); %}
+
+###
+
+### BAR-BB ACCOMMODATION COMPONENT
+POST {{serviceComponentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"rateId": {{superiorRateId}}, "facilityId": {{accommodationBbFacilityId}}, "priceSource": "RATE_PRICE", "quantityBasis": "PER_NIGHT", "multiplier": 1, "included": false, "sortOrder": 0, "active": true}
+
+> {% client.test("BAR-BB accommodation component created", function () { client.assert(response.status === 201); }); %}
+
+###
+
+### BAR-RO5 ACCOMMODATION COMPONENT
+POST {{serviceComponentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"rateId": {{rate3Id}}, "facilityId": {{accommodationRoFacilityId}}, "priceSource": "RATE_PRICE", "quantityBasis": "PER_NIGHT", "multiplier": 1, "included": false, "sortOrder": 0, "active": true}
+
+> {% client.test("BAR-RO5 accommodation component created", function () { client.assert(response.status === 201); }); %}
+
+###
+
+### BAR-BB5 ACCOMMODATION COMPONENT
+POST {{serviceComponentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"rateId": {{rate4Id}}, "facilityId": {{accommodationBbFacilityId}}, "priceSource": "RATE_PRICE", "quantityBasis": "PER_NIGHT", "multiplier": 1, "included": false, "sortOrder": 0, "active": true}
+
+> {% client.test("BAR-BB5 accommodation component created", function () { client.assert(response.status === 201); }); %}
+
+###
+
+### BAR-RO10 ACCOMMODATION COMPONENT
+POST {{serviceComponentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"rateId": {{rate5Id}}, "facilityId": {{accommodationRoFacilityId}}, "priceSource": "RATE_PRICE", "quantityBasis": "PER_NIGHT", "multiplier": 1, "included": false, "sortOrder": 0, "active": true}
+
+> {% client.test("BAR-RO10 accommodation component created", function () { client.assert(response.status === 201); }); %}
+
+###
+
+### BAR-BB10 ACCOMMODATION COMPONENT
+POST {{serviceComponentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"rateId": {{rate6Id}}, "facilityId": {{accommodationBbFacilityId}}, "priceSource": "RATE_PRICE", "quantityBasis": "PER_NIGHT", "multiplier": 1, "included": false, "sortOrder": 0, "active": true}
+
+> {% client.test("BAR-BB10 accommodation component created", function () { client.assert(response.status === 201); }); %}
+
+###
+
+### BAR-RO15 ACCOMMODATION COMPONENT
+POST {{serviceComponentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"rateId": {{rate7Id}}, "facilityId": {{accommodationRoFacilityId}}, "priceSource": "RATE_PRICE", "quantityBasis": "PER_NIGHT", "multiplier": 1, "included": false, "sortOrder": 0, "active": true}
+
+> {% client.test("BAR-RO15 accommodation component created", function () { client.assert(response.status === 201); }); %}
+
+###
+
+### BAR-BB15 ACCOMMODATION COMPONENT
+POST {{serviceComponentUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"rateId": {{rate8Id}}, "facilityId": {{accommodationBbFacilityId}}, "priceSource": "RATE_PRICE", "quantityBasis": "PER_NIGHT", "multiplier": 1, "included": false, "sortOrder": 0, "active": true}
+
+> {% client.test("BAR-BB15 accommodation component created", function () { client.assert(response.status === 201); }); %}
+
+###
+
+### VERIFY RATE COMPONENTS
+GET {{serviceComponentUrl}}/rate/{{standardRateId}}
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("BAR-RO has accommodation component", function () {
+        client.assert(response.status === 200);
+        client.assert(response.body.some(function (component) { return component.facilityId === Number(client.global.get("accommodationRoFacilityId")); }));
     });
 %}
 
@@ -2621,6 +3133,115 @@ Content-Type: application/json
     });
 
     client.global.set("manualBreakfastAccrualId", response.body.id);
+%}
+
+###
+
+### CREATE EARLY CHECK-IN WITHOUT BREAKFAST ACCRUAL
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"facilityId": {{earlyCheckInRoFacilityId}}, "reservationId": {{reservation2Id}}, "folioId": {{folio2Id}}, "serviceDate": "{{reservation2CheckInDate}}", "quantity": 1}
+
+> {%
+    client.test("Room-only early check-in accrual created", function () {
+        client.assert(response.status === 201);
+        client.assert(response.body.name.indexOf("без сніданку") >= 0);
+    });
+    client.global.set("earlyCheckInRoAccrualId", response.body.id);
+%}
+
+###
+
+### CREATE EARLY CHECK-IN WITH BREAKFAST ACCRUAL
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"facilityId": {{earlyCheckInBbFacilityId}}, "reservationId": {{reservation2Id}}, "folioId": {{folio2Id}}, "serviceDate": "{{reservation2CheckInDate}}", "quantity": 1}
+
+> {%
+    client.test("Breakfast early check-in accrual created", function () {
+        client.assert(response.status === 201);
+        client.assert(response.body.name.indexOf("зі сніданком") >= 0);
+    });
+    client.global.set("earlyCheckInBbAccrualId", response.body.id);
+%}
+
+###
+
+### CREATE RESTAURANT BREAKFAST ACCRUAL
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"facilityId": {{breakfastFacilityId}}, "reservationId": {{reservation2Id}}, "folioId": {{folio2Id}}, "serviceDate": "{{reservation2CheckInDate}}", "quantity": 2}
+
+> {%
+    client.test("Restaurant breakfast accrual created", function () {
+        client.assert(response.status === 201);
+        client.assert(Number(response.body.quantity) === 2);
+    });
+    client.global.set("restaurantBreakfastAccrualId", response.body.id);
+%}
+
+###
+
+### CREATE RESTAURANT DINNER ACCRUAL
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"facilityId": {{dinnerFacilityId}}, "reservationId": {{reservation2Id}}, "folioId": {{folio2Id}}, "serviceDate": "{{reservation2CheckInDate}}", "quantity": 2}
+
+> {%
+    client.test("Restaurant dinner accrual created", function () {
+        client.assert(response.status === 201);
+    });
+    client.global.set("restaurantDinnerAccrualId", response.body.id);
+%}
+
+###
+
+### CREATE MINIBAR WATER ACCRUAL
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"facilityId": {{minibarWaterFacilityId}}, "reservationId": {{reservation2Id}}, "folioId": {{folio2Id}}, "serviceDate": "{{reservation2CheckInDate}}", "quantity": 1}
+
+> {%
+    client.test("Minibar water accrual created", function () { client.assert(response.status === 201); });
+    client.global.set("minibarWaterAccrualId", response.body.id);
+%}
+
+###
+
+### CREATE MINIBAR JUICE ACCRUAL
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"facilityId": {{minibarJuiceFacilityId}}, "reservationId": {{reservation2Id}}, "folioId": {{folio2Id}}, "serviceDate": "{{reservation2CheckInDate}}", "quantity": 2}
+
+> {%
+    client.test("Minibar juice accrual created", function () { client.assert(response.status === 201); });
+    client.global.set("minibarJuiceAccrualId", response.body.id);
+%}
+
+###
+
+### CREATE MINIBAR CHOCOLATE ACCRUAL
+POST {{accrualUrl}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{"facilityId": {{minibarChocolateFacilityId}}, "reservationId": {{reservation2Id}}, "folioId": {{folio2Id}}, "serviceDate": "{{reservation2CheckInDate}}", "quantity": 1}
+
+> {%
+    client.test("Minibar chocolate accrual created", function () { client.assert(response.status === 201); });
+    client.global.set("minibarChocolateAccrualId", response.body.id);
 %}
 
 ###

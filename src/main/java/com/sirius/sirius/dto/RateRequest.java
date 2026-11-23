@@ -23,8 +23,6 @@ public record RateRequest(
         @Positive
         Long categoryId,
 
-        boolean active,
-
-        boolean breakfastIncluded
+        boolean active
 ) {
 }

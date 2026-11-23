@@ -25,6 +25,10 @@ public interface ReservationRepository
 
     boolean existsByConfirmationNumber(String confirmationNumber);
 
+    boolean existsByIdAndRoom_Hotel_Id(Long id, Long hotelId);
+
+    List<ReservationEntity> findAllByRoom_Hotel_Id(Long hotelId);
+
     List<ReservationEntity> findByRoomId(Long roomId);
 
     List<ReservationEntity> findByStatus(ReservationStatus status);

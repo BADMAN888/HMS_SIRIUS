@@ -9,6 +9,10 @@ import com.sirius.sirius.mappers.ProfileMapper;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
 import com.sirius.sirius.store.repository.ProfileRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
+import com.sirius.sirius.store.repository.HotelRepository;
+import com.sirius.sirius.security.HotelAccessService;
+import com.sirius.sirius.store.entity.hotel.HotelEntity;
+import com.sirius.sirius.exeption.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +27,8 @@ public class ProfileService {
     private final ProfileRepository profileRepository;
     private final ProfileMapper profileMapper;
     private final ReservationRepository reservationRepository;
+    private final HotelRepository hotelRepository;
+    private final HotelAccessService hotelAccess;
 
     public ProfileResponse getById(Long id) {
         ProfileEntity profile = findProfile(id);
@@ -33,6 +39,8 @@ public class ProfileService {
     public List<ProfileResponse> getAll() {
         return profileRepository.findAllWithGuestDocuments()
                 .stream()
+                .filter(profile -> hotelAccess.isAdmin()
+                        || profile.getHotel() != null && hotelAccess.canAccessHotel(profile.getHotel().getId()))
                 .map(profileMapper::toResponse)
                 .toList();
     }
@@ -40,6 +48,8 @@ public class ProfileService {
     public List<ProfileResponse> getAllBlacklistedOrVip() {
         return profileRepository.findAllBlacklistedOrVip()
                 .stream()
+                .filter(profile -> hotelAccess.isAdmin()
+                        || profile.getHotel() != null && hotelAccess.canAccessHotel(profile.getHotel().getId()))
                 .map(profileMapper::toResponse)
                 .toList();
     }
@@ -47,6 +57,7 @@ public class ProfileService {
     @Transactional
     public ProfileResponse create(ProfileRequest request) {
         ProfileEntity profile = profileMapper.toEntity(request);
+        profile.setHotel(resolveProfileHotel(request.hotelId()));
 
         ProfileEntity savedProfile = profileRepository.save(profile);
 
@@ -58,6 +69,9 @@ public class ProfileService {
         ProfileEntity profile = findProfile(id);
 
         profileMapper.updateEntity(request, profile);
+        if (hotelAccess.isAdmin() && request.hotelId() != null) {
+            profile.setHotel(resolveProfileHotel(request.hotelId()));
+        }
 
         ProfileEntity updatedProfile = profileRepository.save(profile);
 
@@ -76,6 +90,7 @@ public class ProfileService {
 
         return reservationRepository.findAllByGuestProfileId(profileId)
                 .stream()
+                .filter(reservation -> hotelAccess.canAccessHotel(reservation.getRoom().getHotel().getId()))
                 .map(reservation -> new ProfileReservationResponse(
                         reservation.getId(),
                         reservation.getConfirmationNumber(),
@@ -89,11 +104,29 @@ public class ProfileService {
     }
 
     private ProfileEntity findProfile(Long id) {
-        return profileRepository.findByIdWithGuestDocuments(id)
+        ProfileEntity profile = profileRepository.findByIdWithGuestDocuments(id)
                 .orElseThrow(() ->
                         new NotFoundException(
                                 "Profile with id: " + id + " not found"
                         )
                 );
+        if (!hotelAccess.isAdmin()
+                && (profile.getHotel() == null || !hotelAccess.canAccessHotel(profile.getHotel().getId()))) {
+            throw new ForbiddenException("Немає доступу до профілю гостя цього готелю");
+        }
+        return profile;
+    }
+
+    private HotelEntity resolveProfileHotel(Long requestedHotelId) {
+        if (hotelAccess.isAdmin() && requestedHotelId == null) return null;
+        Long hotelId = hotelAccess.isAdmin() ? requestedHotelId : hotelAccess.currentHotelId();
+        if (hotelId == null) {
+            throw new ForbiddenException("Профіль гостя має бути прив'язаний до готелю");
+        }
+        if (!hotelAccess.canAccessHotel(hotelId)) {
+            throw new ForbiddenException("Немає доступу до вибраного готелю");
+        }
+        return hotelRepository.findById(hotelId)
+                .orElseThrow(() -> new NotFoundException("Готель не знайдено"));
     }
 }

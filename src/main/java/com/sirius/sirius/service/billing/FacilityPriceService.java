@@ -40,7 +40,10 @@ public class FacilityPriceService {
         validatePrice(request.price());
         validatePeriod(request.validFrom(), request.validTo());
 
-        FacilityEntity facility = getFacility(request.facilityId());
+        FacilityEntity facility = facilityRepository.findByIdForUpdate(request.facilityId())
+                .orElseThrow(() -> new NotFoundException(
+                        "Послугу з ID " + request.facilityId() + " не знайдено"
+                ));
 
         validateNoOverlappingPrice(
                 facility.getId(),

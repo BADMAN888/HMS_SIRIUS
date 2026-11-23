@@ -21,6 +21,7 @@ import com.sirius.sirius.store.repository.BalanceAccountRepository;
 import com.sirius.sirius.store.repository.BalanceTransactionRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
 import com.sirius.sirius.store.repository.PaymentRepository;
+import com.sirius.sirius.security.HotelAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.security.core.Authentication;
@@ -38,6 +39,7 @@ import java.util.List;
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final HotelAccessService hotelAccess;
     private final CashRegisterService cashRegisterService;
     private final FolioRepository folioRepository;
     private final BalanceAccountRepository balanceAccountRepository;
@@ -218,6 +220,8 @@ public class PaymentService {
     public List<PaymentResponse> getAll() {
         return paymentRepository.findAll()
                 .stream()
+                .filter(payment -> payment.getFolio() != null
+                        && hotelAccess.canAccessHotel(payment.getFolio().getHotel().getId()))
                 .map(paymentMapper::toResponse)
                 .toList();
     }

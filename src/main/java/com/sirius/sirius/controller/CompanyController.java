@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.CompanyRequest;
 import com.sirius.sirius.dto.CompanyResponse;
 import com.sirius.sirius.service.CompanyService;
@@ -18,6 +19,7 @@ import java.util.List;
 @RequestMapping("/api/companies")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class CompanyController {
 
     private final CompanyService companyService;

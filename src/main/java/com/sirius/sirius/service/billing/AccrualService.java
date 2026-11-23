@@ -20,12 +20,15 @@ import com.sirius.sirius.store.repository.CustomerRepository;
 import com.sirius.sirius.store.repository.FacilityRepository;
 import com.sirius.sirius.store.repository.FolioRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
+import com.sirius.sirius.store.repository.ServiceComponentRepository;
+import com.sirius.sirius.security.HotelAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -37,10 +40,13 @@ public class AccrualService {
     private final AccrualRepository accrualRepository;
     private final FolioRepository folioRepository;
     private final ReservationRepository reservationRepository;
+    private final ServiceComponentRepository serviceComponentRepository;
     private final CustomerRepository customerRepository;
     private final FacilityRepository facilityRepository;
     private final FacilityPriceService facilityPriceService;
     private final AccrualMapper accrualMapper;
+    private final HotelAccessService hotelAccess;
+    private final Clock clock;
 
     public AccrualResponse getById(Long id) {
         return accrualMapper.toResponse(getAccrual(id));
@@ -49,6 +55,7 @@ public class AccrualService {
     public List<AccrualResponse> getAll() {
         return accrualRepository.findAll()
                 .stream()
+                .filter(accrual -> hotelAccess.canAccessHotel(accrual.getHotel().getId()))
                 .map(accrualMapper::toResponse)
                 .toList();
     }
@@ -67,6 +74,14 @@ public class AccrualService {
         validateCreateRequest(request);
 
         FacilityEntity facility = getFacility(request.facilityId());
+
+        if (!serviceComponentRepository
+                .findAllByParentFacilityIdAndActiveTrueOrderBySortOrderAscIdAsc(facility.getId())
+                .isEmpty()) {
+            throw new ConflictException(
+                    "Це пакет послуг. Створіть його через /api/accruals/package, щоб нарахувати складові окремо"
+            );
+        }
 
         if (!facility.isActive()) {
             throw new ConflictException(
@@ -122,7 +137,7 @@ public class AccrualService {
                 .quantity(quantity)
                 .amount(amount)
                 .serviceDate(request.serviceDate())
-                .accruedAt(LocalDateTime.now())
+                .accruedAt(LocalDateTime.now(clock))
                 .build();
 
         AccrualEntity savedAccrual = accrualRepository.save(accrual);

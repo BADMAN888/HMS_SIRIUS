@@ -23,6 +23,10 @@ public interface RoomRepository extends JpaRepository<RoomEntity, Long> {
 
     List<RoomEntity> findAllByHotelId(Long hotelId);
 
+    boolean existsByIdAndHotelId(Long id, Long hotelId);
+
+    boolean existsByIdAndCategory_Hotel_Id(Long id, Long hotelId);
+
     List<RoomEntity> findAllByCategoryId(Long categoryId);
 
     List<RoomEntity> findAllByHotelIdAndStatus(

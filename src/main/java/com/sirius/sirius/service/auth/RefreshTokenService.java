@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.Clock;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
@@ -20,6 +21,7 @@ public class RefreshTokenService {
     private static final long REFRESH_TOKEN_DAYS = 30;
 
     private final RefreshTokenRepository refreshTokenRepository;
+    private final Clock clock;
 
     @Transactional
     public RefreshTokenEntity create(UserEntity user) {
@@ -28,7 +30,7 @@ public class RefreshTokenService {
         refreshToken.setToken(UUID.randomUUID().toString());
         refreshToken.setUser(user);
         refreshToken.setExpiresAt(
-                Instant.now().plus(REFRESH_TOKEN_DAYS, ChronoUnit.DAYS)
+                clock.instant().plus(REFRESH_TOKEN_DAYS, ChronoUnit.DAYS)
         );
         refreshToken.setRevoked(false);
 
@@ -38,7 +40,7 @@ public class RefreshTokenService {
     @Transactional
     public RefreshTokenEntity rotate(String token) {
         RefreshTokenEntity current =
-                refreshTokenRepository.findByToken(token)
+                refreshTokenRepository.findByTokenForUpdate(token)
                         .orElseThrow(() ->
                                 new UnauthorizedException(
                                         "Invalid refresh token"
@@ -46,7 +48,7 @@ public class RefreshTokenService {
                         );
 
         if (current.isRevoked()
-                || !current.getExpiresAt().isAfter(Instant.now())) {
+                || !current.getExpiresAt().isAfter(clock.instant())) {
             throw new UnauthorizedException(
                     "Refresh token is expired or revoked"
             );

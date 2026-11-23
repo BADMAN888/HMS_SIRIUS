@@ -14,8 +14,7 @@ Content-Type: application/json
   "description": "Rate created for API testing",
   "currency": "UAH",
   "categoryId": "{{categoryId}}",
-  "active": true,
-  "breakfastIncluded": false
+  "active": true
 }
 
 > {%
@@ -49,6 +48,5 @@ Content-Type: application/json
   "description": "Updated rate description",
   "currency": "UAH",
   "categoryId": "{{categoryId}}",
-  "active": true,
-  "breakfastIncluded": true
+  "active": true
 }

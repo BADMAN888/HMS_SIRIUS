@@ -1,5 +1,6 @@
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.CashOperationsReportResponse;
 import com.sirius.sirius.service.billing.CashRegisterService;
 import com.sirius.sirius.store.enums.CashOperationType;
@@ -13,9 +14,11 @@ import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class CashOperationsController {
     private final CashRegisterService service;
 
+    @PreAuthorize("@hotelAccess.canSearchCashOperations(#p0, #p2)")
     @GetMapping("/api/cash-operations")
     public List<com.sirius.sirius.dto.CashOperationResponse> operations(
             @RequestParam(required=false) Long hotelId,
@@ -30,6 +33,7 @@ public class CashOperationsController {
         return service.search(hotelId,legalEntityId,registerId,cashierId,type,method,shiftId,from,to).operations();
     }
 
+    @PreAuthorize("@hotelAccess.canSearchCashOperations(#p0, #p2)")
     @GetMapping("/api/cash-reports/operations")
     public CashOperationsReportResponse report(
             @RequestParam(required=false) Long hotelId,

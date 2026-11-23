@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.BalanceAccountResponse;
 import com.sirius.sirius.dto.BalanceTransactionResponse;
 import com.sirius.sirius.service.billing.BalanceAccountService;
@@ -23,10 +24,12 @@ import java.util.List;
 @RequestMapping("/api/balance-accounts")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class BalanceAccountController {
 
     private final BalanceAccountService balanceAccountService;
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p1)")
     @GetMapping("/profile/{profileId}/hotel/{hotelId}")
     public ResponseEntity<BalanceAccountResponse> getByProfileAndHotel(
             @PathVariable @Positive Long profileId,
@@ -40,6 +43,7 @@ public class BalanceAccountController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p1)")
     @GetMapping("/profile/{profileId}/hotel/{hotelId}/accounts")
     public ResponseEntity<List<BalanceAccountResponse>> getAllByProfileAndHotel(
             @PathVariable @Positive Long profileId,
@@ -53,6 +57,7 @@ public class BalanceAccountController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p1)")
     @PostMapping("/profile/{profileId}/hotel/{hotelId}/accounts")
     public ResponseEntity<BalanceAccountResponse> createNew(
             @PathVariable @Positive Long profileId,
@@ -63,6 +68,7 @@ public class BalanceAccountController {
                 .body(balanceAccountService.createNew(profileId, hotelId));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p1)")
     @PostMapping("/profile/{profileId}/hotel/{hotelId}")
     public ResponseEntity<BalanceAccountResponse> getOrCreate(
             @PathVariable @Positive Long profileId,
@@ -78,6 +84,7 @@ public class BalanceAccountController {
                 );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p1)")
     @PostMapping("/profile/{profileId}/hotel/{hotelId}/deposit")
     public ResponseEntity<BalanceAccountResponse> deposit(
             @PathVariable @Positive Long profileId,
@@ -94,6 +101,7 @@ public class BalanceAccountController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessAccount(#p0)")
     @GetMapping("/{accountId}/transactions")
     public ResponseEntity<List<BalanceTransactionResponse>> getTransactions(
             @PathVariable @Positive Long accountId
@@ -103,6 +111,7 @@ public class BalanceAccountController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessAccount(#p0)")
     @PostMapping("/{accountId}/refund")
     public ResponseEntity<BalanceAccountResponse> refund(
             @PathVariable @Positive Long accountId,
@@ -117,6 +126,7 @@ public class BalanceAccountController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessAccount(#p0)")
     @PostMapping("/{accountId}/deposit")
     public ResponseEntity<BalanceAccountResponse> depositToAccount(
             @PathVariable @Positive Long accountId,
@@ -131,6 +141,7 @@ public class BalanceAccountController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessAccount(#p0)")
     @PatchMapping("/{accountId}/close")
     public ResponseEntity<BalanceAccountResponse> close(
             @PathVariable @Positive Long accountId
@@ -138,6 +149,7 @@ public class BalanceAccountController {
         return ResponseEntity.ok(balanceAccountService.close(accountId));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessAccount(#p0)")
     @PostMapping("/{accountId}/debit")
     public ResponseEntity<BalanceAccountResponse> debit(
             @PathVariable @Positive Long accountId,
@@ -152,6 +164,7 @@ public class BalanceAccountController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessAccount(#p0) and @hotelAccess.canAccessFolio(#p1)")
     @PostMapping("/{accountId}/pay-folio/{folioId}")
     public ResponseEntity<BalanceAccountResponse> payFolio(
             @PathVariable @Positive Long accountId,
@@ -169,6 +182,7 @@ public class BalanceAccountController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p1) and @hotelAccess.canAccessFolio(#p2)")
     @PostMapping("/profile/{profileId}/hotel/{hotelId}/pay-folio/{folioId}")
     public ResponseEntity<List<BalanceAccountResponse>> payFolioFromProfileBalance(
             @PathVariable @Positive Long profileId,

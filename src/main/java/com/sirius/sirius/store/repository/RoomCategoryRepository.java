@@ -10,6 +10,8 @@ public interface RoomCategoryRepository
 
     List<RoomCategoryEntity> findAllByHotelId(Long hotelId);
 
+    boolean existsByIdAndHotelId(Long id, Long hotelId);
+
     boolean existsByNameAndHotelId(
             String name,
             Long hotelId

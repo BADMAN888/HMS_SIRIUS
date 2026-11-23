@@ -16,13 +16,16 @@ public interface ProfileMapper {
 
     @Mapping(target = "guestDocuments", ignore = true)
     @Mapping(target = "reservations", ignore = true)
+    @Mapping(target = "hotel", ignore = true)
     ProfileEntity toEntity(ProfileRequest request);
 
+    @Mapping(target = "hotelId", source = "hotel.id")
     ProfileResponse toResponse(ProfileEntity entity);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "guestDocuments", ignore = true)
     @Mapping(target = "reservations", ignore = true)
+    @Mapping(target = "hotel", ignore = true)
     void updateEntity(
             ProfileRequest request,
             @MappingTarget ProfileEntity entity

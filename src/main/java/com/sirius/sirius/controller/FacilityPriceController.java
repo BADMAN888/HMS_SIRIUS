@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.FacilityPriceRequest;
 import com.sirius.sirius.dto.FacilityPriceResponse;
 import com.sirius.sirius.service.billing.FacilityPriceService;
@@ -20,6 +21,7 @@ import java.util.List;
 @RequestMapping("/api/facility-prices")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class FacilityPriceController {
 
     private final FacilityPriceService facilityPriceService;
@@ -33,6 +35,7 @@ public class FacilityPriceController {
                 .body(facilityPriceService.create(request));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessFacility(#p0)")
     @GetMapping("/facility/{facilityId}")
     public ResponseEntity<List<FacilityPriceResponse>> getHistory(
             @PathVariable @Positive Long facilityId
@@ -42,6 +45,7 @@ public class FacilityPriceController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessFacility(#p0)")
     @GetMapping("/facility/{facilityId}/date/{date}")
     public ResponseEntity<FacilityPriceResponse> getPriceForDate(
             @PathVariable @Positive Long facilityId,

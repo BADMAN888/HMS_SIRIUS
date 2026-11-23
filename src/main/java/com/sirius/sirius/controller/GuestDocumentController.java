@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.GuestDocumentRequest;
 import com.sirius.sirius.dto.GuestDocumentResponse;
 import com.sirius.sirius.service.profile.GuestDocumentService;
@@ -17,10 +18,12 @@ import java.util.List;
 @RequestMapping("/api/guest-documents")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class GuestDocumentController {
 
     private final GuestDocumentService guestDocumentService;
 
+    @PreAuthorize("@hotelAccess.canAccessGuestDocument(#p0)")
     @GetMapping("/{id}")
     public ResponseEntity<GuestDocumentResponse> getById(
             @PathVariable @Positive Long id
@@ -30,6 +33,7 @@ public class GuestDocumentController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping
     public ResponseEntity<List<GuestDocumentResponse>> getAll() {
         return ResponseEntity.ok(
@@ -37,6 +41,7 @@ public class GuestDocumentController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessProfile(#p0)")
     @PostMapping("/profile/{profileId}")
     public ResponseEntity<GuestDocumentResponse> create(
             @PathVariable @Positive Long profileId,
@@ -47,6 +52,7 @@ public class GuestDocumentController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessGuestDocument(#p0)")
     @PutMapping("/{id}")
     public ResponseEntity<GuestDocumentResponse> update(
             @PathVariable @Positive Long id,
@@ -57,6 +63,7 @@ public class GuestDocumentController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessGuestDocument(#p0)")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable @Positive Long id

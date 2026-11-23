@@ -12,6 +12,8 @@ public interface GuestDocumentRepository
 
     Optional<GuestDocumentEntity> findByDocumentNumber(String documentNumber);
 
+    boolean existsByIdAndProfile_Hotel_Id(Long id, Long hotelId);
+
     boolean existsByDocumentTypeAndDocumentNumber(
             DocumentType documentType,
             String documentNumber

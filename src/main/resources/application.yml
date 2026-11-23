@@ -1,19 +1,28 @@
 spring:
+  profiles:
+    default: local
+
   mail:
     host: ${SMTP_HOST:localhost}
     port: ${SMTP_PORT:25}
     username: ${SMTP_USERNAME:}
     password: ${SMTP_PASSWORD:}
   datasource:
-    url: jdbc:postgresql://localhost:5432/sirius
-    username: HMS_sirius
-    password: HMS_sirius
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/sirius}
+    username: ${SPRING_DATASOURCE_USERNAME:${DB_USERNAME:}}
+    password: ${SPRING_DATASOURCE_PASSWORD:${DB_PASSWORD:}}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
 
 security:
   jwt:
@@ -21,5 +30,11 @@ security:
     access-token-ttl: ${JWT_ACCESS_TOKEN_TTL:15m}
 
 app:
+  time-zone: ${APP_TIME_ZONE:Europe/Kyiv}
+  auth:
+    self-registration-enabled: ${APP_SELF_REGISTRATION_ENABLED:false}
+  bootstrap-admin:
+    email: ${APP_BOOTSTRAP_ADMIN_EMAIL:}
+    password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:}
   mail:
     from: ${APP_MAIL_FROM:}

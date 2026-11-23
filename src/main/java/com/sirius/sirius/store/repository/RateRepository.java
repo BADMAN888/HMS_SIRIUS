@@ -12,6 +12,10 @@ import java.util.Optional;
 
 public interface RateRepository extends JpaRepository<RateEntity, Long> {
 
+    boolean existsByIdAndCategory_Hotel_Id(Long id, Long hotelId);
+
+    java.util.List<RateEntity> findAllByCategory_Hotel_Id(Long hotelId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             SELECT r

@@ -27,6 +27,7 @@ import com.sirius.sirius.store.repository.FolioStatusHistoryRepository;
 import com.sirius.sirius.store.repository.HotelRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
 import com.sirius.sirius.store.repository.LegalEntityRepository;
+import com.sirius.sirius.security.HotelAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
@@ -35,6 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -51,6 +53,8 @@ public class FolioService {
     private final FolioStatusHistoryRepository folioStatusHistoryRepository;
     private final FolioMapper folioMapper;
     private final LegalEntityRepository legalEntityRepository;
+    private final HotelAccessService hotelAccess;
+    private final Clock clock;
 
     public FolioResponse create(FolioRequest request) {
         HotelEntity hotel = findHotel(request.hotelId());
@@ -123,6 +127,7 @@ public class FolioService {
     public List<FolioResponse> getAll() {
         return folioRepository.findAll()
                 .stream()
+                .filter(folio -> hotelAccess.canAccessHotel(folio.getHotel().getId()))
                 .map(folioMapper::toResponse)
                 .toList();
     }
@@ -231,7 +236,7 @@ public class FolioService {
         }
 
         folio.setStatus(FolioStatus.CLOSED);
-        folio.setClosedAt(LocalDateTime.now());
+        folio.setClosedAt(LocalDateTime.now(clock));
 
         saveStatusHistory(
                 folio,
@@ -297,7 +302,7 @@ public class FolioService {
                         .status(status)
                         .reason(reason)
                         .changedBy(user.getEmail())
-                        .changedAt(LocalDateTime.now())
+                        .changedAt(LocalDateTime.now(clock))
                         .build();
 
         folioStatusHistoryRepository.save(history);

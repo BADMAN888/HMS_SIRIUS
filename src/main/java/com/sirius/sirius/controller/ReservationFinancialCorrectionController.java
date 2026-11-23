@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.ReservationFinancialCorrectionRequest;
 import com.sirius.sirius.dto.ReservationFinancialCorrectionResponse;
 import com.sirius.sirius.service.reservation.ReservationFinancialCorrectionService;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/reservation-financial-corrections")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class ReservationFinancialCorrectionController {
 
     private final ReservationFinancialCorrectionService correctionService;

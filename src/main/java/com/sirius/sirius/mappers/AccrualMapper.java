@@ -13,5 +13,7 @@ public interface AccrualMapper {
     @Mapping(target = "recipientId", source = "recipient.id")
     @Mapping(target = "folioId", source = "folio.id")
     @Mapping(target = "facilityId", source = "facility.id")
+    @Mapping(target = "serviceComponentId", source = "serviceComponent.id")
+    @Mapping(target = "sourceRateComponentId", source = "sourceRateComponent.id")
     AccrualResponse toResponse(AccrualEntity entity);
 }

@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.FolioReopenRequest;
 import com.sirius.sirius.dto.FolioRequest;
 import com.sirius.sirius.dto.FolioPartiesRequest;
@@ -22,10 +23,12 @@ import java.util.List;
 @RequestMapping("/api/folios")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class FolioController {
 
     private final FolioService folioService;
 
+    @PreAuthorize("@hotelAccess.canCreateFolio(#p0)")
     @PostMapping
     public ResponseEntity<FolioResponse> create(
             @Valid @RequestBody FolioRequest request
@@ -35,11 +38,13 @@ public class FolioController {
                 .body(folioService.create(request));
     }
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping
     public ResponseEntity<List<FolioResponse>> getAll() {
         return ResponseEntity.ok(folioService.getAll());
     }
 
+    @PreAuthorize("@hotelAccess.canAccessFolio(#p0)")
     @GetMapping("/{id}")
     public ResponseEntity<FolioResponse> getById(
             @PathVariable @Positive Long id
@@ -47,6 +52,7 @@ public class FolioController {
         return ResponseEntity.ok(folioService.getById(id));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @GetMapping("/reservation/{reservationId}")
     public ResponseEntity<List<FolioResponse>> getByReservationId(
             @PathVariable @Positive Long reservationId
@@ -56,6 +62,7 @@ public class FolioController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p0)")
     @GetMapping("/hotel/{hotelId}")
     public ResponseEntity<List<FolioResponse>> getByHotelId(
             @PathVariable @Positive Long hotelId
@@ -65,6 +72,7 @@ public class FolioController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessFolio(#p0)")
     @PutMapping("/{id}/accruals")
     public ResponseEntity<FolioResponse> attachAccruals(
             @PathVariable @Positive Long id,
@@ -77,6 +85,7 @@ public class FolioController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessFolio(#p0)")
     @PatchMapping("/{id}/parties")
     public ResponseEntity<FolioResponse> updateParties(
             @PathVariable @Positive Long id,
@@ -85,6 +94,7 @@ public class FolioController {
         return ResponseEntity.ok(folioService.updateParties(id, request));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessFolio(#p0)")
     @PatchMapping("/{id}/close")
     public ResponseEntity<FolioResponse> close(
             @PathVariable @Positive Long id
@@ -92,6 +102,7 @@ public class FolioController {
         return ResponseEntity.ok(folioService.close(id));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessFolio(#p0)")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable @Positive Long id
@@ -100,6 +111,7 @@ public class FolioController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@hotelAccess.canAccessFolio(#p0)")
     @PatchMapping("/{id}/reopen")
     public ResponseEntity<FolioResponse> reopen(
             @PathVariable @Positive Long id,

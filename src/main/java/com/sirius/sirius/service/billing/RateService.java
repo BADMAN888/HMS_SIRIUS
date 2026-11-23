@@ -8,6 +8,7 @@ import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
 import com.sirius.sirius.store.repository.RateRepository;
 import com.sirius.sirius.store.repository.RoomCategoryRepository;
+import com.sirius.sirius.security.HotelAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ public class RateService {
     private final RoomCategoryRepository roomCategoryRepository;
     private final RateMapper rateMapper;
     private final PriceService priceService;
+    private final HotelAccessService hotelAccess;
 
     public RateResponse create(RateRequest request) {
         RoomCategoryEntity category =
@@ -41,7 +43,11 @@ public class RateService {
 
     @Transactional(readOnly = true)
     public List<RateResponse> getAll() {
-        return rateRepository.findAll()
+        List<RateEntity> rates = hotelAccess.isAdmin()
+                ? rateRepository.findAll()
+                : hotelAccess.currentHotelId() == null ? List.of()
+                : rateRepository.findAllByCategory_Hotel_Id(hotelAccess.currentHotelId());
+        return rates
                 .stream()
                 .map(this::toResponse)
                 .toList();
@@ -75,8 +81,7 @@ public class RateService {
                 response.categoryId(),
                 priceService.getCurrentPrice(entity.getId())
                         .orElse(null),
-                response.active(),
-                response.breakfastIncluded()
+                response.active()
         );
     }
 

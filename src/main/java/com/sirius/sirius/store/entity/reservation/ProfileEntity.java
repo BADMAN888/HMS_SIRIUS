@@ -2,6 +2,7 @@
 package com.sirius.sirius.store.entity.reservation;
 
 import com.sirius.sirius.store.entity.biling.CustomerEntity;
+import com.sirius.sirius.store.entity.hotel.HotelEntity;
 import com.sirius.sirius.store.enums.Gender;
 import com.sirius.sirius.store.enums.Nationality;
 import jakarta.persistence.*;
@@ -78,6 +79,10 @@ public class ProfileEntity extends CustomerEntity {
     @Column(name = "in_black_list", nullable = false)
     @Builder.Default
     boolean inBlackList = false;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hotel_id")
+    HotelEntity hotel;
 
     @ManyToMany(mappedBy = "guests")
     @Builder.Default

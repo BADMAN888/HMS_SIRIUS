@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.ReservationCheckInResponse;
 import com.sirius.sirius.dto.ReservationCheckOutResponse;
 import com.sirius.sirius.dto.ReservationCommentRequest;
@@ -37,6 +38,7 @@ import java.util.List;
 @RequestMapping("/api/reservations")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class ReservationController {
 
     private final ReservationService reservationService;
@@ -46,6 +48,7 @@ public class ReservationController {
     private final DocumentService documentService;
     private final BookingConfirmationEmailService bookingConfirmationEmailService;
 
+    @PreAuthorize("@hotelAccess.canCreateReservation(#p0)")
     @PostMapping
     public ResponseEntity<ReservationResponse> create(
             @Valid @RequestBody ReservationRequest request
@@ -55,6 +58,7 @@ public class ReservationController {
                 .body(reservationService.create(request));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @GetMapping("/{id}")
     public ResponseEntity<ReservationResponse> getById(
             @PathVariable @Positive Long id
@@ -64,6 +68,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @GetMapping("/{id}/registration-card")
     public ResponseEntity<byte[]> getRegistrationCard(
             @PathVariable @Positive Long id,
@@ -77,6 +82,7 @@ public class ReservationController {
                 .body(document.content());
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @GetMapping("/{id}/registration-card/preview")
     public ResponseEntity<byte[]> getRegistrationCardPreview(
             @PathVariable @Positive Long id
@@ -89,6 +95,7 @@ public class ReservationController {
                 .body(preview.content());
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @GetMapping("/{id}/confirmation")
     public ResponseEntity<byte[]> getBookingConfirmation(
             @PathVariable @Positive Long id,
@@ -102,6 +109,7 @@ public class ReservationController {
                 .body(document.content());
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @GetMapping("/{id}/confirmation/preview")
     public ResponseEntity<byte[]> getBookingConfirmationPreview(
             @PathVariable @Positive Long id
@@ -114,6 +122,7 @@ public class ReservationController {
                 .body(preview.content());
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @PostMapping("/{id}/confirmation/email")
     public ResponseEntity<Void> sendBookingConfirmationEmail(
             @PathVariable @Positive Long id,
@@ -123,6 +132,7 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping
     public ResponseEntity<List<ReservationResponse>> getAll() {
         return ResponseEntity.ok(
@@ -130,6 +140,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping("/status/{status}")
     public ResponseEntity<List<ReservationResponse>> getByStatus(
             @PathVariable ReservationStatus status
@@ -139,6 +150,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canUpdateReservation(#p0, #p1)")
     @PutMapping("/{id}")
     public ResponseEntity<ReservationResponse> update(
             @PathVariable @Positive Long id,
@@ -149,6 +161,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @PatchMapping("/{id}/guests")
     public ResponseEntity<ReservationResponse> updateGuests(
             @PathVariable @Positive Long id,
@@ -159,6 +172,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
             @PathVariable @Positive Long id
@@ -167,6 +181,7 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<Void> cancel(
             @PathVariable @Positive Long id,
@@ -176,6 +191,7 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @PatchMapping("/{id}/check-in")
     public ResponseEntity<Void> checkIn(
             @PathVariable @Positive Long id
@@ -184,6 +200,7 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @PatchMapping("/{id}/check-out")
     public ResponseEntity<Void> checkOut(
             @PathVariable @Positive Long id
@@ -192,6 +209,7 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @PatchMapping("/{id}/no-show")
     public ResponseEntity<Void> noShow(
             @PathVariable @Positive Long id
@@ -200,6 +218,7 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping("/check-in")
     public ResponseEntity<List<ReservationCheckInResponse>> getByCheckInDate(
             @RequestParam LocalDate date
@@ -209,6 +228,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping("/check-out")
     public ResponseEntity<List<ReservationCheckOutResponse>> getByCheckOutDate(
             @RequestParam LocalDate date
@@ -218,6 +238,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping("/date")
     public ResponseEntity<List<ReservationResponse>> getByDate(
             @RequestParam LocalDate date
@@ -227,6 +248,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping("/date-range")
     public ResponseEntity<List<ReservationResponse>> getByDateRange(
             @RequestParam LocalDate startDate,
@@ -237,6 +259,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @GetMapping("/{id}/comments")
     public ResponseEntity<List<ReservationCommentResponse>> getComments(
             @PathVariable @Positive Long id
@@ -246,6 +269,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @PostMapping("/{id}/comments")
     public ResponseEntity<ReservationCommentResponse> createComment(
             @PathVariable @Positive Long id,
@@ -256,6 +280,7 @@ public class ReservationController {
                 .body(commentService.create(id, request));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @PutMapping("/{id}/comments/{commentId}")
     public ResponseEntity<ReservationCommentResponse> updateComment(
             @PathVariable @Positive Long id,
@@ -267,6 +292,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @DeleteMapping("/{id}/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(
             @PathVariable @Positive Long id,
@@ -276,6 +302,7 @@ public class ReservationController {
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @GetMapping("/{id}/included-breakfasts")
     public ResponseEntity<List<ReservationIncludedBreakfastResponse>>
     getIncludedBreakfasts(
@@ -286,6 +313,7 @@ public class ReservationController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
     @PatchMapping("/{id}/included-breakfasts/{breakfastId}/served")
     public ResponseEntity<ReservationIncludedBreakfastResponse>
     updateIncludedBreakfastServed(

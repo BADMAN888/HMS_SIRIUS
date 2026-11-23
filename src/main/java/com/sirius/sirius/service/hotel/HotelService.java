@@ -9,6 +9,7 @@ import com.sirius.sirius.store.entity.hotel.HotelEntity;
 import com.sirius.sirius.store.entity.biling.LegalEntityEntity;
 import com.sirius.sirius.store.repository.HotelRepository;
 import com.sirius.sirius.store.repository.LegalEntityRepository;
+import com.sirius.sirius.security.HotelAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,10 +24,13 @@ public class HotelService {
     private final HotelRepository hotelRepository;
     private final LegalEntityRepository legalEntityRepository;
     private final HotelMapper hotelMapper;
+    private final HotelAccessService hotelAccess;
 
     @Transactional(readOnly = true)
     public List<HotelResponse> getAllHotels() {
-        return hotelRepository.findAll().stream().map(hotelMapper::toResponse).toList();
+        return hotelRepository.findAll().stream()
+                .filter(hotel -> hotelAccess.canAccessHotel(hotel.getId()))
+                .map(hotelMapper::toResponse).toList();
     }
 
     @Transactional(readOnly = true)

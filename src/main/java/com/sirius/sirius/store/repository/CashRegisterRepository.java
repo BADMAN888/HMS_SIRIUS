@@ -12,6 +12,7 @@ import java.util.Optional;
 
 public interface CashRegisterRepository extends JpaRepository<CashRegisterEntity, Long> {
     List<CashRegisterEntity> findAllByHotelIdOrderById(Long hotelId);
+    boolean existsByIdAndHotelId(Long id, Long hotelId);
     Optional<CashRegisterEntity> findByHotel_IdAndLegalEntity_Id(Long hotelId, Long legalEntityId);
     boolean existsByHotel_IdAndLegalEntity_Id(Long hotelId, Long legalEntityId);
 

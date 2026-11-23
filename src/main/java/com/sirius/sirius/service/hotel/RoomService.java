@@ -14,6 +14,7 @@ import com.sirius.sirius.store.enums.RoomStatus;
 import com.sirius.sirius.store.repository.HotelRepository;
 import com.sirius.sirius.store.repository.RoomCategoryRepository;
 import com.sirius.sirius.store.repository.RoomRepository;
+import com.sirius.sirius.security.HotelAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ public class RoomService {
     private final HotelRepository hotelRepository;
     private final RoomCategoryRepository roomCategoryRepository;
     private final RoomMapper roomMapper;
+    private final HotelAccessService hotelAccess;
 
     public RoomResponse getById(Long id) {
         RoomEntity room = roomRepository.findById(id)
@@ -44,6 +46,7 @@ public class RoomService {
     public List<RoomResponse> getAll() {
         return roomRepository.findAll()
                 .stream()
+                .filter(room -> hotelAccess.canAccessHotel(room.getHotel().getId()))
                 .map(roomMapper::toResponse)
                 .toList();
     }
@@ -70,6 +73,7 @@ public class RoomService {
 
         return roomRepository.findAllByCategoryId(categoryId)
                 .stream()
+                .filter(room -> hotelAccess.canAccessHotel(room.getHotel().getId()))
                 .map(roomMapper::toResponse)
                 .toList();
     }
@@ -235,6 +239,10 @@ public class RoomService {
                         )
                 );
 
+        if (!hotelAccess.canAccessHotel(room.getHotel().getId())) {
+            throw new com.sirius.sirius.exeption.ForbiddenException("Немає доступу до готелю цього номера");
+        }
+
         return roomMapper.toResponse(room);
     }
 
@@ -253,6 +261,7 @@ public class RoomService {
                         status
                 )
                 .stream()
+                .filter(room -> hotelAccess.canAccessHotel(room.getHotel().getId()))
                 .map(roomMapper::toResponse)
                 .toList();
     }

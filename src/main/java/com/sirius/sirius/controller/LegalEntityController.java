@@ -1,5 +1,6 @@
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.LegalEntityRequest;
 import com.sirius.sirius.dto.LegalEntityResponse;
 import com.sirius.sirius.service.LegalEntityService;
@@ -17,6 +18,7 @@ import java.util.List;
 @RequestMapping("/api/legal-entities")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class LegalEntityController {
 
     private final LegalEntityService legalEntityService;

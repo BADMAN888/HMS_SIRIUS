@@ -4,17 +4,26 @@ import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.exeption.ValidationException;
 import com.sirius.sirius.dto.ReservationRequest;
+import com.sirius.sirius.dto.RateQuoteItem;
+import com.sirius.sirius.dto.RateQuoteResponse;
 import com.sirius.sirius.service.billing.FacilityPriceService;
 import com.sirius.sirius.service.billing.PriceService;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
 import com.sirius.sirius.store.entity.biling.FacilityEntity;
+import com.sirius.sirius.store.entity.biling.ServiceComponentEntity;
+import com.sirius.sirius.store.entity.biling.RateEntity;
+import com.sirius.sirius.store.entity.hotel.RoomEntity;
 import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.AccrualSource;
+import com.sirius.sirius.store.enums.ComponentPriceSource;
+import com.sirius.sirius.store.enums.ComponentQuantityBasis;
 import com.sirius.sirius.store.enums.FacilityType;
 import com.sirius.sirius.store.enums.TaxStatus;
 import com.sirius.sirius.store.repository.AccrualRepository;
 import com.sirius.sirius.store.repository.FacilityRepository;
 import com.sirius.sirius.store.repository.ReservationRepository;
+import com.sirius.sirius.store.repository.ServiceComponentRepository;
+import com.sirius.sirius.store.repository.RateRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,15 +33,16 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class ReservationAccrualService {
-
-    private static final String ACCOMMODATION_NAME = "Проживання";
 
     private static final BigDecimal ONE_NIGHT =
             BigDecimal.ONE.setScale(3, RoundingMode.UNNECESSARY);
@@ -42,7 +52,58 @@ public class ReservationAccrualService {
     private final FacilityRepository facilityRepository;
     private final PriceService priceService;
     private final FacilityPriceService facilityPriceService;
+    private final ServiceComponentRepository serviceComponentRepository;
+    private final RateRepository rateRepository;
     private final Clock clock;
+
+    @Transactional(readOnly = true)
+    public RateQuoteResponse quote(
+            Long rateId,
+            LocalDate checkIn,
+            LocalDate checkOut,
+            int adults,
+            int children
+    ) {
+        if (checkIn == null || checkOut == null || !checkOut.isAfter(checkIn)
+                || adults < 1 || children < 0) {
+            throw new ValidationException("Вкажіть коректний період і кількість гостей для розрахунку тарифу");
+        }
+        RateEntity rate = rateRepository.findById(rateId)
+                .orElseThrow(() -> new NotFoundException("Тариф не знайдено: " + rateId));
+        RoomEntity room = new RoomEntity();
+        room.setHotel(rate.getCategory().getHotel());
+        ReservationEntity estimate = new ReservationEntity();
+        estimate.setRate(rate);
+        estimate.setRoom(room);
+        estimate.setCheckIn(checkIn.atStartOfDay());
+        estimate.setCheckOut(checkOut.atStartOfDay());
+        estimate.setAdults(adults);
+        estimate.setChildren(children);
+        List<ServiceComponentEntity> components = serviceComponentRepository
+                .findAllByRateIdAndActiveTrueOrderBySortOrderAscIdAsc(rateId);
+        if (components.isEmpty()) {
+            throw new ConflictException("У тарифі не налаштовано складових для розрахунку");
+        }
+        List<AccrualEntity> lines = createComponentAccruals(estimate, checkIn, components);
+        if (lines.isEmpty()) {
+            throw new ConflictException("У тарифі немає включених складових для нарахування");
+        }
+        List<RateQuoteItem> items = lines.stream()
+                .map(line -> new RateQuoteItem(
+                        line.getFacility() == null ? null : line.getFacility().getId(),
+                        line.getName(),
+                        line.getServiceDate(),
+                        line.getUnitPrice(),
+                        line.getQuantity(),
+                        line.getAmount(),
+                        line.isIncludedComponent(),
+                        line.getServiceComponent() == null ? null : line.getServiceComponent().getId()
+                )).toList();
+        BigDecimal total = lines.stream().map(AccrualEntity::getAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add).setScale(2, RoundingMode.HALF_UP);
+        return new RateQuoteResponse(rate.getId(), rate.getCurrency(),
+                Math.toIntExact(ChronoUnit.DAYS.between(checkIn, checkOut)), total, items);
+    }
 
     public void create(ReservationEntity reservation, ReservationRequest request) {
         ReservationEntity lockedReservation = lockReservation(reservation);
@@ -88,6 +149,26 @@ public class ReservationAccrualService {
                     reservation.getCheckOut().toLocalDate()
             );
         }
+        if (request.earlyExtraNightAccepted()) {
+            addExtraAccommodationNight(reservation, reservation.getCheckIn().toLocalDate().minusDays(1), "Додаткова ніч перед заїздом");
+        }
+        if (request.lateExtraNightAccepted()) {
+            addExtraAccommodationNight(reservation, reservation.getCheckOut().toLocalDate(), "Додаткова ніч після виїзду");
+        }
+    }
+
+    private void addExtraAccommodationNight(ReservationEntity reservation, LocalDate serviceDate, String name) {
+        boolean alreadyAdded = accrualRepository.findAllByReservationId(reservation.getId()).stream()
+                .anyMatch(accrual -> !accrual.isReversed() && name.equals(accrual.getName()));
+        if (alreadyAdded) return;
+        BigDecimal price = priceService.getPriceAmountForDate(reservation.getRate().getId(), serviceDate)
+                .setScale(2, RoundingMode.HALF_UP);
+        accrualRepository.save(AccrualEntity.builder()
+                .hotel(reservation.getRoom().getHotel()).reservation(reservation)
+                .source(AccrualSource.AUTOMATIC).name(name)
+                .unitPrice(price).quantity(ONE_NIGHT).amount(price).serviceDate(serviceDate)
+                .accruedAt(LocalDateTime.now(clock)).build());
+        addExtraTouristTax(reservation, serviceDate, name);
     }
 
     private void addSupplementalCharge(
@@ -217,9 +298,15 @@ public class ReservationAccrualService {
     ) {
         List<AccrualEntity> accruals = new ArrayList<>();
 
-        accruals.addAll(
-                createAccommodationAccruals(reservation, startDate)
-        );
+        List<ServiceComponentEntity> rateComponents = serviceComponentRepository
+                .findAllByRateIdAndActiveTrueOrderBySortOrderAscIdAsc(reservation.getRate().getId());
+        if (rateComponents.isEmpty()) {
+            throw new ConflictException("У тарифі не налаштовано складових для нарахування");
+        }
+        accruals.addAll(createComponentAccruals(reservation, startDate, rateComponents));
+        if (accruals.isEmpty()) {
+            throw new ConflictException("У тарифі немає оплачуваних складових для нарахування");
+        }
 
         accruals.addAll(
                 createTouristTaxAccruals(reservation, startDate)
@@ -230,53 +317,113 @@ public class ReservationAccrualService {
         }
     }
 
-    private List<AccrualEntity> createAccommodationAccruals(
+    private List<AccrualEntity> createComponentAccruals(
             ReservationEntity reservation,
-            LocalDate startDate
+            LocalDate startDate,
+            List<ServiceComponentEntity> components
     ) {
-        LocalDate checkOut = reservation.getCheckOut().toLocalDate();
-
         List<AccrualEntity> accruals = new ArrayList<>();
+        LocalDate checkOut = reservation.getCheckOut().toLocalDate();
+        int guests = reservation.getAdults() + reservation.getChildren();
         LocalDateTime accruedAt = LocalDateTime.now(clock);
-
-        for (LocalDate serviceDate = startDate;
-             serviceDate.isBefore(checkOut);
-             serviceDate = serviceDate.plusDays(1)) {
-
-            BigDecimal unitPrice = priceService.getPriceAmountForDate(
-                    reservation.getRate().getId(),
-                    serviceDate
-            );
-
-            if (unitPrice == null || unitPrice.signum() < 0) {
-                throw new ConflictException(
-                        "Accommodation price configuration is invalid"
-                );
+        for (ServiceComponentEntity component : components) {
+            for (LocalDate date = startDate; date.isBefore(checkOut); date = date.plusDays(1)) {
+                expandComponent(reservation, component, component, date, reservation.getCheckIn().toLocalDate(), BigDecimal.ONE,
+                        guests, new HashSet<>(), accruedAt, accruals);
             }
+        }
+        return accruals;
+    }
 
-            unitPrice = unitPrice.setScale(
-                    2,
-                    RoundingMode.HALF_UP
-            );
-
-            AccrualEntity accrual = AccrualEntity.builder()
-                    .hotel(reservation.getRoom().getHotel())
-                    .reservation(reservation)
-                    .folio(null)
-                    .facility(null)
-                    .source(AccrualSource.AUTOMATIC)
-                    .name(ACCOMMODATION_NAME)
-                    .unitPrice(unitPrice)
-                    .quantity(ONE_NIGHT)
-                    .amount(unitPrice)
-                    .serviceDate(serviceDate)
-                    .accruedAt(accruedAt)
-                    .build();
-
-            accruals.add(accrual);
+    private void expandComponent(
+            ReservationEntity reservation,
+            ServiceComponentEntity component,
+            ServiceComponentEntity sourceRateComponent,
+            LocalDate date,
+            LocalDate firstDate,
+            BigDecimal parentQuantity,
+            int guests,
+            Set<Long> path,
+            LocalDateTime accruedAt,
+            List<AccrualEntity> accruals
+    ) {
+        Long facilityId = component.getFacility().getId();
+        if (!path.add(facilityId)) {
+            throw new ConflictException("Цикл в складі пакетної послуги: " + facilityId);
         }
 
-        return accruals;
+        BigDecimal packageQuantity = componentQuantity(
+                component, date, firstDate, parentQuantity, guests
+        );
+        List<ServiceComponentEntity> children = serviceComponentRepository
+                .findAllByParentFacilityIdAndActiveTrueOrderBySortOrderAscIdAsc(facilityId);
+
+        if (!children.isEmpty()) {
+            for (ServiceComponentEntity child : children) {
+                expandComponent(reservation, child, sourceRateComponent, date, firstDate, packageQuantity,
+                        guests, new HashSet<>(path), accruedAt, accruals);
+            }
+        } else {
+            boolean singleOccurrence = component.getQuantityBasis() == ComponentQuantityBasis.FIXED
+                    || component.getQuantityBasis() == ComponentQuantityBasis.PER_STAY
+                    || component.getQuantityBasis() == ComponentQuantityBasis.PER_GUEST;
+            if (singleOccurrence && !date.equals(firstDate)) {
+                return;
+            }
+            if (packageQuantity.signum() <= 0) {
+                return;
+            }
+            BigDecimal unitPrice = componentPrice(reservation, component, date);
+            BigDecimal amount = unitPrice.multiply(packageQuantity).setScale(2, RoundingMode.HALF_UP);
+            accruals.add(AccrualEntity.builder()
+                    .hotel(reservation.getRoom().getHotel())
+                    .reservation(reservation)
+                    .facility(component.getFacility())
+                    .serviceComponent(component)
+                    .sourceRateComponent(sourceRateComponent)
+                    .includedComponent(component.isIncluded())
+                    .componentPriceSource(component.getPriceSource())
+                    .componentQuantityBasis(component.getQuantityBasis())
+                    .componentMultiplier(component.getMultiplier())
+                    .source(AccrualSource.AUTOMATIC)
+                    .name(component.getFacility().getName())
+                    .unitPrice(unitPrice)
+                    .quantity(packageQuantity.setScale(3, RoundingMode.HALF_UP))
+                    .amount(amount)
+                    .serviceDate(date)
+                    .accruedAt(accruedAt)
+                    .build());
+        }
+    }
+
+    private BigDecimal componentQuantity(
+            ServiceComponentEntity component,
+            LocalDate date,
+            LocalDate firstDate,
+            BigDecimal parentQuantity,
+            int guests
+    ) {
+        BigDecimal multiplier = component.getMultiplier();
+        return switch (component.getQuantityBasis()) {
+            case FIXED, PER_STAY -> multiplier;
+            case PER_GUEST -> multiplier.multiply(BigDecimal.valueOf(guests));
+            case PER_NIGHT -> multiplier;
+            case PER_GUEST_PER_NIGHT -> multiplier.multiply(BigDecimal.valueOf(guests));
+            case PARENT_MULTIPLIER -> multiplier.multiply(parentQuantity);
+        };
+    }
+
+    private BigDecimal componentPrice(
+            ReservationEntity reservation,
+            ServiceComponentEntity component,
+            LocalDate date
+    ) {
+        return switch (component.getPriceSource()) {
+            case RATE_PRICE -> priceService.getPriceAmountForDate(reservation.getRate().getId(), date);
+            case FACILITY_PRICE -> facilityPriceService
+                    .getPriceForDate(component.getFacility().getId(), date).price();
+            case NONE -> throw new ConflictException("У складової без ціни не налаштовано дочірніх послуг");
+        };
     }
 
     private List<AccrualEntity> createTouristTaxAccruals(

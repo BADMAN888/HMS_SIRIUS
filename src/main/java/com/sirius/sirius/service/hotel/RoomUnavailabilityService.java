@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.Clock;
 import java.util.List;
 
 @Service
@@ -25,12 +26,13 @@ public class RoomUnavailabilityService {
 
     private final RoomRepository roomRepository;
     private final RoomUnavailabilityRepository unavailabilityRepository;
+    private final Clock clock;
 
     @Transactional
     public RoomUnavailabilityResponse create(
             RoomUnavailabilityRequest request
     ) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         if (!request.endAt().isAfter(request.startAt())) {
             throw new ValidationException(
@@ -112,7 +114,7 @@ public class RoomUnavailabilityService {
             );
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         if (now.isBefore(repair.getStartAt())) {
             throw new ConflictException(
@@ -130,7 +132,7 @@ public class RoomUnavailabilityService {
     @Scheduled(fixedDelay = 60000)
     @Transactional
     public void synchronizeRepairStatuses() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         List<RoomUnavailabilityEntity> repairs =
                 unavailabilityRepository.findAllByCompletedAtIsNull();

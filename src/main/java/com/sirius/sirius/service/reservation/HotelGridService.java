@@ -9,6 +9,7 @@ import com.sirius.sirius.store.entity.reservation.ReservationEntity;
 import com.sirius.sirius.store.enums.ReservationStatus;
 import com.sirius.sirius.store.repository.ReservationRepository;
 import com.sirius.sirius.store.repository.RoomRepository;
+import com.sirius.sirius.security.HotelAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ public class HotelGridService {
 
     private final RoomRepository roomRepository;
     private final ReservationRepository reservationRepository;
+    private final HotelAccessService hotelAccess;
 
     public HotelGridResponse getGrid(
             LocalDate startDate,
@@ -46,7 +48,9 @@ public class HotelGridService {
         LocalDateTime start = startDate.atStartOfDay();
         LocalDateTime end = endDate.atStartOfDay();
 
-        List<RoomEntity> rooms = roomRepository.findAll();
+        List<RoomEntity> rooms = roomRepository.findAll().stream()
+                .filter(room -> hotelAccess.canAccessHotel(room.getHotel().getId()))
+                .toList();
 
         List<ReservationEntity> reservations =
                 reservationRepository
@@ -55,6 +59,7 @@ public class HotelGridService {
                                 start
                         )
                         .stream()
+                        .filter(reservation -> hotelAccess.canAccessHotel(reservation.getRoom().getHotel().getId()))
                         .filter(reservation -> reservation.getStatus() != ReservationStatus.CANCELLED
                                 && reservation.getStatus() != ReservationStatus.NO_SHOW)
                         .toList();

@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.RoomUnavailabilityRequest;
 import com.sirius.sirius.dto.RoomUnavailabilityResponse;
 import com.sirius.sirius.service.hotel.RoomUnavailabilityService;
@@ -17,6 +18,7 @@ import java.util.List;
 @RequestMapping("/api/room-unavailabilities")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class RoomUnavailabilityController {
 
     private final RoomUnavailabilityService roomUnavailabilityService;

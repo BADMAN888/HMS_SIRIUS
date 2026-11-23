@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.RoomRequest;
 import com.sirius.sirius.dto.RoomResponse;
 import com.sirius.sirius.dto.RoomCleanlinessRequest;
@@ -20,10 +21,12 @@ import java.util.List;
 @RequestMapping("/api/rooms")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class RoomController {
 
     private final RoomService roomService;
 
+    @PreAuthorize("@hotelAccess.canAccessRoom(#p0)")
     @GetMapping("/{id}")
     public ResponseEntity<RoomResponse> getById(
             @PathVariable @Positive Long id
@@ -33,6 +36,7 @@ public class RoomController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping
     public ResponseEntity<List<RoomResponse>> getAll() {
         return ResponseEntity.ok(
@@ -40,6 +44,7 @@ public class RoomController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p0)")
     @GetMapping("/hotel/{hotelId}")
     public ResponseEntity<List<RoomResponse>> getAllByHotelId(
             @PathVariable @Positive Long hotelId
@@ -49,6 +54,7 @@ public class RoomController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessCategory(#p0)")
     @GetMapping("/category/{categoryId}")
     public ResponseEntity<List<RoomResponse>> getAllByCategoryId(
             @PathVariable @Positive Long categoryId
@@ -58,6 +64,7 @@ public class RoomController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p0)")
     @GetMapping("/hotel/{hotelId}/status/{status}")
     public ResponseEntity<List<RoomResponse>> getAllByStatus(
             @PathVariable @Positive Long hotelId,
@@ -98,6 +105,7 @@ public class RoomController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessRoom(#p0)")
     @PatchMapping("/{id}/status")
     public ResponseEntity<RoomResponse> updateRoomStatus(
             @PathVariable @Positive Long id,
@@ -108,6 +116,7 @@ public class RoomController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessRoom(#p0)")
     @PatchMapping("/{id}/cleanliness")
     public ResponseEntity<RoomResponse> updateRoomCleanliness(
             @PathVariable @Positive Long id,
@@ -116,6 +125,7 @@ public class RoomController {
         return ResponseEntity.ok(roomService.updateCleanliness(id, request));
     }
 
+    @PreAuthorize("@hotelAccess.canAccessCategory(#p0)")
     @GetMapping("/category/{categoryId}/status/{status}")
     public ResponseEntity<List<RoomResponse>> getAllByCategoryIdAndStatus(
             @PathVariable @Positive Long categoryId,

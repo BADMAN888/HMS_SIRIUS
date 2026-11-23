@@ -1,38 +1,81 @@
 @baseUrl = http://localhost:8080
 
-### 1. REGISTER
+### Потрібні змінні HTTP Client environment: adminEmail, adminPassword, hotelId
+
+### 1. Самостійна реєстрація вимкнена
 
 POST {{baseUrl}}/auth/register
 Content-Type: application/json
 
 {
-  "email": "user@gmail.com",
-  "password": "123456"
+  "email": "self-registration@example.com",
+  "password": "TestPassword123!"
 }
 
 > {%
-    client.test("Registration successful", function () {
-        client.assert(response.status === 200, "Expected HTTP 200");
-        client.assert(response.body.token != null, "Token is missing");
-        client.assert(response.body.refreshToken != null, "Refresh token is missing");
+    client.test("Self-registration is disabled", function () {
+        client.assert(response.status === 403, "Expected HTTP 403 when self-registration is disabled");
+        client.assert(response.body.message === "Самостійну реєстрацію вимкнено; обліковий запис створює адміністратор готелю");
     });
-
-    client.global.set("token", response.body.token);
-    client.global.set("refreshToken", response.body.refreshToken);
 %}
 
-### 2. LOGIN
+### 2. Вхід адміністратора
 
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
 
 {
-  "email": "user@gmail.com",
-  "password": "123456"
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
 }
 
 > {%
-    client.test("Login successful", function () {
+    client.test("Admin login successful", function () {
+        client.assert(response.status === 200, "Expected HTTP 200");
+        client.assert(response.body.token != null, "Token is missing");
+        client.assert(response.body.refreshToken != null, "Refresh token is missing");
+    });
+
+    client.global.set("adminToken", response.body.token);
+    client.global.set("adminRefreshToken", response.body.refreshToken);
+    var suffix = String(Date.now());
+    client.global.set("createdUserEmail", "http-user-" + suffix + "@example.com");
+    client.global.set("createdUserPassword", "HttpTest-" + suffix + "-Pass!");
+%}
+
+### 3. Адміністратор створює акаунт користувача готелю
+
+POST {{baseUrl}}/api/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "email": "{{createdUserEmail}}",
+  "password": "{{createdUserPassword}}",
+  "hotelId": {{hotelId}}
+}
+
+> {%
+    client.test("Hotel user created by administrator", function () {
+        client.assert(response.status === 201, "Expected HTTP 201");
+        client.assert(response.body.email === client.global.get("createdUserEmail"));
+        client.assert(response.body.role === "USER");
+        client.assert(response.body.hotelId != null, "Hotel assignment is missing");
+    });
+%}
+
+### 4. Вхід створеного користувача
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{createdUserEmail}}",
+  "password": "{{createdUserPassword}}"
+}
+
+> {%
+    client.test("Hotel user login successful", function () {
         client.assert(response.status === 200, "Expected HTTP 200");
         client.assert(response.body.token != null, "Token is missing");
         client.assert(response.body.refreshToken != null, "Refresh token is missing");
@@ -42,9 +85,7 @@ Content-Type: application/json
     client.global.set("refreshToken", response.body.refreshToken);
 %}
 
-###
-
-### 3. REFRESH TOKEN
+### 5. Оновлення токенів
 
 POST {{baseUrl}}/auth/refresh
 Content-Type: application/json

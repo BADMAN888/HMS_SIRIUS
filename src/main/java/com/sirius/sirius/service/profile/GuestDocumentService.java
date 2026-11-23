@@ -11,6 +11,8 @@ import com.sirius.sirius.store.entity.reservation.GuestDocumentEntity;
 import com.sirius.sirius.store.entity.reservation.ProfileEntity;
 import com.sirius.sirius.store.repository.GuestDocumentRepository;
 import com.sirius.sirius.store.repository.ProfileRepository;
+import com.sirius.sirius.security.HotelAccessService;
+import com.sirius.sirius.exeption.ForbiddenException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,9 +27,11 @@ public class GuestDocumentService {
     private final GuestDocumentRepository guestDocumentRepository;
     private final ProfileRepository profileRepository;
     private final GuestDocumentMapper guestDocumentMapper;
+    private final HotelAccessService hotelAccess;
 
     public GuestDocumentResponse getById(Long id) {
         GuestDocumentEntity document = findDocument(id);
+        ensureProfileAccess(document.getProfile());
 
         return guestDocumentMapper.toResponse(document);
     }
@@ -35,6 +39,8 @@ public class GuestDocumentService {
     public List<GuestDocumentResponse> getAll() {
         return guestDocumentRepository.findAll()
                 .stream()
+                .filter(document -> hotelAccess.isAdmin() || document.getProfile().getHotel() != null
+                        && hotelAccess.canAccessHotel(document.getProfile().getHotel().getId()))
                 .map(guestDocumentMapper::toResponse)
                 .toList();
     }
@@ -53,6 +59,7 @@ public class GuestDocumentService {
                                 "Profile with id: " + profileId + " not found"
                         )
                 );
+        ensureProfileAccess(profile);
 
         GuestDocumentEntity document =
                 guestDocumentMapper.toEntity(request);
@@ -74,6 +81,7 @@ public class GuestDocumentService {
         validateDates(request);
 
         GuestDocumentEntity document = findDocument(id);
+        ensureProfileAccess(document.getProfile());
 
         validateUniqueDocument(request, document);
 
@@ -88,6 +96,7 @@ public class GuestDocumentService {
     @Transactional
     public void delete(Long id) {
         GuestDocumentEntity document = findDocument(id);
+        ensureProfileAccess(document.getProfile());
 
         guestDocumentRepository.delete(document);
     }
@@ -99,6 +108,13 @@ public class GuestDocumentService {
                                 "Guest document with id: " + id + " not found"
                         )
                 );
+    }
+
+    private void ensureProfileAccess(ProfileEntity profile) {
+        if (!hotelAccess.isAdmin() && (profile.getHotel() == null
+                || !hotelAccess.canAccessHotel(profile.getHotel().getId()))) {
+            throw new ForbiddenException("Немає доступу до документів гостя цього готелю");
+        }
     }
 
     private void validateDates(GuestDocumentRequest request) {

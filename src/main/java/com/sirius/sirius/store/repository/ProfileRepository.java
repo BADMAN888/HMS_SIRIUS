@@ -14,6 +14,8 @@ import java.util.Optional;
 
 public interface ProfileRepository extends JpaRepository<ProfileEntity, Long> {
 
+    boolean existsByIdAndHotelId(Long id, Long hotelId);
+
     @EntityGraph(attributePaths = "guestDocuments")
     @Query("""
             SELECT profile

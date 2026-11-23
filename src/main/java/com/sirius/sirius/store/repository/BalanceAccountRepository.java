@@ -15,6 +15,8 @@ import java.util.List;
 public interface BalanceAccountRepository
         extends JpaRepository<BalanceAccountEntity, Long> {
 
+    boolean existsByIdAndHotelId(Long id, Long hotelId);
+
     Optional<BalanceAccountEntity> findByCustomerIdAndHotelId(
             Long customerId,
             Long hotelId

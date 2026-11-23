@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.HotelGridResponse;
 import com.sirius.sirius.service.reservation.HotelGridService;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +17,12 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/api/hotel-grid")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('ADMIN')")
 public class HotelGridController {
 
     private final HotelGridService hotelGridService;
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping
     public ResponseEntity<HotelGridResponse> getGrid(
             @RequestParam

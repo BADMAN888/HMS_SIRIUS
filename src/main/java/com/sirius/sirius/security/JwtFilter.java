@@ -52,7 +52,7 @@ public class JwtFilter extends OncePerRequestFilter {
         try {
             String email = jwtService.extractEmail(token);
 
-            UserEntity user = userRepository.findByEmail(email)
+            UserEntity user = userRepository.findByEmailIgnoreCase(email)
                     .orElse(null);
 
             if (user == null) {
@@ -74,7 +74,7 @@ public class JwtFilter extends OncePerRequestFilter {
                             null,
                             List.of(
                                     new SimpleGrantedAuthority(
-                                            user.getRole().name()
+                                            "ROLE_" + user.getRole().name()
                                     )
                             )
                     );

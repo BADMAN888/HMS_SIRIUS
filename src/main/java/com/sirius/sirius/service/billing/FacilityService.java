@@ -122,10 +122,10 @@ public class FacilityService {
             );
         }
 
-        if (request.type() == FacilityType.STANDARD
+        if (request.type() != FacilityType.TOURIST_TAX
                 && request.taxStatus() != null) {
             throw new ValidationException(
-                    "Звичайна послуга не повинна мати податковий статус"
+                    "Лише туристичний збір може мати податковий статус"
             );
         }
 

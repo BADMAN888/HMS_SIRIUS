@@ -19,6 +19,7 @@ import com.sirius.sirius.store.enums.ReservationStatus;
 import com.sirius.sirius.store.enums.RoomStatus;
 import com.sirius.sirius.store.repository.ReservationRepository;
 import com.sirius.sirius.store.repository.RoomRepository;
+import com.sirius.sirius.security.HotelAccessService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -46,6 +47,7 @@ public class ReservationService {
     private final ReservationGuestService guestService;
     private final ReservationValidationService validationService;
     private final ReservationIncludedBreakfastService includedBreakfastService;
+    private final HotelAccessService hotelAccess;
 
     private final Clock clock;
 
@@ -129,7 +131,11 @@ public class ReservationService {
 
     @Transactional(readOnly = true)
     public List<ReservationResponse> getAll() {
-        return reservationRepository.findAll()
+        List<ReservationEntity> reservations = hotelAccess.isAdmin()
+                ? reservationRepository.findAll()
+                : hotelAccess.currentHotelId() == null ? List.of()
+                : reservationRepository.findAllByRoom_Hotel_Id(hotelAccess.currentHotelId());
+        return reservations
                 .stream()
                 .map(reservationMapper::toResponse)
                 .toList();
@@ -498,6 +504,7 @@ public class ReservationService {
                         end
                 )
                 .stream()
+                .filter(reservation -> hotelAccess.canAccessHotel(reservation.getRoom().getHotel().getId()))
                 .filter(reservation -> reservation.getStatus() == ReservationStatus.RESERVED)
                 .map(reservationMapper::toCheckInResponse)
                 .toList();
@@ -516,6 +523,7 @@ public class ReservationService {
                         end
                 )
                 .stream()
+                .filter(reservation -> hotelAccess.canAccessHotel(reservation.getRoom().getHotel().getId()))
                 .map(reservationMapper::toCheckOutResponse)
                 .toList();
     }
@@ -531,6 +539,7 @@ public class ReservationService {
                         start
                 )
                 .stream()
+                .filter(reservation -> hotelAccess.canAccessHotel(reservation.getRoom().getHotel().getId()))
                 .map(reservationMapper::toResponse)
                 .toList();
     }
@@ -551,6 +560,7 @@ public class ReservationService {
                         start
                 )
                 .stream()
+                .filter(reservation -> hotelAccess.canAccessHotel(reservation.getRoom().getHotel().getId()))
                 .map(reservationMapper::toResponse)
                 .toList();
     }
@@ -561,6 +571,7 @@ public class ReservationService {
     ) {
         return reservationRepository.findByStatus(status)
                 .stream()
+                .filter(reservation -> hotelAccess.canAccessHotel(reservation.getRoom().getHotel().getId()))
                 .map(reservationMapper::toResponse)
                 .toList();
     }

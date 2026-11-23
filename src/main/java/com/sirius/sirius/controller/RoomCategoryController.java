@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.RoomCategoryRequest;
 import com.sirius.sirius.dto.RoomCategoryResponse;
 import com.sirius.sirius.service.hotel.RoomCategoryService;
@@ -18,10 +19,12 @@ import java.util.List;
 @RequestMapping("/api/room-category")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class RoomCategoryController {
 
     private final RoomCategoryService roomCategoryService;
 
+    @PreAuthorize("@hotelAccess.canAccessCategory(#p0)")
     @GetMapping("/{id}")
     public ResponseEntity<RoomCategoryResponse> getById(
             @PathVariable @Positive Long id
@@ -31,6 +34,7 @@ public class RoomCategoryController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping
     public ResponseEntity<List<RoomCategoryResponse>> getAll() {
         return ResponseEntity.ok(
@@ -38,6 +42,7 @@ public class RoomCategoryController {
         );
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p0)")
     @GetMapping("/by-hotel/{hotelId}")
     public ResponseEntity<List<RoomCategoryResponse>> getAllByHotelId(
             @PathVariable @Positive Long hotelId

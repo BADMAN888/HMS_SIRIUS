@@ -9,7 +9,6 @@ public record RateResponse(
         String currency,
         Long categoryId,
         BigDecimal currentPrice,
-        boolean active,
-        boolean breakfastIncluded
+        boolean active
 ) {
 }

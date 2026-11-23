@@ -1,6 +1,7 @@
 
 package com.sirius.sirius.controller;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.sirius.sirius.dto.HotelRequest;
 import com.sirius.sirius.dto.HotelResponse;
 import com.sirius.sirius.service.hotel.HotelService;
@@ -18,15 +19,18 @@ import java.util.List;
 @RequestMapping("/api/hotels")
 @RequiredArgsConstructor
 @Validated
+@PreAuthorize("hasRole('ADMIN')")
 public class HotelController {
 
     private final HotelService hotelService;
 
+    @PreAuthorize("@hotelAccess.hasAssignedHotel()")
     @GetMapping
     public ResponseEntity<List<HotelResponse>> getAllHotels() {
         return ResponseEntity.ok(hotelService.getAllHotels());
     }
 
+    @PreAuthorize("@hotelAccess.canAccessHotel(#p0)")
     @GetMapping("/{id}")
     public ResponseEntity<HotelResponse> getHotelById(
             @PathVariable @Positive Long id

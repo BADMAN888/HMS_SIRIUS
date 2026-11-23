@@ -37,6 +37,8 @@ public record ProfileResponse(
 
         boolean inBlackList,
 
+        Long hotelId,
+
         Set<GuestDocumentResponse> guestDocuments
 
 ) {
