@@ -71,7 +71,12 @@ public record ReservationRequest(
 
         @Size(max = 100)
         @Email(message = "Вкажіть коректну email-адресу")
-        String guestEmail
+        String guestEmail,
+
+        boolean earlyCheckInAccepted,
+        boolean lateCheckOutAccepted,
+        boolean earlyExtraNightAccepted,
+        boolean lateExtraNightAccepted
 
 ) {
         public ReservationRequest {

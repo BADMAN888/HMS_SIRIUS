@@ -3,6 +3,7 @@ package com.sirius.sirius.service.reservation;
 import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.exeption.ValidationException;
+import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.store.entity.biling.CompanyEntity;
 import com.sirius.sirius.store.entity.biling.RateEntity;
 import com.sirius.sirius.store.entity.hotel.RoomCategoryEntity;
@@ -85,11 +86,29 @@ public class ReservationValidationService {
         }
     }
 
-    public void validateUpdateStatus(ReservationEntity reservation) {
+    public void validateUpdateStatus(
+            ReservationEntity reservation,
+            ReservationRequest request
+    ) {
         if (reservation == null) {
             throw new ValidationException(
                     "Reservation must be specified"
             );
+        }
+
+        if (reservation.getStatus() == ReservationStatus.IN_HOUSE) {
+            if (!reservation.getCheckIn().equals(request.checkIn())) {
+                throw new ConflictException(
+                        "Check-in cannot be changed while the reservation is in house"
+                );
+            }
+            if (!reservation.getCheckOut().toLocalDate().equals(request.checkOut().toLocalDate())
+                    && !request.lateExtraNightAccepted()) {
+                throw new ConflictException(
+                        "Check-out date cannot be changed while the reservation is in house"
+                );
+            }
+            return;
         }
 
         if (reservation.getStatus() != ReservationStatus.RESERVED) {

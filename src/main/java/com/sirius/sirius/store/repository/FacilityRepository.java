@@ -14,6 +14,8 @@ public interface FacilityRepository extends JpaRepository<FacilityEntity, Long> 
 
     List<FacilityEntity> findAllByHotelIdAndActiveTrue(Long hotelId);
 
+    Optional<FacilityEntity> findByHotelIdAndTypeAndActiveTrue(Long hotelId, FacilityType type);
+
     boolean existsByIdAndHotelId(Long id, Long hotelId);
 
     Optional<FacilityEntity> findByHotelIdAndTypeAndTaxStatusAndActiveTrue(

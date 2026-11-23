@@ -27,6 +27,10 @@ public record HotelRequest(
 
         LocalTime checkInTime,
 
-        LocalTime checkOutTime
+        LocalTime earlyCheckInTime,
+
+        LocalTime checkOutTime,
+
+        LocalTime lateCheckOutTime
 ) {
 }

@@ -116,7 +116,7 @@ public class ReservationService {
         ReservationEntity saved =
                 reservationRepository.saveAndFlush(reservation);
 
-        accrualService.create(saved);
+        accrualService.create(saved, request);
         includedBreakfastService.synchronize(saved);
 
         return reservationMapper.toResponse(saved);
@@ -141,7 +141,7 @@ public class ReservationService {
     ) {
         ReservationEntity reservation = findByIdForUpdate(id);
 
-        validationService.validateUpdateStatus(reservation);
+        validationService.validateUpdateStatus(reservation, request);
 
         if (reservation.isRoomLocked()
                 && request.roomLocked()
@@ -252,6 +252,8 @@ public class ReservationService {
         if (financialChanges) {
             recalculationService.recalculate(reservation);
         }
+
+        accrualService.addEarlyLateCharges(reservation, request);
 
         includedBreakfastService.synchronize(reservation);
 
@@ -460,6 +462,14 @@ public class ReservationService {
                 || !Objects.equals(
                 reservation.getCheckOut().toLocalDate(),
                 request.checkOut().toLocalDate()
+        )
+                || !Objects.equals(
+                reservation.getCheckIn().toLocalTime(),
+                request.checkIn().toLocalTime()
+        )
+                || !Objects.equals(
+                reservation.getCheckOut().toLocalTime(),
+                request.checkOut().toLocalTime()
         )
                 || !Objects.equals(
                 reservation.getAdults(),

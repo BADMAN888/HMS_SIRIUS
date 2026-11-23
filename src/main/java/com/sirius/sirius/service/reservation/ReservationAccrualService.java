@@ -3,6 +3,7 @@ package com.sirius.sirius.service.reservation;
 import com.sirius.sirius.exeption.ConflictException;
 import com.sirius.sirius.exeption.NotFoundException;
 import com.sirius.sirius.exeption.ValidationException;
+import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.service.billing.FacilityPriceService;
 import com.sirius.sirius.service.billing.PriceService;
 import com.sirius.sirius.store.entity.biling.AccrualEntity;
@@ -43,7 +44,7 @@ public class ReservationAccrualService {
     private final FacilityPriceService facilityPriceService;
     private final Clock clock;
 
-    public void create(ReservationEntity reservation) {
+    public void create(ReservationEntity reservation, ReservationRequest request) {
         ReservationEntity lockedReservation = lockReservation(reservation);
 
         validateReservation(lockedReservation);
@@ -63,6 +64,89 @@ public class ReservationAccrualService {
                 lockedReservation,
                 lockedReservation.getCheckIn().toLocalDate()
         );
+        addEarlyLateCharges(lockedReservation, request);
+    }
+
+    public void addEarlyLateCharges(
+            ReservationEntity reservation,
+            ReservationRequest request
+    ) {
+        if (request == null) {
+            return;
+        }
+        if (request.earlyCheckInAccepted()) {
+            addSupplementalCharge(
+                    reservation,
+                    FacilityType.EARLY_CHECK_IN,
+                    reservation.getCheckIn().toLocalDate()
+            );
+        }
+        if (request.lateCheckOutAccepted()) {
+            addSupplementalCharge(
+                    reservation,
+                    FacilityType.LATE_CHECK_OUT,
+                    reservation.getCheckOut().toLocalDate()
+            );
+        }
+    }
+
+    private void addSupplementalCharge(
+            ReservationEntity reservation,
+            FacilityType type,
+            LocalDate date
+    ) {
+        String name = type == FacilityType.EARLY_CHECK_IN
+                ? "Ранній заїзд"
+                : "Пізній виїзд";
+        boolean alreadyAdded = accrualRepository.findAllByReservationId(reservation.getId()).stream()
+                .anyMatch(accrual -> !accrual.isReversed() && accrual.getName().equals(name));
+        if (alreadyAdded) {
+            return;
+        }
+        FacilityEntity facility = facilityRepository
+                .findByHotelIdAndTypeAndActiveTrue(
+                        reservation.getRoom().getHotel().getId(),
+                        type
+                )
+                .orElseGet(() -> facilityRepository.save(FacilityEntity.builder()
+                        .hotel(reservation.getRoom().getHotel())
+                        .name(name)
+                        .unit("послуга")
+                        .type(type)
+                        .active(true)
+                        .build()));
+        LocalDate accommodationDate = type == FacilityType.LATE_CHECK_OUT
+                ? date.minusDays(1)
+                : date;
+        BigDecimal nightly = priceService.getPriceAmountForDate(
+                        reservation.getRate().getId(),
+                        accommodationDate
+                )
+                .setScale(2, RoundingMode.HALF_UP);
+        BigDecimal price = nightly.multiply(new BigDecimal("0.50"))
+                .setScale(2, RoundingMode.HALF_UP);
+        accrualRepository.save(AccrualEntity.builder()
+                .hotel(reservation.getRoom().getHotel()).reservation(reservation).facility(facility)
+                .source(AccrualSource.AUTOMATIC).name(name)
+                .unitPrice(price).quantity(ONE_NIGHT).amount(price).serviceDate(date)
+                .accruedAt(LocalDateTime.now(clock)).build());
+        addExtraTouristTax(reservation, date, name);
+    }
+
+    private void addExtraTouristTax(ReservationEntity reservation, LocalDate date, String relatedChargeName) {
+        TaxStatus status = reservation.getTaxStatus() == null ? TaxStatus.RESIDENT : reservation.getTaxStatus();
+        if (status == TaxStatus.EXEMPT) return;
+        String taxName = "Додатковий туристичний збір — " + relatedChargeName;
+        boolean alreadyAdded = accrualRepository.findAllByReservationId(reservation.getId()).stream()
+                .anyMatch(accrual -> !accrual.isReversed() && taxName.equals(accrual.getName()));
+        if (alreadyAdded) return;
+        FacilityEntity tax = getTouristTaxFacility(reservation, status);
+        BigDecimal quantity = BigDecimal.valueOf(reservation.getAdults() + reservation.getChildren()).setScale(3, RoundingMode.UNNECESSARY);
+        BigDecimal unitPrice = facilityPriceService.getPriceForDate(tax.getId(), date).price().setScale(2, RoundingMode.HALF_UP);
+        BigDecimal amount = unitPrice.multiply(quantity).setScale(2, RoundingMode.HALF_UP);
+        accrualRepository.save(AccrualEntity.builder().hotel(reservation.getRoom().getHotel()).reservation(reservation)
+                .facility(tax).source(AccrualSource.AUTOMATIC).name(taxName).unitPrice(unitPrice)
+                .quantity(quantity).amount(amount).serviceDate(date).accruedAt(LocalDateTime.now(clock)).build());
     }
 
     public void createFromDate(

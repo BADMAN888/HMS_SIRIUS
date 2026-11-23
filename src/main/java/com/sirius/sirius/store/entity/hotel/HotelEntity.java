@@ -59,8 +59,14 @@ public class HotelEntity {
     @Column(name = "check_in_time")
     LocalTime checkInTime;
 
+    @Column(name = "early_check_in_time")
+    LocalTime earlyCheckInTime;
+
     @Column(name = "check_out_time")
     LocalTime checkOutTime;
+
+    @Column(name = "late_check_out_time")
+    LocalTime lateCheckOutTime;
 
     @OneToMany(mappedBy = "hotel")
     List<RoomEntity> rooms = new ArrayList<>();

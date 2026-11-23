@@ -11,6 +11,8 @@ public record HotelResponse(
         String phone,
         LocalTime checkInTime,
         LocalTime checkOutTime,
+        LocalTime earlyCheckInTime,
+        LocalTime lateCheckOutTime,
         List<LegalEntityResponse> legalEntities
 ) {
 }
