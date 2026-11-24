@@ -6,6 +6,7 @@ import java.util.List;
 public record HotelResponse(
         Long id,
         String hotelName,
+        String description,
         String address,
         String email,
         String phone,
