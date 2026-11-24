@@ -31,6 +31,7 @@ public record ReservationResponse(
         ReservationCancellationReason cancellationReason,
         List<ReservationCommentResponse> comments,
         LocalDateTime createdAt,
+        LocalDateTime cancelledAt,
         Long folioId,
         String externalBookingNumber,
         String bookingSource,

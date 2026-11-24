@@ -51,6 +51,7 @@ public class ReservationLifecycleService {
 
         reservation.setStatus(ReservationStatus.CANCELLED);
         reservation.setCancellationReason(reason);
+        reservation.setCancelledAt(LocalDateTime.now(clock));
 
         includedBreakfastService.cancelRemaining(reservation.getId());
     }

@@ -127,6 +127,9 @@ public class ReservationEntity {
     @Column(nullable = false, name = "created_at")
     LocalDateTime createdAt;
 
+    @Column(name = "cancelled_at")
+    LocalDateTime cancelledAt;
+
 
     @OneToMany(mappedBy = "reservation")
     @Builder.Default
