@@ -16,6 +16,12 @@ public interface RoomUnavailabilityRepository
             Long roomId
     );
 
+    List<RoomUnavailabilityEntity> findAllByRoom_Hotel_IdAndStartAtLessThanAndEndAtGreaterThanOrderByStartAtAsc(
+            Long hotelId,
+            LocalDateTime endAt,
+            LocalDateTime startAt
+    );
+
     @Query("""
             SELECT u
             FROM RoomUnavailabilityEntity u

@@ -80,6 +80,12 @@ public interface ReservationRepository
             LocalDateTime start
     );
 
+    List<ReservationEntity> findAllByRoom_Hotel_IdAndCheckInLessThanAndCheckOutGreaterThan(
+            Long hotelId,
+            LocalDateTime end,
+            LocalDateTime start
+    );
+
     List<ReservationEntity> findAllByRoomIdAndCheckInLessThanAndCheckOutGreaterThan(
             Long roomId,
             LocalDateTime end,
