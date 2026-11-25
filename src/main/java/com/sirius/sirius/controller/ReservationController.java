@@ -12,6 +12,8 @@ import com.sirius.sirius.dto.ReservationRequest;
 import com.sirius.sirius.dto.ReservationCancelRequest;
 import com.sirius.sirius.dto.ReservationGuestsRequest;
 import com.sirius.sirius.dto.ReservationResponse;
+import com.sirius.sirius.dto.ReservationHistoryResponse;
+import com.sirius.sirius.service.reservation.ReservationHistoryService;
 import com.sirius.sirius.service.reservation.ReservationCommentService;
 import com.sirius.sirius.service.reservation.ReservationIncludedBreakfastService;
 import com.sirius.sirius.service.reservation.ReservationLifecycleService;
@@ -47,6 +49,13 @@ public class ReservationController {
     private final ReservationIncludedBreakfastService includedBreakfastService;
     private final DocumentService documentService;
     private final BookingConfirmationEmailService bookingConfirmationEmailService;
+    private final ReservationHistoryService historyService;
+
+    @PreAuthorize("@hotelAccess.canAccessReservation(#p0)")
+    @GetMapping("/{id}/history")
+    public ResponseEntity<List<ReservationHistoryResponse>> getHistory(@PathVariable @Positive Long id) {
+        return ResponseEntity.ok(historyService.get(id));
+    }
 
     @PreAuthorize("@hotelAccess.canCreateReservation(#p0)")
     @PostMapping

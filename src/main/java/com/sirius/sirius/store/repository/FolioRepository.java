@@ -15,6 +15,8 @@ public interface FolioRepository extends JpaRepository<FolioEntity, Long> {
 
     List<FolioEntity> findAllByReservationId(Long reservationId);
 
+    List<FolioEntity> findAllByReservationIdIn(List<Long> reservationIds);
+
     List<FolioEntity> findAllByHotelId(Long hotelId);
 
     boolean existsByIdAndHotelId(Long id, Long hotelId);

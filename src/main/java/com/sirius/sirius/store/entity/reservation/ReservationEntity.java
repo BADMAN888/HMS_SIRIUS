@@ -50,6 +50,10 @@ public class ReservationEntity {
     @JoinColumn(name = "operator_company_id")
     private CompanyEntity operatorCompany;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "group_booking_id")
+    private GroupBookingEntity groupBooking;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "room_id", nullable = false)
     RoomEntity room;

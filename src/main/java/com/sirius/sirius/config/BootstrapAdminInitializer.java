@@ -48,6 +48,7 @@ public class BootstrapAdminInitializer implements ApplicationRunner {
         if (userRepository.findByEmailIgnoreCase(normalizedEmail).isPresent()) return;
 
         UserEntity admin = new UserEntity();
+        admin.setFullName(normalizedEmail);
         admin.setEmail(normalizedEmail);
         admin.setPassword(passwordEncoder.encode(password));
         admin.setRole(Role.ADMIN);

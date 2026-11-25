@@ -36,6 +36,7 @@ public interface ReservationMapper {
     @Mapping(target = "folios", ignore = true)
     @Mapping(target = "sourceCompany", ignore = true)
     @Mapping(target = "operatorCompany", ignore = true)
+    @Mapping(target = "groupBooking", ignore = true)
     @Mapping(target = "taxStatus", source = "taxStatus")
     ReservationEntity toEntity(ReservationRequest request);
 
@@ -87,6 +88,7 @@ public interface ReservationMapper {
     @Mapping(target = "folios", ignore = true)
     @Mapping(target = "sourceCompany", ignore = true)
     @Mapping(target = "operatorCompany", ignore = true)
+    @Mapping(target = "groupBooking", ignore = true)
     @Mapping(target = "taxStatus", source = "taxStatus")
     void updateEntity(
             ReservationRequest request,

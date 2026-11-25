@@ -6,11 +6,13 @@ import com.sirius.sirius.store.enums.DocumentType;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
+import java.util.List;
 
 public interface GuestDocumentRepository
         extends JpaRepository<GuestDocumentEntity, Long> {
 
     Optional<GuestDocumentEntity> findByDocumentNumber(String documentNumber);
+    List<GuestDocumentEntity> findAllByProfileId(Long profileId);
 
     boolean existsByIdAndProfile_Hotel_Id(Long id, Long hotelId);
 

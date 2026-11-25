@@ -34,6 +34,7 @@ public class ReservationIncludedBreakfastService {
     private final Clock clock;
     private final ReservationRepository reservationRepository;
     private final ServiceComponentRepository componentRepository;
+    private final ReservationHistoryService historyService;
 
     public void synchronize(ReservationEntity reservation) {
         LocalDate today = LocalDate.now(clock);
@@ -143,7 +144,9 @@ public class ReservationIncludedBreakfastService {
             );
         }
 
+        Integer oldServedQuantity = breakfast.getServedQuantity();
         breakfast.setServedQuantity(servedQuantity);
+        historyService.record(breakfast.getReservation(), "UPDATED", "breakfastServed:" + breakfast.getServiceDate(), oldServedQuantity, servedQuantity);
 
         return toResponse(breakfast);
     }

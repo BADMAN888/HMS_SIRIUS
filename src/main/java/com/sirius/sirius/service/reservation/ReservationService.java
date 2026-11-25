@@ -47,6 +47,7 @@ public class ReservationService {
     private final ReservationGuestService guestService;
     private final ReservationValidationService validationService;
     private final ReservationIncludedBreakfastService includedBreakfastService;
+    private final ReservationHistoryService historyService;
     private final HotelAccessService hotelAccess;
 
     private final Clock clock;
@@ -118,6 +119,8 @@ public class ReservationService {
         ReservationEntity saved =
                 reservationRepository.saveAndFlush(reservation);
 
+        historyService.record(saved, "CREATED", "reservation", null, saved.getConfirmationNumber());
+
         accrualService.create(saved, request);
         includedBreakfastService.synchronize(saved);
 
@@ -146,7 +149,6 @@ public class ReservationService {
             ReservationRequest request
     ) {
         ReservationEntity reservation = findByIdForUpdate(id);
-
         validationService.validateUpdateStatus(reservation, request);
 
         if (reservation.isRoomLocked()
@@ -239,6 +241,9 @@ public class ReservationService {
                 rate
         );
 
+        recordReservationChanges(reservation, request, room, rate, paymentCategory, sourceCompany, operatorCompany, guests, primaryGuest,
+                guestName, guestPhone, guestEmail);
+
         reservationMapper.updateEntity(request, reservation);
 
         reservation.setGuestName(guestName);
@@ -271,6 +276,9 @@ public class ReservationService {
             ReservationGuestsRequest request
     ) {
         ReservationEntity reservation = findByIdForUpdate(id);
+        String previousGuests = guestNames(reservation);
+        String previousPrimaryGuest = reservation.getPrimaryGuest() == null
+                ? null : profileFullName(reservation.getPrimaryGuest());
         Set<ProfileEntity> guests = guestService.findGuests(request.guestIds());
         ProfileEntity primaryGuest = guestService.findPrimaryGuest(
                 request.primaryGuestId(),
@@ -285,9 +293,59 @@ public class ReservationService {
             reservation.setGuestEmail(primaryGuest.getEmail());
         }
 
-        return reservationMapper.toResponse(
-                reservationRepository.saveAndFlush(reservation)
-        );
+        ReservationEntity saved = reservationRepository.saveAndFlush(reservation);
+        historyService.record(saved, "UPDATED", "guests", previousGuests, guestNames(saved));
+        historyService.record(saved, "UPDATED", "primaryGuest", previousPrimaryGuest,
+                primaryGuest == null ? null : profileFullName(primaryGuest));
+        return reservationMapper.toResponse(saved);
+    }
+
+    private void recordReservationChanges(ReservationEntity reservation, ReservationRequest request, RoomEntity room,
+                                         RateEntity rate, RoomCategoryEntity paymentCategory,
+                                         com.sirius.sirius.store.entity.biling.CompanyEntity sourceCompany,
+                                         com.sirius.sirius.store.entity.biling.CompanyEntity operatorCompany,
+                                         Set<ProfileEntity> guests, ProfileEntity primaryGuest,
+                                         String guestName, String guestPhone, String guestEmail) {
+        historyService.record(reservation, "UPDATED", "checkIn", reservation.getCheckIn(), request.checkIn());
+        historyService.record(reservation, "UPDATED", "checkOut", reservation.getCheckOut(), request.checkOut());
+        historyService.record(reservation, "UPDATED", "room", reservation.getRoom().getRoomNumber(), room.getRoomNumber());
+        historyService.record(reservation, "UPDATED", "adults", reservation.getAdults(), request.adults());
+        historyService.record(reservation, "UPDATED", "children", reservation.getChildren(), request.children());
+        historyService.record(reservation, "UPDATED", "guestName", reservation.getGuestName(), guestName);
+        historyService.record(reservation, "UPDATED", "guestPhone", reservation.getGuestPhone(), guestPhone);
+        historyService.record(reservation, "UPDATED", "guestEmail", reservation.getGuestEmail(), guestEmail);
+        historyService.record(reservation, "UPDATED", "roomLocked", reservation.isRoomLocked(), request.roomLocked());
+        historyService.record(reservation, "UPDATED", "taxStatus", reservation.getTaxStatus(), request.taxStatus());
+        historyService.record(reservation, "UPDATED", "externalBookingNumber", reservation.getExternalBookingNumber(), request.externalBookingNumber());
+        historyService.record(reservation, "UPDATED", "bookingSource", reservation.getBookingSource(), request.bookingSource());
+        historyService.record(reservation, "UPDATED", "sourceCompany", companyName(reservation.getSourceCompany()), companyName(sourceCompany));
+        historyService.record(reservation, "UPDATED", "operatorCompany", companyName(reservation.getOperatorCompany()), companyName(operatorCompany));
+        historyService.record(reservation, "UPDATED", "rate", reservation.getRate().getName(), rate.getName());
+        historyService.record(reservation, "UPDATED", "paymentCategory", reservation.getPaymentCategory().getName(), paymentCategory.getName());
+        historyService.record(reservation, "UPDATED", "guests", guestNames(reservation), guestNames(guests));
+        historyService.record(reservation, "UPDATED", "primaryGuest",
+                reservation.getPrimaryGuest() == null ? null : profileFullName(reservation.getPrimaryGuest()), primaryGuest == null ? null : profileFullName(primaryGuest));
+    }
+
+    private String guestNames(ReservationEntity reservation) {
+        return guestNames(reservation.getGuests());
+    }
+
+    private String guestNames(Set<ProfileEntity> guests) {
+        return guests.stream().map(this::profileFullName).sorted()
+                .collect(java.util.stream.Collectors.joining(", "));
+    }
+
+    private String rateName(Long rateId) {
+        return validationService.findRate(rateId).getName();
+    }
+
+    private String categoryName(Long categoryId) {
+        return validationService.findPaymentCategory(categoryId).getName();
+    }
+
+    private String companyName(com.sirius.sirius.store.entity.biling.CompanyEntity company) {
+        return company == null ? null : company.getLegalEntity().getShortName();
     }
 
     private String resolveGuestName(

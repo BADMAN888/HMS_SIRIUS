@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Collection;
 
 public interface ReservationRepository
         extends JpaRepository<ReservationEntity, Long> {
@@ -28,6 +29,8 @@ public interface ReservationRepository
     boolean existsByIdAndRoom_Hotel_Id(Long id, Long hotelId);
 
     List<ReservationEntity> findAllByRoom_Hotel_Id(Long hotelId);
+
+    List<ReservationEntity> findAllByGroupBooking_IdIn(Collection<Long> groupIds);
 
     List<ReservationEntity> findByRoomId(Long roomId);
 

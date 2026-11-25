@@ -42,6 +42,7 @@ public class AuthService {
 
         UserEntity user = new UserEntity();
 
+        user.setFullName(email);
         user.setEmail(email);
         user.setPassword(
                 passwordEncoder.encode(request.password())

@@ -33,6 +33,7 @@ public class ReservationLifecycleService {
     private final AccrualRepository accrualRepository;
     private final FolioService folioService;
     private final ReservationIncludedBreakfastService includedBreakfastService;
+    private final ReservationHistoryService historyService;
     private final Clock clock;
 
     public void cancel(Long id) {
@@ -52,6 +53,8 @@ public class ReservationLifecycleService {
         reservation.setStatus(ReservationStatus.CANCELLED);
         reservation.setCancellationReason(reason);
         reservation.setCancelledAt(LocalDateTime.now(clock));
+        historyService.record(reservation, "CANCELLED", "status", ReservationStatus.RESERVED, ReservationStatus.CANCELLED);
+        historyService.record(reservation, "CANCELLED", "cancellationReason", null, reason);
 
         includedBreakfastService.cancelRemaining(reservation.getId());
     }
@@ -86,6 +89,7 @@ public class ReservationLifecycleService {
         room.setStatus(RoomStatus.OCCUPIED);
         reservation.setActualCheckIn(now);
         reservation.setStatus(ReservationStatus.IN_HOUSE);
+        historyService.record(reservation, "CHECKED_IN", "status", ReservationStatus.RESERVED, ReservationStatus.IN_HOUSE);
     }
 
     public void checkOut(Long id) {
@@ -123,6 +127,7 @@ public class ReservationLifecycleService {
         room.setClean(false);
 
         reservation.setStatus(ReservationStatus.COMPLETED);
+        historyService.record(reservation, "CHECKED_OUT", "status", ReservationStatus.IN_HOUSE, ReservationStatus.COMPLETED);
 
         includedBreakfastService.cancelRemaining(reservation.getId());
 
@@ -148,6 +153,7 @@ public class ReservationLifecycleService {
         }
 
         reservation.setStatus(ReservationStatus.NO_SHOW);
+        historyService.record(reservation, "NO_SHOW", "status", ReservationStatus.RESERVED, ReservationStatus.NO_SHOW);
 
         includedBreakfastService.cancelRemaining(reservation.getId());
     }

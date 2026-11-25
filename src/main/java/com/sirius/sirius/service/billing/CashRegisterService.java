@@ -130,10 +130,29 @@ public class CashRegisterService {
         CashRegisterEntity register = registers.findByHotel_IdAndLegalEntity_Id(folio.getHotel().getId(), legal.getId())
                 .orElseThrow(() -> new ConflictException("Для юридичної особи не створена каса"));
         CashRegisterShiftEntity shift = shifts.findCurrentForUpdate(register.getId(), CashShiftStatus.OPEN)
-                .orElseThrow(() -> new ConflictException("Відкрийте касову зміну перед прийманням оплат"));
+                .orElseGet(() -> openShiftForPayment(register.getId()));
         CashOperationType type = payment.getReversalOf() == null ? CashOperationType.PAYMENT : CashOperationType.REFUND;
         CashOperationEntity op = operation(shift, type, payment.getMethod(), payment.getAmount().abs(), payment.getDescription(), payment, payment.getReversalOf());
         return operations.save(op);
+    }
+
+    private CashRegisterShiftEntity openShiftForPayment(Long registerId) {
+        // Serialize automatic opening so concurrent payments cannot create competing shifts.
+        CashRegisterEntity register = registers.findByIdForUpdate(registerId)
+                .orElseThrow(() -> new NotFoundException("Касу не знайдено"));
+        if (!register.isActive() || !register.getLegalEntity().isActive()) {
+            throw new ConflictException("Каса або юридична особа неактивна");
+        }
+        return shifts.findCurrentForUpdate(registerId, CashShiftStatus.OPEN)
+                .orElseGet(() -> {
+                    CashRegisterShiftEntity shift = new CashRegisterShiftEntity();
+                    shift.setCashRegister(register);
+                    shift.setOpenedBy(currentUser());
+                    shift.setOpenedAt(now());
+                    shift.setOpeningBalance(ZERO);
+                    shift.setStatus(CashShiftStatus.OPEN);
+                    return shifts.save(shift);
+                });
     }
 
     private CashOperationEntity operation(CashRegisterShiftEntity shift, CashOperationType type, PaymentMethod method, BigDecimal amount, String description, PaymentEntity payment, PaymentEntity reversal) {

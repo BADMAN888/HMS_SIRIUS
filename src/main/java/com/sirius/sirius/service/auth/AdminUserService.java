@@ -39,6 +39,7 @@ public class AdminUserService {
         HotelEntity hotel = hotelRepository.findById(request.hotelId())
                 .orElseThrow(() -> new NotFoundException("Готель не знайдено"));
         UserEntity user = new UserEntity();
+        user.setFullName(request.fullName().trim());
         user.setEmail(email);
         user.setPassword(passwordEncoder.encode(request.password()));
         user.setRole(Role.USER);
@@ -65,7 +66,7 @@ public class AdminUserService {
     }
 
     private AdminUserResponse toResponse(UserEntity user) {
-        return new AdminUserResponse(user.getId(), user.getEmail(), user.getRole(),
+        return new AdminUserResponse(user.getId(), user.getFullName(), user.getEmail(), user.getRole(),
                 user.getHotel() == null ? null : user.getHotel().getId());
     }
 

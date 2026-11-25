@@ -16,6 +16,7 @@ public interface PaymentRepository extends JpaRepository<PaymentEntity, Long> {
     java.util.Optional<PaymentEntity> findByIdempotencyKey(String idempotencyKey);
 
     List<PaymentEntity> findAllByFolioId(Long folioId);
+    List<PaymentEntity> findAllByPayerId(Long payerId);
 
     boolean existsByIdAndFolio_Hotel_Id(Long id, Long hotelId);
 

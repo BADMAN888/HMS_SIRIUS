@@ -15,6 +15,7 @@ public interface AccrualRepository extends JpaRepository<AccrualEntity, Long> {
     List<AccrualEntity> findAllByFolioId(Long folioId);
 
     List<AccrualEntity> findAllByHotelId(Long hotelId);
+    List<AccrualEntity> findAllByRecipientId(Long recipientId);
 
     boolean existsByIdAndHotelId(Long id, Long hotelId);
 

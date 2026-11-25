@@ -17,6 +17,8 @@ public interface BalanceAccountRepository
 
     boolean existsByIdAndHotelId(Long id, Long hotelId);
 
+    List<BalanceAccountEntity> findAllByCustomerId(Long customerId);
+
     Optional<BalanceAccountEntity> findByCustomerIdAndHotelId(
             Long customerId,
             Long hotelId

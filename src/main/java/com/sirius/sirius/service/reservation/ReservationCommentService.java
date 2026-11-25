@@ -26,6 +26,7 @@ public class ReservationCommentService {
     private final ReservationRepository reservationRepository;
     private final ReservationCommentMapper commentMapper;
     private final Clock clock;
+    private final ReservationHistoryService historyService;
 
     public List<ReservationCommentResponse> getAll(Long reservationId) {
         findReservation(reservationId);
@@ -45,6 +46,7 @@ public class ReservationCommentService {
         ReservationCommentEntity comment = commentMapper.toEntity(request);
         comment.setReservation(reservation);
         comment.setCreatedAt(LocalDateTime.now(clock));
+        historyService.record(reservation, "COMMENT_ADDED", "comment", null, request.text());
 
         return commentMapper.toResponse(commentRepository.save(comment));
     }
@@ -55,14 +57,17 @@ public class ReservationCommentService {
             ReservationCommentRequest request
     ) {
         ReservationCommentEntity comment = findComment(reservationId, commentId);
+        String oldText = comment.getText();
 
         commentMapper.updateEntity(request, comment);
+        historyService.record(comment.getReservation(), "COMMENT_UPDATED", "comment", oldText, comment.getText());
 
         return commentMapper.toResponse(commentRepository.save(comment));
     }
 
     public void delete(Long reservationId, Long commentId) {
         ReservationCommentEntity comment = findComment(reservationId, commentId);
+        historyService.record(comment.getReservation(), "COMMENT_DELETED", "comment", comment.getText(), null);
         commentRepository.delete(comment);
     }
 
