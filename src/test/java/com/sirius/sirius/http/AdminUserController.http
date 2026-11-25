@@ -1,0 +1,34 @@
+@baseUrl = http://localhost:8080
+@hotelId = {{createdHotelId}}
+@userId = {{createdUserId}}
+@userEmail = http.employee@example.com
+@userPassword = ChangeThisUserPassword123!
+
+### List users
+GET {{baseUrl}}/api/admin/users
+Authorization: Bearer {{adminToken}}
+
+### Create hotel user
+POST {{baseUrl}}/api/admin/users
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "fullName": "HTTP Test Employee",
+  "email": "{{userEmail}}",
+  "password": "{{userPassword}}",
+  "hotelId": {{hotelId}}
+}
+
+> {%
+    client.test("User created", function () {
+        client.assert(response.status === 201, "Expected HTTP 201");
+        client.assert(response.body.fullName === "HTTP Test Employee");
+        client.assert(response.body.hotelId != null);
+    });
+    client.global.set("createdUserId", response.body.id);
+%}
+
+### Assign user to hotel
+PUT {{baseUrl}}/api/admin/users/{{userId}}/hotel/{{hotelId}}
+Authorization: Bearer {{adminToken}}

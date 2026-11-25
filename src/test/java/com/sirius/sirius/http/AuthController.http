@@ -5,6 +5,7 @@
 @adminPassword = Kovalenko20020502
 @newUserEmail = new.employee@example.com
 @newUserPassword = ChangeThisUserPassword123!
+@newUserName = HTTP Test Employee
 
 ### 1. Увійти як адміністратор
 
@@ -52,6 +53,7 @@ Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {
+  "fullName": "{{newUserName}}",
   "email": "{{newUserEmail}}",
   "password": "{{newUserPassword}}",
   "hotelId": {{hotelId}}
@@ -61,6 +63,7 @@ Content-Type: application/json
     client.test("Hotel user created", function () {
         client.assert(response.status === 201, "Переконайся, що hotelId існує і вхід виконано адміном");
         client.assert(response.body.email != null, "Email користувача відсутній у відповіді");
+        client.assert(response.body.fullName === "{{newUserName}}", "Ім’я користувача відсутнє");
         client.assert(response.body.role === "USER");
         client.assert(response.body.hotelId != null, "Готель не призначено користувачу");
     });

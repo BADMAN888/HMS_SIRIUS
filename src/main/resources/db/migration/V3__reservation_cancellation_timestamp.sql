@@ -1,2 +1,0 @@
-ALTER TABLE reservations
-    ADD COLUMN cancelled_at TIMESTAMP;

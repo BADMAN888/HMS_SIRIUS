@@ -1,0 +1,48 @@
+@baseUrl = http://localhost:8080
+@rateId = {{createdRateId}}
+@facilityId = {{createdFacilityId}}
+@componentId = {{createdServiceComponentId}}
+
+### List rate service components
+GET {{baseUrl}}/api/service-components/rate/{{rateId}}
+Authorization: Bearer {{token}}
+
+### List facility service components
+GET {{baseUrl}}/api/service-components/facility/{{facilityId}}
+Authorization: Bearer {{token}}
+
+### Create service component
+POST {{baseUrl}}/api/service-components
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rateId": {{rateId}},
+  "facilityId": {{facilityId}},
+  "priceSource": "RATE_PRICE",
+  "quantityBasis": "PER_STAY",
+  "multiplier": 1,
+  "included": false,
+  "sortOrder": 100,
+  "active": true
+}
+
+### Update service component
+PUT {{baseUrl}}/api/service-components/{{componentId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "rateId": {{rateId}},
+  "facilityId": {{facilityId}},
+  "priceSource": "RATE_PRICE",
+  "quantityBasis": "PER_STAY",
+  "multiplier": 2,
+  "included": false,
+  "sortOrder": 100,
+  "active": true
+}
+
+### Deactivate service component
+DELETE {{baseUrl}}/api/service-components/{{componentId}}
+Authorization: Bearer {{token}}

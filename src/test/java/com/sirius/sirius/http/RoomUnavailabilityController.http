@@ -1,0 +1,51 @@
+@baseUrl = http://localhost:8080
+@hotelId = {{createdHotelId}}
+@roomId = {{createdRoomId}}
+@repairId = {{createdRoomUnavailabilityId}}
+
+### Create room unavailability
+POST {{baseUrl}}/api/room-unavailabilities
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "roomId": {{roomId}},
+  "status": "OUT_OF_SERVICE",
+  "startAt": "2026-12-01T09:00:00",
+  "endAt": "2026-12-03T18:00:00",
+  "reason": "HTTP maintenance test"
+}
+
+> {%
+    client.test("Room unavailability created", function () {
+        client.assert(response.status === 201, "Expected HTTP 201");
+        client.assert(response.body.id != null, "Unavailability ID missing");
+    });
+    client.global.set("createdRoomUnavailabilityId", response.body.id);
+%}
+
+### Create batch room unavailability
+POST {{baseUrl}}/api/room-unavailabilities/batch
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "roomIds": [{{roomId}}],
+  "status": "OUT_OF_ORDER",
+  "startAt": "2026-12-05T09:00:00",
+  "endAt": "2026-12-06T18:00:00",
+  "reason": "HTTP batch maintenance test"
+}
+
+### Get unavailability by hotel and period
+GET {{baseUrl}}/api/room-unavailabilities/hotel/{{hotelId}}?startAt=2026-12-01T00:00:00&endAt=2026-12-07T00:00:00
+Authorization: Bearer {{token}}
+
+### Get unavailability by room
+GET {{baseUrl}}/api/room-unavailabilities/room/{{roomId}}
+Authorization: Bearer {{token}}
+
+### Finish unavailability early
+PATCH {{baseUrl}}/api/room-unavailabilities/{{repairId}}/finish
+Authorization: Bearer {{token}}

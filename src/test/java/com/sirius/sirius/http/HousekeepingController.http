@@ -1,0 +1,30 @@
+@baseUrl = http://localhost:8080
+@hotelId = {{createdHotelId}}
+@serviceDate = 2026-12-01
+@taskId = {{createdHousekeepingTaskId}}
+
+### Get housekeeping plan
+GET {{baseUrl}}/api/housekeeping/plans?hotelId={{hotelId}}&date={{serviceDate}}
+Authorization: Bearer {{token}}
+
+### Generate housekeeping plan
+POST {{baseUrl}}/api/housekeeping/plans/generate
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "serviceDate": "{{serviceDate}}",
+  "attendantCount": 4
+}
+
+### Update housekeeping task
+PATCH {{baseUrl}}/api/housekeeping/tasks/{{taskId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "attendantNumber": 1,
+  "status": "IN_PROGRESS",
+  "notes": "HTTP test update"
+}

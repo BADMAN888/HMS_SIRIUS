@@ -11,7 +11,7 @@ Content-Type: application/json
 {
   "facilityId": {{facilityId}},
   "price": 500.00,
-  "validFrom": "2026-11-10",
+  "validFrom": "2027-11-10",
   "validTo": "2027-12-31"
 }
 
@@ -26,5 +26,5 @@ Authorization: Bearer {{token}}
 
 ### 3. GET FACILITY PRICE FOR DATE
 
-GET {{baseUrl}}/api/facility-prices/facility/{{facilityId}}/date/2026-11-10
+GET {{baseUrl}}/api/facility-prices/facility/{{facilityId}}/date/2027-11-10
 Authorization: Bearer {{token}}

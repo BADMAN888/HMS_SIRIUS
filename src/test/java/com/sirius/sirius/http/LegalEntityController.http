@@ -1,0 +1,50 @@
+@baseUrl = http://localhost:8080
+@legalEntityId = {{createdLegalEntityId}}
+@hotelId = {{createdHotelId}}
+@entityCode = {{legalEntity2Code}}
+
+### Create legal entity
+POST {{baseUrl}}/api/legal-entities
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "fullName": "HTTP Test Legal Entity {{entityCode}}",
+  "shortName": "HTTP Entity {{entityCode}}",
+  "edrpou": "{{entityCode}}",
+  "registrationDate": "2020-01-01",
+  "organizationalLegalForm": "LLC"
+}
+
+### List legal entities
+GET {{baseUrl}}/api/legal-entities
+Authorization: Bearer {{adminToken}}
+
+### Get legal entity
+GET {{baseUrl}}/api/legal-entities/{{legalEntityId}}
+Authorization: Bearer {{adminToken}}
+
+### Get legal entities by hotel
+GET {{baseUrl}}/api/legal-entities/hotel/{{hotelId}}
+Authorization: Bearer {{adminToken}}
+
+### Update legal entity
+PUT {{baseUrl}}/api/legal-entities/{{legalEntityId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+  "fullName": "Updated HTTP Legal Entity {{entityCode}}",
+  "shortName": "Updated HTTP Entity {{entityCode}}",
+  "edrpou": "{{entityCode}}",
+  "registrationDate": "2020-01-01",
+  "organizationalLegalForm": "LLC"
+}
+
+### Deactivate legal entity
+PATCH {{baseUrl}}/api/legal-entities/{{legalEntityId}}/deactivate
+Authorization: Bearer {{adminToken}}
+
+### Activate legal entity
+PATCH {{baseUrl}}/api/legal-entities/{{legalEntityId}}/activate
+Authorization: Bearer {{adminToken}}

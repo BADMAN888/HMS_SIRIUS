@@ -1,0 +1,44 @@
+@baseUrl = http://localhost:8080
+@hotelId = {{createdHotelId}}
+@roomId = {{createdRoomId}}
+@rateId = {{createdRateId}}
+@paymentCategoryId = {{createdCategoryId}}
+@guestId = {{createdProfileId}}
+@groupBookingId = {{createdGroupBookingId}}
+
+### Create group booking
+POST {{baseUrl}}/api/group-bookings
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "hotelId": {{hotelId}},
+  "groupName": "HTTP Test Group",
+  "organizerName": "Test Organizer",
+  "contactPhone": "+380501234567",
+  "contactEmail": "organizer@example.com",
+  "checkIn": "2026-12-10T14:00:00",
+  "checkOut": "2026-12-12T12:00:00",
+  "notes": "HTTP integration scenario",
+  "bookingSource": "HTTP_TEST",
+  "taxStatus": "RESIDENT",
+  "reservations": [{
+    "roomId": {{roomId}},
+    "rateId": {{rateId}},
+    "paymentCategoryId": {{paymentCategoryId}},
+    "primaryGuestId": {{guestId}},
+    "guestIds": [{{guestId}}],
+    "adults": 1,
+    "children": 0,
+    "roomLocked": false,
+    "guestName": "Test Guest"
+  }]
+}
+
+### Search group bookings
+GET {{baseUrl}}/api/group-bookings/search?hotelId={{hotelId}}&page=0&size=20
+Authorization: Bearer {{token}}
+
+### Get group booking
+GET {{baseUrl}}/api/group-bookings/{{groupBookingId}}
+Authorization: Bearer {{token}}

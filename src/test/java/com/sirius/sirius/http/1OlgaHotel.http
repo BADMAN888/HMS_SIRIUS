@@ -1,7 +1,7 @@
 
 @baseUrl = http://localhost:8080
 
-# Select the "local" HTTP Client environment to load credentials from the private env file.
+# Select the "local" HTTP Client environment to load admin credentials.
 
 @hotelUrl = {{baseUrl}}/api/hotels
 @roomCategoryUrl = {{baseUrl}}/api/room-category
@@ -70,7 +70,28 @@
 ### AUTH
 ### ==================================================
 
-# Run the admin login request in AuthController.http first. It sets token and runCode.
+### ADMIN LOGIN
+
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
+}
+
+> {%
+    client.test("Admin login successful", function () {
+        client.assert(response.status === 200, "Check admin credentials in the local HTTP Client environment");
+        client.assert(response.body.token != null);
+        client.assert(response.body.refreshToken != null);
+    });
+    client.global.set("token", response.body.token);
+    client.global.set("refreshToken", response.body.refreshToken);
+    var runCode = String(10000000 + Math.floor(Math.random() * 90000000));
+    client.global.set("runCode", runCode);
+    client.global.set("legalEntity2Code", String(10000000 + ((Number(runCode) - 10000000 + 1) % 90000000)));
+%}
 
 ### REFRESH TOKEN
 
@@ -2746,6 +2767,20 @@ Authorization: Bearer {{token}}
 > {%
     client.test("Reservation 1 loaded", function () {
         client.assert(response.status === 200);
+    });
+%}
+
+###
+
+### GET RESERVATION CHANGE HISTORY
+
+GET {{reservationUrl}}/{{reservation1Id}}/history
+Authorization: Bearer {{token}}
+
+> {%
+    client.test("Reservation change history loaded", function () {
+        client.assert(response.status === 200);
+        client.assert(Array.isArray(response.body));
     });
 %}
 

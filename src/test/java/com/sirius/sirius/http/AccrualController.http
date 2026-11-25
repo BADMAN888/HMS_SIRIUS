@@ -19,7 +19,7 @@ Content-Type: application/json
   "reservationId": {{reservationId}},
   "recipientId": {{profileId}},
   "folioId": {{folioId}},
-  "serviceDate": "2026-11-15",
+  "serviceDate": "2027-11-15",
   "quantity": 1
 }
 

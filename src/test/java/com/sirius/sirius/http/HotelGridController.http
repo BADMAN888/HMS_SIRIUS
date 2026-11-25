@@ -3,7 +3,7 @@
 
 ### 1. GET HOTEL GRID
 
-GET {{baseUrl}}/api/hotel-grid?startDate=2026-11-15&endDate=2026-12-15
+GET {{baseUrl}}/api/hotel-grid?startDate=2027-11-15&endDate=2027-12-15
 Authorization: Bearer {{token}}
 
 > {%
@@ -16,7 +16,7 @@ Authorization: Bearer {{token}}
 
 ### 2. GET HOTEL GRID - ONE WEEK
 
-GET {{baseUrl}}/api/hotel-grid?startDate=2026-11-15&endDate=2026-11-22
+GET {{baseUrl}}/api/hotel-grid?startDate=2027-11-15&endDate=2027-11-22
 Authorization: Bearer {{token}}
 
 > {%
@@ -42,7 +42,7 @@ Authorization: Bearer {{token}}
 
 ### 4. GET HOTEL GRID - MISSING END DATE
 
-GET {{baseUrl}}/api/hotel-grid?startDate=2026-11-15
+GET {{baseUrl}}/api/hotel-grid?startDate=2027-11-15
 Authorization: Bearer {{token}}
 
 > {%

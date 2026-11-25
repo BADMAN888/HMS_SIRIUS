@@ -58,7 +58,7 @@ Authorization: Bearer {{token}}
 
 ###
 
-### 7. GET ROOMS BY CATEGORY AND STATUS
+### 7. GET ROOMS BY CATEGORY AND STATUS (not supported by controller)
 
 GET {{baseUrl}}/api/rooms/category/{{categoryId}}/status/AVAILABLE
 Authorization: Bearer {{token}}
